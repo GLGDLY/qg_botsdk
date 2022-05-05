@@ -1,7 +1,7 @@
-#qg_botsdk
+##qg_botsdk
 
 <div align="center">
-_✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级sdk✨_
+✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级sdk✨
 
 ![](https://img.shields.io/badge/language-python-green.svg)
 ![](https://img.shields.io/badge/license-MIT-orange.svg)
