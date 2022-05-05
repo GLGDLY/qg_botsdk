@@ -8,7 +8,7 @@
 
 ![](https://img.shields.io/badge/language-python-green.svg)
 ![](https://img.shields.io/badge/license-MIT-orange.svg)
-![](https://img.shields.io/github/v/release/GDLYGL/qg_botsdk)
+![](https://img.shields.io/github/v/release/GLGDLY/qg_botsdk)
 </div>
 
 #### 亮点
