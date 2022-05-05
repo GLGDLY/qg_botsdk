@@ -1,4 +1,4 @@
-##qg_botsdk
+# qg_botsdk
 
 <div align="center">
 ✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级sdk✨
