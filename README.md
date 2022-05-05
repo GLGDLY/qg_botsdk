@@ -1,7 +1,10 @@
 # qg_botsdk
 
 <div align="center">
-✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级sdk✨
+    
+<img src="https://groupprohead.gtimg.cn/13887241636967950/40?t=1650772396134" width="128"/>
+    
+✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
 
 ![](https://img.shields.io/badge/language-python-green.svg)
 ![](https://img.shields.io/badge/license-MIT-orange.svg)
@@ -11,7 +14,7 @@
 #### 亮点
 ###### - 轻量，简洁的代码结构，10行即可构建一个简单的程序
 ###### - 容易入门，无需学会asyncio也可使用，同时保留较高并发能力
-###### - 保持官方json格式，带你学习官方结构，日后可自行开发适合自己的sdk
+###### - 保留官方json格式，带你学习官方结构，日后可自行开发适合自己的sdk
 
 #### 当前应用
 ###### - 自用（爱萌AM）
