@@ -26,8 +26,8 @@
 ### 一个简单的工作流
 
 > - 注册BOT实例，录入机器人平台获取的ID（BotAppId开发者ID）和token（机器人令牌）
-- 绑定接收事件的函数（bind_msg、bind_dm、bind_msg_delete、bind_guild_event、bind_guild_member、bind_reaction、bind_interaction、bind_audit、bind_forum、bind_audio）
-- 开始运行机器人：bot.start()
+> - 绑定接收事件的函数（bind_msg、bind_dm、bind_msg_delete、bind_guild_event、bind_guild_member、bind_reaction、bind_interaction、bind_audit、bind_forum、bind_audio）
+> - 开始运行机器人：bot.start()
 
 ```python
 from qg_bot import BOT
