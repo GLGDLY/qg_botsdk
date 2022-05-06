@@ -1,3 +1,7 @@
 
 setup.py
 release
+.idea
+__pycache__
+qg_botsdk/__pycache__
+example/log

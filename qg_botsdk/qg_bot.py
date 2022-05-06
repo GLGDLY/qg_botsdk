@@ -13,17 +13,36 @@ from threading import Thread
 from typing import Any, Callable
 from sys import exc_info
 from traceback import extract_tb
-import logger
+from collections import namedtuple
+from .logger import Logger
+from .model import *
+
+
+def objectize(data):
+    if isinstance(data, dict):
+        for keys, values in data.items():
+            if keys.isnumeric():
+                return data
+            if isinstance(values, dict):
+                data[keys] = objectize(values)
+            elif isinstance(values, list):
+                for i, items in enumerate(values):
+                    if isinstance(items, dict):
+                        data[keys][i] = objectize(items)
+        return namedtuple('object', data.keys())(*data.values())
+    else:
+        return None
 
 
 class BotWs:
-    def __init__(self, shard: int, shard_no: int, url: str, header: dict, bot_id: str, bot_token: str, bot_url: str,
-                 on_msg_function: Callable[[Any], Any], on_dm_function: Callable[[Any], Any],
+    def __init__(self, logger, shard: int, shard_no: int, url: str, header: dict, bot_id: str, bot_token: str,
+                 bot_url: str, on_msg_function: Callable[[Any], Any], on_dm_function: Callable[[Any], Any],
                  on_delete_function: Callable[[Any], Any], is_filter_self: bool,
                  on_guild_event_function: Callable[[Any], Any], on_guild_member_function: Callable[[Any], Any],
                  on_reaction_function: Callable[[Any], Any], on_interaction_function: Callable[[Any], Any],
                  on_audit_function: Callable[[Any], Any], on_forum_function: Callable[[Any], Any],
                  on_audio_function: Callable[[Any], Any], intents: int, msg_treat: bool, dm_treat: bool):
+        self.logger = logger
         self.shard = shard
         self.shard_no = shard_no
         self.url = url
@@ -83,14 +102,186 @@ class BotWs:
             await asyncio.sleep(self.heartbeat_time)
             self.loop.create_task(self.ws_send(dumps(self.heart_paras)))
 
+    def data_process(self, data):
+        if data["t"] in ("AT_MESSAGE_CREATE", 'MESSAGE_CREATE'):
+            if 'content' not in data["d"]:
+                raw_msg = ''
+            elif '<@!{}>'.format(self.bot_qid) in data["d"]["content"]:
+                raw_msg = data["d"]["content"][data["d"]["content"].find('<@!{}>'.format(
+                    self.bot_qid)) + len(self.bot_qid) + 4:].strip()
+            else:
+                raw_msg = data["d"]["content"]
+            self.logger.info('收到来自“' + data["d"]["author"]["username"] + '--' + str(data["d"]["author"]["id"])
+                             + '”的消息（' + raw_msg + '）')
+            if self.on_msg_function is not None:
+                if self.msg_treat:
+                    if '\xa0' in raw_msg:
+                        raw_msg = raw_msg.replace('\xa0', ' ')
+                    if raw_msg[0] == '/':
+                        raw_msg = raw_msg[1:]
+                    raw_msg = raw_msg.replace('&amp;', '&')
+                    raw_msg = raw_msg.replace('&lt;', '<')
+                    raw_msg = raw_msg.replace('&gt;', '>')
+                    data["d"]["treated_msg"] = raw_msg
+                    data["d"]["t"] = data["t"]
+                try:
+                    Thread(target=self.on_msg_function, args=[objectize(data["d"])],
+                           name=f'MsgThread-{str(data["s"])}').start()
+                except Exception as error:
+                    self.logger.error(error)
+                    error_info = extract_tb(exc_info()[-1])[-1]
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                                                                                      error_info[1], error_info[2]))
+                    pass
+        elif data["t"] in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE", "DIRECT_MESSAGE_DELETE"):
+            if self.on_delete_function is not None:
+                if self.is_filter_self:
+                    target = data['d']['message']['author']['id']
+                    op_user = data['d']['op_user']['id']
+                    if op_user == target:
+                        return
+                data["d"]["t"] = data["t"]
+                try:
+                    Thread(target=self.on_delete_function, args=[objectize(data["d"])],
+                           name=f'MsgThread-{str(data["s"])}').start()
+                except Exception as error:
+                    self.logger.error(error)
+                    error_info = extract_tb(exc_info()[-1])[-1]
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                                                                                      error_info[1], error_info[2]))
+                    pass
+        elif data["t"] == "DIRECT_MESSAGE_CREATE":
+            if 'content' not in data["d"]:
+                raw_msg = ''
+            else:
+                raw_msg = data["d"]["content"]
+            self.logger.info('收到来自“' + data["d"]["author"]["username"] + '--' + str(data["d"]["author"]["id"])
+                             + '”的私信消息（' + raw_msg + '）')
+            if self.on_dm_function is not None:
+                if self.msg_treat:
+                    if '\xa0' in raw_msg:
+                        raw_msg = raw_msg.replace('\xa0', ' ')
+                    if raw_msg[0] == '/':
+                        raw_msg = raw_msg[1:]
+                    raw_msg = raw_msg.strip()
+                    raw_msg = raw_msg.replace('&amp;', '&')
+                    raw_msg = raw_msg.replace('&lt;', '<')
+                    raw_msg = raw_msg.replace('&gt;', '>')
+                    data["d"]["treated_msg"] = raw_msg
+                    data["d"]["t"] = data["t"]
+                try:
+                    Thread(target=self.on_dm_function, args=[objectize(data["d"])],
+                           name=f'MsgThread-{str(data["s"])}').start()
+                except Exception as error:
+                    self.logger.error(error)
+                    error_info = extract_tb(exc_info()[-1])[-1]
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                                                                                      error_info[1], error_info[2]))
+                    pass
+        elif data["t"] in ("GUILD_CREATE", "GUILD_UPDATE", "GUILD_DELETE", "CHANNEL_CREATE", "CHANNEL_UPDATE",
+                           "CHANNEL_DELETE"):
+            if self.on_guild_event_function is not None:
+                try:
+                    data["d"]["t"] = data["t"]
+                    Thread(target=self.on_guild_event_function, args=[objectize(data["d"])],
+                           name=f'EventThread-{str(data["s"])}').start()
+                except Exception as error:
+                    self.logger.error(error)
+                    error_info = extract_tb(exc_info()[-1])[-1]
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                                                                                      error_info[1], error_info[2]))
+                    pass
+        elif data["t"] in ("GUILD_MEMBER_ADD", "GUILD_MEMBER_UPDATE", "GUILD_MEMBER_REMOVE"):
+            if self.on_guild_member_function is not None:
+                try:
+                    data["d"]["t"] = data["t"]
+                    Thread(target=self.on_guild_event_function, args=[objectize(data["d"])],
+                           name=f'EventThread-{str(data["s"])}').start()
+                except Exception as error:
+                    self.logger.error(error)
+                    error_info = extract_tb(exc_info()[-1])[-1]
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                                                                                      error_info[1], error_info[2]))
+                    pass
+        elif data["t"] in ("MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE"):
+            if self.on_reaction_function is not None:
+                try:
+                    data["d"]["t"] = data["t"]
+                    Thread(target=self.on_guild_event_function, args=[objectize(data["d"])],
+                           name=f'EventThread-{str(data["s"])}').start()
+                except Exception as error:
+                    self.logger.error(error)
+                    error_info = extract_tb(exc_info()[-1])[-1]
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                                                                                      error_info[1], error_info[2]))
+                    pass
+        elif data["t"] == "INTERACTION_CREATE":
+            if self.on_interaction_function is not None:
+                try:
+                    data["d"]["t"] = data["t"]
+                    Thread(target=self.on_guild_event_function, args=[objectize(data["d"])],
+                           name=f'EventThread-{str(data["s"])}').start()
+                except Exception as error:
+                    self.logger.error(error)
+                    error_info = extract_tb(exc_info()[-1])[-1]
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                                                                                      error_info[1], error_info[2]))
+                    pass
+        elif data["t"] in ("MESSAGE_AUDIT_PASS", "MESSAGE_AUDIT_REJECT"):
+            if self.on_audit_function is not None:
+                try:
+                    data["d"]["t"] = data["t"]
+                    Thread(target=self.on_audit_function, args=[objectize(data["d"])],
+                           name=f'EventThread-{str(data["s"])}').start()
+                except Exception as error:
+                    self.logger.error(error)
+                    error_info = extract_tb(exc_info()[-1])[-1]
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                                                                                      error_info[1], error_info[2]))
+                    pass
+        elif data["t"] in ("FORUM_THREAD_CREATE", "FORUM_THREAD_UPDATE", "FORUM_THREAD_DELETE", "FORUM_POST_CREATE",
+                           "FORUM_POST_DELETE", "FORUM_REPLY_CREATE", "FORUM_REPLY_DELETE",
+                           "FORUM_PUBLISH_AUDIT_RESULT"):
+            if self.on_forum_function is not None:
+                try:
+                    data["d"]["t"] = data["t"]
+                    try:
+                        data["d"]["thread_info"]["content"] = loads(data["d"]["thread_info"]["content"])
+                    except JSONDecodeError:
+                        pass
+                    try:
+                        data["d"]["thread_info"]["title"] = loads(data["d"]["thread_info"]["title"])
+                    except JSONDecodeError:
+                        pass
+                    Thread(target=self.on_forum_function, args=[objectize(data["d"])],
+                           name=f'EventThread-{str(data["s"])}').start()
+                except Exception as error:
+                    self.logger.error(error)
+                    error_info = extract_tb(exc_info()[-1])[-1]
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                                                                                      error_info[1], error_info[2]))
+                    pass
+        elif data["t"] in ("AUDIO_START", "AUDIO_FINISH", "AUDIO_ON_MIC", "AUDIO_OFF_MIC"):
+            if self.on_audio_function is not None:
+                try:
+                    data["d"]["t"] = data["t"]
+                    Thread(target=self.on_audio_function, args=[objectize(data["d"])],
+                           name=f'EventThread-{str(data["s"])}').start()
+                except Exception as error:
+                    self.logger.error(error)
+                    error_info = extract_tb(exc_info()[-1])[-1]
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                                                                                      error_info[1], error_info[2]))
+                    pass
+
     def main(self, msg):
         data = loads(msg)
         if data["op"] == 11:
-            logger.info('心跳发送成功')
+            self.logger.info('心跳发送成功')
         else:
             if "t" in data and data["t"] != "READY":
-                logger.info('[消息] ' + data["t"])
-            logger.debug(data)
+                self.logger.info('[消息] ' + data["t"])
+            self.logger.debug(data)
         if "s" in data and data["t"] != "READY" and data["t"] != "RESUMED":
             self.heart_paras["d"] = data["s"]
         if data["op"] == 10:
@@ -111,7 +302,7 @@ class BotWs:
             if data["t"] == "READY":
                 me_qid = session.get(self.bot_url + '/users/@me', headers=self.header).json()
                 self.bot_qid = str(me_qid['id'])
-                logger.info('机器人频道id：' + self.bot_qid)
+                self.logger.info('机器人频道用户ID：' + self.bot_qid)
                 self.connection = True
                 self.session_id = data["d"]["session_id"]
                 self.reconnect_times = 0
@@ -119,7 +310,7 @@ class BotWs:
                 if 'heartbeat_task' not in tasks:
                     self.heartbeat = self.loop.create_task(self.heart())
                     self.heartbeat.set_name('heartbeat_task')
-                logger.info('连接成功，机器人开始运行')
+                self.logger.info('连接成功，机器人开始运行')
             elif data["t"] == "RESUMED":
                 self.connection = True
                 self.reconnect_times = 0
@@ -127,157 +318,9 @@ class BotWs:
                 if 'heartbeat_task' not in tasks:
                     self.heartbeat = self.loop.create_task(self.heart())
                     self.heartbeat.set_name('heartbeat_task')
-                logger.info('重连成功，机器人继续运行')
-            elif data["t"] in ("AT_MESSAGE_CREATE", 'MESSAGE_CREATE'):
-                if 'content' not in data["d"]:
-                    raw_msg = ''
-                elif '<@!{}>'.format(self.bot_qid) in data["d"]["content"]:
-                    raw_msg = data["d"]["content"][data["d"]["content"].find('<@!{}>'.format(
-                        self.bot_qid)) + len(self.bot_qid) + 4:].strip()
-                else:
-                    raw_msg = data["d"]["content"]
-                logger.info('收到来自“' + data["d"]["author"]["username"] + '--' + str(data["d"]["author"]["id"])
-                            + '”的消息（' + raw_msg + '）')
-                if self.on_msg_function is not None:
-                    if self.msg_treat:
-                        if '\xa0' in raw_msg:
-                            raw_msg = raw_msg.replace('\xa0', ' ')
-                        if raw_msg[0] == '/':
-                            raw_msg = raw_msg[1:]
-                        raw_msg = raw_msg.replace('&amp;', '&')
-                        raw_msg = raw_msg.replace('&lt;', '<')
-                        raw_msg = raw_msg.replace('&gt;', '>')
-                        data["treated_msg"] = raw_msg
-                    try:
-                        Thread(target=self.on_msg_function, args=[data], name=f'MsgThread-{str(data["s"])}').start()
-                    except Exception as error:
-                        logger.error(error)
-                        error_info = extract_tb(exc_info()[-1])[-1]
-                        logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                     error_info[1], error_info[2]))
-                        pass
-            elif data["t"] in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE", "DIRECT_MESSAGE_DELETE"):
-                if self.on_delete_function is not None:
-                    if self.is_filter_self:
-                        target = data['d']['message']['author']['id']
-                        op_user = data['d']['op_user']['id']
-                        if op_user == target:
-                            return
-                    try:
-                        Thread(target=self.on_delete_function, args=[data],
-                               name=f'EventThread-{str(data["s"])}').start()
-                    except Exception as error:
-                        logger.error(error)
-                        error_info = extract_tb(exc_info()[-1])[-1]
-                        logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                     error_info[1], error_info[2]))
-                        pass
-            elif data["t"] == "DIRECT_MESSAGE_CREATE":
-                if 'content' not in data["d"]:
-                    raw_msg = ''
-                else:
-                    raw_msg = data["d"]["content"]
-                logger.info('收到来自“' + data["d"]["author"]["username"] + '--' + str(data["d"]["author"]["id"])
-                            + '”的私信消息（' + raw_msg + '）')
-                if self.on_dm_function is not None:
-                    if self.msg_treat:
-                        if '\xa0' in raw_msg:
-                            raw_msg = raw_msg.replace('\xa0', ' ')
-                        if raw_msg[0] == '/':
-                            raw_msg = raw_msg[1:]
-                        raw_msg = raw_msg.strip()
-                        raw_msg = raw_msg.replace('&amp;', '&')
-                        raw_msg = raw_msg.replace('&lt;', '<')
-                        raw_msg = raw_msg.replace('&gt;', '>')
-                        data["treated_msg"] = raw_msg
-                    try:
-                        Thread(target=self.on_dm_function, args=[data], name=f'MsgThread-{str(data["s"])}').start()
-                    except Exception as error:
-                        logger.error(error)
-                        error_info = extract_tb(exc_info()[-1])[-1]
-                        logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                     error_info[1], error_info[2]))
-                        pass
-            elif data["t"] in ("GUILD_CREATE", "GUILD_UPDATE", "GUILD_DELETE", "CHANNEL_CREATE", "CHANNEL_UPDATE",
-                               "CHANNEL_DELETE"):
-                if self.on_guild_event_function is not None:
-                    try:
-                        Thread(target=self.on_guild_event_function, args=[data],
-                               name=f'EventThread-{str(data["s"])}').start()
-                    except Exception as error:
-                        logger.error(error)
-                        error_info = extract_tb(exc_info()[-1])[-1]
-                        logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                     error_info[1], error_info[2]))
-                        pass
-            elif data["t"] in ("GUILD_MEMBER_ADD", "GUILD_MEMBER_UPDATE", "GUILD_MEMBER_REMOVE"):
-                if self.on_guild_member_function is not None:
-                    try:
-                        Thread(target=self.on_guild_member_function, args=[data],
-                               name=f'EventThread-{str(data["s"])}').start()
-                    except Exception as error:
-                        logger.error(error)
-                        error_info = extract_tb(exc_info()[-1])[-1]
-                        logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                     error_info[1], error_info[2]))
-                        pass
-            elif data["t"] in ("MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE"):
-                if self.on_reaction_function is not None:
-                    try:
-                        Thread(target=self.on_reaction_function, args=[data],
-                               name=f'EventThread-{str(data["s"])}').start()
-                    except Exception as error:
-                        logger.error(error)
-                        error_info = extract_tb(exc_info()[-1])[-1]
-                        logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                     error_info[1], error_info[2]))
-                        pass
-            elif data["t"] == "INTERACTION_CREATE":
-                if self.on_interaction_function is not None:
-                    try:
-                        Thread(target=self.on_interaction_function, args=[data],
-                               name=f'EventThread-{str(data["s"])}').start()
-                    except Exception as error:
-                        logger.error(error)
-                        error_info = extract_tb(exc_info()[-1])[-1]
-                        logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                     error_info[1], error_info[2]))
-                        pass
-            elif data["t"] == ("MESSAGE_AUDIT_PASS", "MESSAGE_AUDIT_REJECT"):
-                if self.on_audit_function is not None:
-                    try:
-                        Thread(target=self.on_audit_function, args=[data],
-                               name=f'EventThread-{str(data["s"])}').start()
-                    except Exception as error:
-                        logger.error(error)
-                        error_info = extract_tb(exc_info()[-1])[-1]
-                        logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                     error_info[1], error_info[2]))
-                        pass
-            elif data["t"] in ("FORUM_THREAD_CREATE", "FORUM_THREAD_UPDATE", "FORUM_THREAD_DELETE", "FORUM_POST_CREATE",
-                               "FORUM_POST_DELETE", "FORUM_REPLY_CREATE", "FORUM_REPLY_DELETE",
-                               "FORUM_PUBLISH_AUDIT_RESULT"):
-                if self.on_forum_function is not None:
-                    try:
-                        Thread(target=self.on_forum_function, args=[data],
-                               name=f'EventThread-{str(data["s"])}').start()
-                    except Exception as error:
-                        logger.error(error)
-                        error_info = extract_tb(exc_info()[-1])[-1]
-                        logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                     error_info[1], error_info[2]))
-                        pass
-            elif data["t"] in ("AUDIO_START", "AUDIO_FINISH", "AUDIO_ON_MIC", "AUDIO_OFF_MIC"):
-                if self.on_audio_function is not None:
-                    try:
-                        Thread(target=self.on_audio_function, args=[data],
-                               name=f'EventThread-{str(data["s"])}').start()
-                    except Exception as error:
-                        logger.error(error)
-                        error_info = extract_tb(exc_info()[-1])[-1]
-                        logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                     error_info[1], error_info[2]))
-                        pass
+                self.logger.info('重连成功，机器人继续运行')
+            else:
+                self.data_process(data)
 
     async def connect(self):
         self.connection = True
@@ -296,7 +339,7 @@ class BotWs:
                     self.re_connect = True
                     if self.heartbeat is not None and not self.heartbeat.cancelled():
                         self.heartbeat.cancel()
-                    logger.warning('BOT_WS链接已断开，正在尝试重连……')
+                    self.logger.warning('BOT_WS链接已断开，正在尝试重连……')
                     return
                 except (ConnectionClosed, ConnectionClosedOK):
                     if self.heartbeat is not None and not self.heartbeat.cancelled():
@@ -307,17 +350,17 @@ class BotWs:
                     self.re_connect = True
                     if self.heartbeat is not None and not self.heartbeat.cancelled():
                         self.heartbeat.cancel()
-                    logger.error(error)
+                    self.logger.error(error)
                     error_info = extract_tb(exc_info()[-1])[-1]
-                    logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
                                                                                  error_info[1], error_info[2]))
                     return
         except Exception as error:
             if self.heartbeat is not None and not self.heartbeat.cancelled():
                 self.heartbeat.cancel()
-            logger.error(error)
+            self.logger.error(error)
             error_info = extract_tb(exc_info()[-1])[-1]
-            logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
+            self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
                                                                          error_info[1], error_info[2]))
             return
 
@@ -332,7 +375,7 @@ class BotWs:
                     self.loop.run_until_complete(self.connect())
                     sleep(5)
                 except (ConnectionClosedError, ConnectionClosedOK, SSLError):
-                    logger.warning('网络连线不稳定或已断开，请检查网络链接')
+                    self.logger.warning('网络连线不稳定或已断开，请检查网络链接')
                     sleep(5)
                     pass
             else:
@@ -341,7 +384,7 @@ class BotWs:
                     self.loop.run_until_complete(self.connect())
                     sleep(5)
                 except (ConnectionClosedError, ConnectionClosedOK, SSLError):
-                    logger.warning('网络连线不稳定或已断开，请检查网络链接')
+                    self.logger.warning('网络连线不稳定或已断开，请检查网络链接')
                     sleep(5)
                     pass
 
@@ -361,6 +404,7 @@ class BOT:
     def __init__(self, bot_id: str, bot_token: str, bot_secret: str = None, is_private: bool = True,
                  is_sandbox: bool = False, max_shard: int = 50):
         """
+        机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
         :param bot_id: 机器人平台后台BotAppID（开发者ID）项，必填
         :param bot_token: 机器人平台后台机器人令牌项，必填
         :param bot_secret: 机器人平台后台机器人密钥项，如需要使用安全检测功能需填写此项
@@ -368,6 +412,7 @@ class BOT:
         :param is_sandbox: 是否开启沙箱环境，默认False
         :param max_shard: 最大分片数，请根据配置自行判断，默认50
         """
+        self.logger = Logger(bot_id)
         self.bot_id = bot_id
         self.bot_token = bot_token
         self.bot_secret = bot_secret
@@ -399,22 +444,22 @@ class BOT:
         # self.main_loop = asyncio.new_event_loop()
         gateway = session.get(self.bot_url + '/gateway/bot', headers=self.header).json()
         self.url = gateway["url"]
-        logger.info('[机器人ws地址] ' + self.url)
+        self.logger.info('[机器人ws地址] ' + self.url)
         self.shard = gateway["shards"]
-        logger.info('[建议分片数] ' + str(self.shard))
+        self.logger.info('[建议分片数] ' + str(self.shard))
         if self.shard > max_shard:
             self.shard = max_shard
-            logger.info('[注意] 由于最大分片数少于建议分片数，分片数已自动调整为 ' + str(max_shard))
+            self.logger.info('[注意] 由于最大分片数少于建议分片数，分片数已自动调整为 ' + str(max_shard))
         self.msg_treat = False
         self.dm_treat = False
         self.security_code = ''
         self.code_expire = 0
 
-    def bind_msg(self, on_msg_function: Callable[[Any], Any], treated_data: bool = True):
+    def bind_msg(self, on_msg_function: Callable[[MESSAGE], Any], treated_data: bool = True):
         """
         用作注册接收消息的函数，将根据机器人是否公域自动判断接收艾特或所有消息
-        :param on_msg_function: 类型为function，该函数应包含一个参数以接收dict格式消息数据进行处理
-        :param treated_data: 是否返回经转义处理的文本，如是则会在返回的dict中添加一个treated_msg的key，默认True
+        :param on_msg_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param treated_data: 是否返回经转义处理的文本，如是则会在返回的Object中添加一个treated_msg的子类，默认True
         """
         self.on_msg_function = on_msg_function
         if self.is_private:
@@ -423,24 +468,24 @@ class BOT:
             self.intents = self.intents | 1 << 9
         if treated_data:
             self.msg_treat = True
-        logger.info('消息接收函数订阅成功')
+        self.logger.info('消息接收函数订阅成功')
 
-    def bind_dm(self, on_dm_function: Callable[[Any], Any], treated_data: bool = True):
+    def bind_dm(self, on_dm_function: Callable[[MESSAGE], Any], treated_data: bool = True):
         """
         用作注册接收私信消息的函数
-        :param on_dm_function: 类型为function，该函数应包含一个参数以接收dict格式数据进行处理
-        :param treated_data: 是否返回经转义处理的文本，如是则会在返回的dict中添加一个treated_msg的key，默认True
+        :param on_dm_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param treated_data: 是否返回经转义处理的文本，如是则会在返回的Object中添加一个treated_msg的子类，默认True
         """
         self.on_dm_function = on_dm_function
         self.intents = self.intents | 1 << 12
         if treated_data:
             self.dm_treat = True
-        logger.info('私信接收函数订阅成功')
+        self.logger.info('私信接收函数订阅成功')
 
-    def bind_msg_delete(self, on_delete_function: Callable[[Any], Any], is_filter_self: bool = True):
+    def bind_msg_delete(self, on_delete_function: Callable[[MESSAGE_DELETE], Any], is_filter_self: bool = True):
         """
         用作注册接收消息撤回事件的函数，注册时将自动根据公域私欲注册艾特或全部消息，但不会主动注册私信事件
-        :param on_delete_function:类型为function，该函数应包含一个参数以接收dict格式数据进行处理
+        :param on_delete_function:类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         :param is_filter_self: 是否过滤用户自行撤回的消息，只接受管理撤回事件
         """
         self.on_delete_function = on_delete_function
@@ -449,73 +494,74 @@ class BOT:
             self.intents = self.intents | 1 << 30
         else:
             self.intents = self.intents | 1 << 9
-        logger.info('撤回事件订阅成功')
+        self.logger.info('撤回事件订阅成功')
 
-    def bind_guild_event(self, on_guild_event_function: Callable[[Any], Any]):
+    def bind_guild_event(self, on_guild_event_function: Callable[[GUILDS], Any]):
         """
         用作注册接收频道信息的函数
-        :param on_guild_event_function: 类型为function，该函数应包含一个参数以接收dict格式事件数据进行处理
+        :param on_guild_event_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         """
         self.on_guild_event_function = on_guild_event_function
         self.intents = self.intents | 1 << 0
-        logger.info('频道事件订阅成功')
+        self.logger.info('频道事件订阅成功')
 
-    def bind_guild_member(self, on_guild_member_function: Callable[[Any], Any]):
+    def bind_guild_member(self, on_guild_member_function: Callable[[GUILD_MEMBERS], Any]):
         """
         用作注册接收频道信息的函数
-        :param on_guild_member_function: 类型为function，该函数应包含一个参数以接收dict格式事件数据进行处理
+        :param on_guild_member_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         """
         self.on_guild_member_function = on_guild_member_function
         self.intents = self.intents | 1 << 1
-        logger.info('频道成员事件订阅成功')
+        self.logger.info('频道成员事件订阅成功')
 
-    def bind_reaction(self, on_reaction_function: Callable[[Any], Any]):
+    def bind_reaction(self, on_reaction_function: Callable[[REACTION], Any]):
         """
         用作注册接收表情表态信息的函数
-        :param on_reaction_function: 类型为function，该函数应包含一个参数以接收dict格式事件数据进行处理
+        :param on_reaction_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         """
         self.on_reaction_function = on_reaction_function
         self.intents = self.intents | 1 << 10
-        logger.info('表情表态事件订阅成功')
+        self.logger.info('表情表态事件订阅成功')
 
     def bind_interaction(self, on_interaction_function: Callable[[Any], Any]):
         """
-        用作注册接收互动事件的函数
-        :param on_interaction_function: 类型为function，该函数应包含一个参数以接收dict格式事件数据进行处理
+        用作注册接收互动事件的函数，当前未有录入数据结构
+        :param on_interaction_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         """
         self.on_interaction_function = on_interaction_function
         self.intents = self.intents | 1 << 26
-        logger.info('互动事件订阅成功')
+        self.logger.info('互动事件订阅成功')
 
-    def bind_audit(self, on_audit_function: Callable[[Any], Any]):
+    def bind_audit(self, on_audit_function: Callable[[MESSAGE_AUDIT], Any]):
         """
         用作注册接收互动事件的函数
-        :param on_audit_function: 类型为function，该函数应包含一个参数以接收dict格式事件数据进行处理
+        :param on_audit_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         """
         self.on_audit_function = on_audit_function
         self.intents = self.intents | 1 << 27
-        logger.info('审核事件订阅成功')
+        self.logger.info('审核事件订阅成功')
 
-    def bind_forum(self, on_forum_function: Callable[[Any], Any]):
+    def bind_forum(self, on_forum_function: Callable[[FORUMS_EVENT], Any]):
         """
-        用作注册接收论坛事件的函数，仅私域机器人能注册此事件
-        :param on_forum_function: 类型为function，该函数应包含一个参数以接收dict格式事件数据进行处理
+        用作注册接收论坛事件的函数，仅私域机器人能注册此事件；
+        当前仅可以接收FORUM_THREAD_CREATE、FORUM_THREAD_UPDATE、FORUM_THREAD_DELETE三个事件
+        :param on_forum_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         """
         if self.is_private:
             self.on_forum_function = on_forum_function
             self.intents = self.intents | 1 << 28
-            logger.info('论坛事件订阅成功')
+            self.logger.info('论坛事件订阅成功')
         else:
-            logger.error('请注意，公域机器人不能注册论坛事件')
+            self.logger.error('请注意，公域机器人不能注册论坛事件')
 
-    def bind_audio(self, on_audio_function: Callable[[Any], Any]):
+    def bind_audio(self, on_audio_function: Callable[[AUDIO_ACTION], Any]):
         """
         用作注册接收论坛事件的函数
-        :param on_audio_function: 类型为function，该函数应包含一个参数以接收dict格式事件数据进行处理
+        :param on_audio_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         """
         self.on_audio_function = on_audio_function
         self.intents = self.intents | 1 << 29
-        logger.info('音频事件订阅成功')
+        self.logger.info('音频事件订阅成功')
 
     def register_repeat_event(self, time_function: Callable[[], Any], check_interval: float or int = 10):
         """
@@ -525,7 +571,7 @@ class BOT:
         """
         self.repeat_function = time_function
         self.check_interval = check_interval
-        logger.info('重复事件注册成功')
+        self.logger.info('重复事件注册成功')
 
     def register_start_event(self, on_start_function: Callable[[], Any]):
         """
@@ -533,24 +579,28 @@ class BOT:
         :param on_start_function: 类型为function，该函数不应包含任何参数
         """
         self.on_start_function = on_start_function
-        logger.info('开始事件注册成功')
+        self.logger.info('开始事件注册成功')
 
     def time_event_check(self):
         while self.running:
-            logger.new_logh()
+            self.logger.new_logh()
             if self.repeat_function is not None:
                 self.repeat_function()
             sleep(self.check_interval)
 
     def security_check_code(self):
         if self.bot_secret is None:
-            logger.error('无法调用内容安全检测接口（备注：没有填入机器人密钥）')
+            self.logger.error('无法调用内容安全检测接口（备注：没有填入机器人密钥）')
             return None
         code = session.get(f'https://api.q.qq.com/api/getToken?grant_type=client_credential&appid={self.bot_id}&'
                            f'secret={self.bot_secret}').json()
-        self.security_code = code['access_token']
-        self.code_expire = time() + 7000
-        return self.security_code
+        try:
+            self.security_code = code['access_token']
+            self.code_expire = time() + 7000
+            return self.security_code
+        except KeyError:
+            self.logger.error('无法调用内容安全检测接口（备注：请检查机器人密钥是否正确）')
+            return None
 
     def security_check(self, content):
         """
@@ -563,14 +613,14 @@ class BOT:
                 return False
         check = session.post(f'https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self.security_code}',
                              headers=security_header, json={'content': content}).json()
-        logger.debug(check)
+        self.logger.debug(check)
         if check['errCode'] in (-1800110107, -1800110108):
             new_code = self.security_check_code()
             if new_code is None:
                 return False
             check = session.post(f'https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={new_code}',
                                  headers=security_header, json={'content': content}).json()
-            logger.debug(check)
+            self.logger.debug(check)
             if check['errCode'] == 0:
                 return True
             return False
@@ -594,18 +644,18 @@ class BOT:
         post_return_dict = post_return.json()
         post_return_dict['header'] = post_return.headers
         if msg is None:
-            logger.info('发送消息' + '[图片：' + image + '] 至子频道' + str(channel))
+            self.logger.info('发送消息' + '[图片：' + image + '] 至子频道' + str(channel))
         elif image is not None:
             try:
-                logger.info('发送（' + msg + '）' + '[图片：' + image + '] 至子频道' + str(channel))
+                self.logger.info('发送（' + msg + '）' + '[图片：' + image + '] 至子频道' + str(channel))
             except UnicodeEncodeError:
-                logger.info('发送消息 ' + '[图片：' + image + '] 至子频道' + str(channel))
+                self.logger.info('发送消息 ' + '[图片：' + image + '] 至子频道' + str(channel))
                 pass
         else:
             try:
-                logger.info('发送（' + msg + '）至子频道' + str(channel))
+                self.logger.info('发送（' + msg + '）至子频道' + str(channel))
             except UnicodeEncodeError:
-                logger.info('发送消息至子频道' + str(channel))
+                self.logger.info('发送消息至子频道' + str(channel))
                 pass
         return post_return_dict
 
@@ -623,13 +673,13 @@ class BOT:
         """
         post_json = {
             "embed": {"title": title, "prompt": prompt, "thumbnail": {"url": image}, "fields": []}, 'msg_id': msg_id}
-        for i in range(len(content)):
-            post_json["embed"]["fields"].append({"name": content[i]})
+        for items in content:
+            post_json["embed"]["fields"].append({"name": items})
         post_return = session.post(self.bot_url + '/channels/{}/messages'.format(channel),
                                    json=post_json, headers=self.header)
         post_return_dict = post_return.json()
         post_return_dict['header'] = post_return.headers
-        logger.info('发送embed消息（' + str(content) + '）至子频道' + str(channel))
+        self.logger.info('发送embed消息（' + str(content) + '）至子频道' + str(channel))
         return post_return_dict
 
     def send_ark_23(self, content: list, link: list or None, msg_id: str or None = None, channel: str or None = None,
@@ -648,14 +698,14 @@ class BOT:
         post_json = {"ark": {"template_id": 23,
                              "kv": [{"key": "#DESC#", "value": prompt}, {"key": "#PROMPT#", "value": prompt},
                                     {"key": "#LIST#", "obj": []}]}, 'msg_id': msg_id}
-        for i in range(len(content)):
-            post_json["ark"]["kv"][2]["obj"].append({"obj_kv": [{"key": "desc", "value": content[i]},
+        for i, items in enumerate(content):
+            post_json["ark"]["kv"][2]["obj"].append({"obj_kv": [{"key": "desc", "value": items},
                                                                 {"key": "link", "value": link[i]}]})
         post_return = session.post(self.bot_url + '/channels/{}/messages'.format(channel),
                                    json=post_json, headers=self.header)
         post_return_dict = post_return.json()
         post_return_dict['header'] = post_return.headers
-        logger.info('发送ark[id=23]消息（' + '\n'.join(content) + '）至子频道' + str(channel))
+        self.logger.info('发送ark[id=23]消息（' + '\n'.join(content) + '）至子频道' + str(channel))
         return post_return_dict
 
     def send_ark_24(self, desc: str, title: str, metadesc: str, link: str or None, msg_id: str or None = None,
@@ -685,7 +735,7 @@ class BOT:
                                    json=post_json, headers=self.header)
         post_return_dict = post_return.json()
         post_return_dict['header'] = post_return.headers
-        logger.info('发送ark[id=37]消息（' + title + '//' + metadesc + '）至子频道' + str(channel))
+        self.logger.info('发送ark[id=37]消息（' + title + '//' + metadesc + '）至子频道' + str(channel))
         return post_return_dict
 
     def send_ark_37(self, title: str, content: str, link: str = None, msg_id: str or None = None,
@@ -710,7 +760,7 @@ class BOT:
                                    json=post_json, headers=self.header)
         post_return_dict = post_return.json()
         post_return_dict['header'] = post_return.headers
-        logger.info('发送ark[id=37]消息（' + title + '//' + content + '）至子频道' + str(channel))
+        self.logger.info('发送ark[id=37]消息（' + title + '//' + content + '）至子频道' + str(channel))
         return post_return_dict
 
     def create_dm(self, target: str, guild: str) -> dict:
@@ -724,7 +774,7 @@ class BOT:
         post_return = session.post(self.bot_url + '/users/@me/dms', json=post_json, headers=self.header)
         post_return_dict = post_return.json()
         post_return_dict['header'] = post_return.headers
-        logger.info('创建私信虚拟频道（目标id：' + target + '）成功')
+        self.logger.info('创建私信虚拟频道（目标id：' + target + '）成功')
         return post_return_dict
 
     def send_dm(self, msg: str, msg_id: str = None, guild: str = None, image: str or None = None) -> dict:
@@ -741,9 +791,9 @@ class BOT:
         post_return_dict = post_return.json()
         post_return_dict['header'] = post_return.headers
         try:
-            logger.info('发送（' + msg + '）至私信频道' + str(guild))
+            self.logger.info('发送（' + msg + '）至私信频道' + str(guild))
         except UnicodeEncodeError:
-            logger.info('发送消息至私信频道' + str(guild))
+            self.logger.info('发送消息至私信频道' + str(guild))
             pass
         return post_return_dict
 
@@ -771,14 +821,14 @@ class BOT:
         if len(get_return) == 100:
             get_return_con = session.get(f'{self.bot_url}/users/@me/guilds?after=' + get_return[-1]['id'],
                                          headers=self.header).json()
-            logger.debug(get_return_con)
+            self.logger.debug(get_return_con)
             for items in get_return_con:
                 get_return.append(items)
             while True:
                 if len(get_return_con) == 100:
                     get_return_con = session.get(f'{self.bot_url}/users/@me/guilds?after=' + get_return_con[-1]['id'],
                                                  headers=self.header).json()
-                    logger.debug(get_return_con)
+                    self.logger.debug(get_return_con)
                     for items in get_return_con:
                         get_return.append(items)
                 else:
@@ -834,9 +884,9 @@ class BOT:
                                   headers=self.header, json=post_json)
         get_return_dict = get_return.json()
         get_return_dict['header'] = get_return.headers
-        logger.debug(get_return_dict)
+        self.logger.debug(get_return_dict)
         if get_return.status_code == (200 or 204):
-            logger.info('发送权限请求信息到频道：' + guild)
+            self.logger.info('发送权限请求信息到频道：' + guild)
             return True
         else:
             return False
@@ -907,12 +957,13 @@ class BOT:
         """
         self.running = True
         for i in range(self.shard_no, self.shard):
-            self.bot_classes.append(BotWs(self.shard, self.shard_no, self.url, self.header, self.bot_id,
+            self.bot_classes.append(BotWs(self.logger, self.shard, self.shard_no, self.url, self.header, self.bot_id,
                                           self.bot_token, self.bot_url, self.on_msg_function, self.on_dm_function,
                                           self.on_delete_function, self.is_filter_self, self.on_guild_event_function,
                                           self.on_guild_member_function, self.on_reaction_function,
                                           self.on_interaction_function, self.on_audit_function, self.on_forum_function,
                                           self.on_audio_function, self.intents, self.msg_treat, self.dm_treat))
+            self.shard_no += 1
         for bot_class in self.bot_classes:
             self.bot_threads.append(Thread(target=bot_class.ws_starter))
         for bot_thread in self.bot_threads:
@@ -936,7 +987,7 @@ class BOT:
         for bot_thread in self.bot_threads:
             bot_thread.setDaemon(True)
             bot_thread.start()
-        logger.info('所有WS链接已结束')
+        self.logger.info('所有WS链接已结束')
 
 
 session = Session()
