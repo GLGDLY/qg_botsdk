@@ -6,10 +6,10 @@
     
 ✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
 
-![](https://img.shields.io/badge/language-python-green.svg)
-![](https://img.shields.io/badge/license-MIT-orange.svg)
-![](https://img.shields.io/github/v/release/GLGDLY/qg_botsdk)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5)](https://www.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=GLGDLY/qg_botsdk&amp;utm_campaign=Badge_Grade)
+![\[\](https://www.python.org/)](https://img.shields.io/badge/language-python-green.svg)
+![\[\](https://github.com/GLGDLY/qg_botsdk/blob/master/LICENSE)](https://img.shields.io/badge/license-MIT-orange.svg)
+![\[\](https://github.com/GLGDLY/qg_botsdk/releases)](https://img.shields.io/github/v/release/GLGDLY/qg_botsdk)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5)](https://www.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=github.com&utm_medium=referral&utm_content=GLGDLY/qg_botsdk&utm_campaign=Badge_Grade)
 
 </div>
 
