@@ -13,25 +13,9 @@ from threading import Thread
 from typing import Any, Callable
 from sys import exc_info
 from traceback import extract_tb
-from collections import namedtuple
+from .utils import objectize
 from .logger import Logger
 from .model import *
-
-
-def objectize(data):
-    if isinstance(data, dict):
-        for keys, values in data.items():
-            if keys.isnumeric():
-                return data
-            if isinstance(values, dict):
-                data[keys] = objectize(values)
-            elif isinstance(values, list):
-                for i, items in enumerate(values):
-                    if isinstance(items, dict):
-                        data[keys][i] = objectize(items)
-        return namedtuple('object', data.keys())(*data.values())
-    else:
-        return None
 
 
 class BotWs:
@@ -74,6 +58,7 @@ class BotWs:
         self.running = False
         self.session_id = 0
         self.heartbeat = None
+        self.ws = None
 
     def hello(self):
         hello_json = {
@@ -352,16 +337,14 @@ class BotWs:
                         self.heartbeat.cancel()
                     self.logger.error(error)
                     error_info = extract_tb(exc_info()[-1])[-1]
-                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                 error_info[1], error_info[2]))
+                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0], error_info[1], error_info[2]))
                     return
         except Exception as error:
             if self.heartbeat is not None and not self.heartbeat.cancelled():
                 self.heartbeat.cancel()
             self.logger.error(error)
             error_info = extract_tb(exc_info()[-1])[-1]
-            self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                         error_info[1], error_info[2]))
+            self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0], error_info[1], error_info[2]))
             return
 
     def ws_starter(self):
@@ -730,12 +713,12 @@ class BOT:
                                                        {'key': '#METADESC#', 'value': metadesc},
                                                        {'key': '#IMG#', 'value': image},
                                                        {'key': '#LINK#', 'value': link},
-                                                       {'key': '#SUBTITLE#', 'value': subtitile}]}}
+                                                       {'key': '#SUBTITLE#', 'value': subtitile}]}, 'msg_id': msg_id}
         post_return = session.post(self.bot_url + '/channels/{}/messages'.format(channel),
                                    json=post_json, headers=self.header)
         post_return_dict = post_return.json()
         post_return_dict['header'] = post_return.headers
-        self.logger.info('发送ark[id=37]消息（' + title + '//' + metadesc + '）至子频道' + str(channel))
+        self.logger.info('发送ark[id=24]消息（' + title + '//' + metadesc + '）至子频道' + str(channel))
         return post_return_dict
 
     def send_ark_37(self, title: str, content: str, link: str = None, msg_id: str or None = None,
@@ -994,6 +977,5 @@ session = Session()
 session.keep_alive = False
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
-session.mount('http://', adapter)
 session.mount('https://', adapter)
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}

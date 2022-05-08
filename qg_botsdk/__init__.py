@@ -4,4 +4,4 @@
 只需导入qg_botsdk.qg_bot.BOT即可快速使用
 """
 name = "qg_botsdk"
-__all__ = ["qg_bot", "logger", "model"]
+__all__ = ["qg_bot", "logger", "model", "utils"]
