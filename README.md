@@ -162,4 +162,3 @@ if __name__ == '__main__':
 -   文档：<https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51>
 -   官方注册机器人：<https://q.qq.com/#/>
 -   官方API文档：<https://bot.q.qq.com/wiki/develop/api/>
--   支持我的创作：<https://afdian.net/@GLGDLY>
