@@ -5,3 +5,7 @@ release
 __pycache__
 qg_botsdk/__pycache__
 example/log
+update.txt
+build
+dist
+qg_botsdk.egg-info

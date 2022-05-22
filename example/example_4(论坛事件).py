@@ -1,15 +1,16 @@
+# !/usr/bin/env python3
 # encoding: utf-8
 # 监听论坛事件，并获取帖子内容的一个实例
-from qg_botsdk.model import *
+from qg_botsdk.model import Model
 from qg_botsdk.qg_bot import BOT
 
 
-def deliver(data: MESSAGE):
+def deliver(data: Model.MESSAGE):
     if '你好' in data.treated_msg:
-        bot.send_msg('你好，世界', str(data.id), str(data.channel_id))
+        bot.send_msg(data.channel_id, '你好，世界', message_id=data.id)
 
 
-def forums_event(data: FORUMS_EVENT):
+def forums_event(data: Model.FORUMS_EVENT):
     """
     目前论坛事件仅能收到创建帖子的FORUM_THREAD_CREATE，回帖和回复都没有任何推送
 
