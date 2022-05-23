@@ -5,9 +5,8 @@ from traceback import extract_tb
 from inspect import stack
 from json import loads, dumps
 from json.decoder import JSONDecodeError
-from websockets import connect
-from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK, ConnectionClosed
-from ssl import SSLError, SSLContext
+import aiohttp
+from ssl import SSLContext
 from typing import Any, Callable
 from asyncio import new_event_loop, all_tasks, set_event_loop, sleep
 from time import sleep as t_sleep
@@ -23,7 +22,7 @@ def __getattr__(identifier: str) -> object:
 
 
 class BotWs:
-    def __init__(self, session, logger, shard: int, shard_no: int, url: str, header: dict, bot_id: str, bot_token: str,
+    def __init__(self, session, logger, shard: int, shard_no: int, url: str, bot_id: str, bot_token: str,
                  bot_url: str, on_msg_function: Callable[[Any], Any], on_dm_function: Callable[[Any], Any],
                  on_delete_function: Callable[[Any], Any], is_filter_self: bool,
                  on_guild_event_function: Callable[[Any], Any], on_guild_member_function: Callable[[Any], Any],
@@ -38,7 +37,6 @@ class BotWs:
         self.shard = shard
         self.shard_no = shard_no
         self.url = url
-        self.header = header
         self.bot_id = bot_id
         self.bot_token = bot_token
         self.bot_url = bot_url
@@ -86,15 +84,14 @@ class BotWs:
         return dumps(hello_json)
 
     async def ws_send(self, msg):
-        try:
-            await self.ws.send(msg)
-        except (ConnectionClosedError, ConnectionClosedOK, SSLError):
-            pass
+        if not self.ws.closed:
+            await self.ws.send_str(msg)
 
     async def heart(self):
         while True:
             await sleep(self.heartbeat_time)
-            self.loop.create_task(self.ws_send(dumps(self.heart_paras)))
+            if not self.ws.closed:
+                await self.ws.send_str(dumps(self.heart_paras))
 
     def data_process(self, data):
         data["d"]["t"] = data["t"]
@@ -222,7 +219,7 @@ class BotWs:
                 self.loop.create_task(self.ws_send(dumps(reconnect_paras)))
         elif data["op"] == 0:
             if data["t"] == "READY":
-                me_qid = self.session.get(self.bot_url + '/users/@me', headers=self.header).json()
+                me_qid = self.session.get(self.bot_url + '/users/@me').json()
                 self.bot_qid = str(me_qid['id'])
                 self.logger.info('机器人频道用户ID：' + self.bot_qid)
                 self.connection = True
@@ -251,40 +248,28 @@ class BotWs:
         self.connection = True
         self.reconnect_times += 1
         try:
-            async with connect(self.url, ssl=SSLContext()) as self.ws:
-                try:
-                    while self.ws.open:
-                        message = await self.ws.recv()
-                        if not self.running:
-                            if self.heartbeat is not None and not self.heartbeat.cancelled():
-                                self.heartbeat.cancel()
-                            await self.ws.close()
-                            self.logger.info('WS进程已结束')
-                            return
-                        # yield message
-                        self.main(message)
-                except (ConnectionClosedError, SSLError):
-                    self.connection = False
-                    self.re_connect = True
-                    if self.heartbeat is not None and not self.heartbeat.cancelled():
-                        self.heartbeat.cancel()
-                    self.logger.warning('BOT_WS链接已断开，正在尝试重连……')
-                    return
-                except (ConnectionClosed, ConnectionClosedOK):
-                    if self.heartbeat is not None and not self.heartbeat.cancelled():
-                        self.heartbeat.cancel()
-                    return
-                except Exception as error:
-                    self.connection = False
-                    self.re_connect = True
-                    if self.heartbeat is not None and not self.heartbeat.cancelled():
-                        self.heartbeat.cancel()
-                    self.logger.error(error)
-                    error_info = extract_tb(exc_info()[-1])[-1]
-                    self.logger.debug("[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0],
-                                                                                      error_info[1], error_info[2]))
-                    return
+            async with aiohttp.ClientSession() as ws_session:
+                async with ws_session.ws_connect(self.url, ssl=SSLContext()) as self.ws:
+                    while self.running:
+                        message = await self.ws.receive()
+                        if message.type == aiohttp.WSMsgType.TEXT:
+                            if not self.running:
+                                if self.heartbeat is not None and not self.heartbeat.cancelled():
+                                    self.heartbeat.cancel()
+                                await self.ws.close()
+                                self.logger.info('WS进程已结束')
+                                return
+                            self.main(message.data)
+                        elif message.type == aiohttp.WSMsgType.CLOSE:
+                            if self.running:
+                                self.connection = False
+                                self.re_connect = True
+                                if self.heartbeat is not None and not self.heartbeat.cancelled():
+                                    self.heartbeat.cancel()
+                                self.logger.warning('BOT_WS链接已断开，正在尝试重连……')
+                                return
         except Exception as error:
+            self.logger.warning('BOT_WS链接已断开，正在尝试重连……')
             if self.heartbeat is not None and not self.heartbeat.cancelled():
                 self.heartbeat.cancel()
             self.logger.error(error)
@@ -299,20 +284,12 @@ class BotWs:
         set_event_loop(self.loop)
         self.loop.run_until_complete(self.connect())
         while self.running:
-            if self.reconnect_times <= 20:
-                try:
-                    self.loop.run_until_complete(self.connect())
-                    t_sleep(5)
-                except (ConnectionClosedError, ConnectionClosedOK, SSLError):
-                    self.logger.warning('网络连线不稳定或已断开，请检查网络链接')
-                    t_sleep(5)
-                    pass
-            else:
-                try:
-                    self.re_connect = False
-                    self.loop.run_until_complete(self.connect())
-                    t_sleep(5)
-                except (ConnectionClosedError, ConnectionClosedOK, SSLError):
-                    self.logger.warning('网络连线不稳定或已断开，请检查网络链接')
-                    t_sleep(5)
-                    pass
+            if self.reconnect_times >= 20:
+                self.re_connect = False
+            try:
+                self.loop.run_until_complete(self.connect())
+                t_sleep(5)
+            except aiohttp.WSServerHandshakeError:
+                self.logger.warning('网络连线不稳定或已断开，请检查网络链接')
+                t_sleep(5)
+                pass
