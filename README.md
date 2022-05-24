@@ -48,7 +48,7 @@ pip install qg-botsdk   # 注意是qg-botsdk（中线），不是qg_botsdk（底
 ### 一个简单的工作流
 
 > -   注册BOT实例，录入机器人平台获取的ID（BotAppId开发者ID）和token（机器人令牌）
-> -   编写接收事件的函数[下方例子：def deliver(data)]，并借助model库检查数据格式（data: MESSAGE）
+> -   编写接收事件的函数->下方例子：`def deliver(data)`，并借助model库检查数据格式（`data: MESSAGE`）
 > -   绑定接收事件的函数（bind_msg、bind_dm、bind_msg_delete、bind_guild_event、bind_guild_member、bind_reaction、bind_interaction、bind_audit、bind_forum、bind_audio）
 > -   开始运行机器人：bot.start()
 

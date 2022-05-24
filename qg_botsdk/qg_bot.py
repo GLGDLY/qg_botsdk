@@ -20,21 +20,21 @@ reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
-version = '2.1.1'
+version = '2.1.2'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 
 
 class BOT:
 
-    def __init__(self, bot_id: str, bot_token: str, bot_secret: str = None, is_private: bool = True,
+    def __init__(self, bot_id: str, bot_token: str, bot_secret: str = None, is_private: bool = False,
                  is_sandbox: bool = False, max_shard: int = 5):
         """
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
         :param bot_id: 机器人平台后台BotAppID（开发者ID）项，必填
         :param bot_token: 机器人平台后台机器人令牌项，必填
         :param bot_secret: 机器人平台后台机器人密钥项，如需要使用安全检测功能需填写此项
-        :param is_private: 机器人是否为私域机器人，默认True
+        :param is_private: 机器人是否为私域机器人，默认False
         :param is_sandbox: 是否开启沙箱环境，默认False
         :param max_shard: 最大分片数，请根据配置自行判断，默认5
         """
@@ -86,7 +86,7 @@ class BOT:
         self._shard = gateway["shards"]
         self.logger.debug('[建议分片数] ' + str(self._shard))
         if self._shard > max_shard:
-            self.shard = max_shard
+            self._shard = max_shard
             self.logger.info('[注意] 由于最大分片数少于建议分片数，分片数已自动调整为 ' + str(max_shard))
         self.msg_treat = False
         self.dm_treat = False
@@ -1634,9 +1634,9 @@ class BOT:
             self.running = True
             if self.__repeat_function is not None:
                 self.__main_loop.create_task(self.__time_event_check())
-            for i in range(self.shard_no, self.shard):
+            for i in range(self.shard_no, self._shard):
                 self.__bot_classes.append(
-                    BotWs(self.__session, self.logger, self.shard, self.shard_no, self._url, self.bot_id,
+                    BotWs(self.__session, self.logger, self._shard, self.shard_no, self._url, self.bot_id,
                           self.bot_token, self.bot_url, self.__on_msg_function, self.__on_dm_function,
                           self.__on_delete_function, self.is_filter_self, self.__on_guild_event_function,
                           self.__on_guild_member_function, self.__on_reaction_function, self.__on_interaction_function,
