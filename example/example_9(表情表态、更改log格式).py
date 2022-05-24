@@ -1,6 +1,6 @@
 # !/usr/bin/env python3
 # encoding: utf-8
-# 使用创建表情表态API的一个简单实例
+# 使用创建表情表态API、更改log格式的一个简单实例
 from qg_botsdk.qg_bot import BOT
 from qg_botsdk.model import Model
 from random import choice
@@ -29,4 +29,5 @@ def deliver(data: Model.MESSAGE):
 if __name__ == '__main__':
     bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=True, max_shard=1)
     bot.bind_msg(deliver, treated_data=True)
+    bot.logger.set_formatter('[%(asctime)s] [%(levelname)s](%(name)s): %(message)s', '%m-%d %H:%M:%S')  # 更改log格式
     bot.start()

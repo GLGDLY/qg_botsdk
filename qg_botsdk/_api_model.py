@@ -74,13 +74,21 @@ def __getattr__(identifier: str) -> object:
     return globals()[identifier.__path__]
 
 
-def api_converter(api):
+def api_converter(api: str):
     if api[-2:] in ['()', '（）']:
         api = api[:-2]
     for keys, values in apis.items():
         if api in keys:
             return values[0], values[1]
     return False, '该API并不存在'
+
+
+def api_converter_re(method: str, path: str):
+    for keys, values in apis.items():
+        if [method, path] == values:
+            return keys[1]
+    return None
+
 
 class ReplyModel:
     def __init__(self, type_: object or dict = object):
@@ -757,6 +765,7 @@ class ReplyModel:
 
     def get_guild_permissions(self):
         class Api:
+            api: str
             path: str
             method: str
             desc: str

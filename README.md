@@ -6,9 +6,10 @@
 
 ✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
 
-[![Language](https://img.shields.io/badge/language-python-green.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-orange.svg)](https://github.com/GLGDLY/qg_botsdk/blob/master/LICENSE)
-[![Releases](https://img.shields.io/github/v/release/GLGDLY/qg_botsdk)](https://github.com/GLGDLY/qg_botsdk/releases)
+[![Language](https://img.shields.io/badge/language-python-green.svg?style=plastic)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-orange.svg?style=plastic)](https://github.com/GLGDLY/qg_botsdk/blob/master/LICENSE)
+[![Releases](https://img.shields.io/github/v/release/GLGDLY/qg_botsdk?style=plastic)](https://github.com/GLGDLY/qg_botsdk/releases)
+[![Pypi](https://img.shields.io/pypi/dw/qg-botsdk?style=plastic&color=blue)](https://pypi.org/project/qg-botsdk/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5)](https://www.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=github.com&utm_medium=referral&utm_content=GLGDLY/qg_botsdk&utm_campaign=Badge_Grade)
 
 [文档](https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51)
@@ -21,11 +22,11 @@
 
 #### 亮点
 
-##### -   轻量，简洁的代码结构，10行即可构建一个简单的程序
+##### -   轻量，简洁，统一的代码结构，10行即可构建一个简单的程序
 
 ##### -   容易入门，无需学会asyncio也可使用，同时保留较高并发能力
 
-##### - 保留官方Json结构字段，带你学习官方结构，日后可自行开发适合自己的SDK
+##### -   保留官方http API中Json数据的结构字段，带你学习官方结构，日后可自行开发适合自己的SDK
 
 #### 当前应用
 

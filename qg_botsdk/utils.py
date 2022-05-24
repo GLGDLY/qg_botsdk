@@ -1,5 +1,7 @@
 # !/usr/bin/env python3
 # encoding: utf-8
+from sys import exc_info
+from traceback import extract_tb
 from inspect import stack
 from json import dumps
 
@@ -9,6 +11,11 @@ def __getattr__(identifier: str) -> object:
         raise AssertionError("为SDK内部使用类，无法使用")
 
     return globals()[identifier.__path__]
+
+
+def exception_handler(error):
+    error_info = extract_tb(exc_info()[-1])[-1]
+    return "[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0], error_info[1], error_info[2])
 
 
 def objectize(data: dict, flag: bool = True):
@@ -57,3 +64,13 @@ def convert_color(color: tuple or str):
     else:
         raise TypeError('颜色值应为RGB的三位tuple，如(255,255,255)；或HEX的sting颜色，如"#ffffff"')
     return colors[0] + 256 * colors[1] + 256 * 256 * colors[2]
+
+
+def treat_msg(raw_msg: str):
+    if not raw_msg:
+        return None
+    if '\xa0' in raw_msg:
+        raw_msg = raw_msg.replace('\xa0', ' ')
+    if raw_msg[0] == '/':
+        raw_msg = raw_msg[1:]
+    return raw_msg.strip().replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')

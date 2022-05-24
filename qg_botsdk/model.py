@@ -146,14 +146,14 @@ class Model:
         """
         现有推送的type字段：
         type 1：普通文本，子字段text
+        type 2：图片，子字段image
+        type 3：视频，子字段video
         type 4：url信息，子字段url
 
         现无推送，根据文档列出的type：
         原type 2：at信息，目前为空子字段，无任何内容反馈
         原type 4：表情，目前为空子字段，无任何内容反馈
         原type 5：#子频道，目前为空子字段，无任何内容反馈
-        原type 10：视频，目前为空子字段，无任何内容反馈
-        原type 11：图片，目前为空子字段，无任何内容反馈
         """
 
         class thread_info:
@@ -206,11 +206,12 @@ class Model:
 
                 paragraphs: list[__ForumsContent]
 
+            thread_id: str
+            date_time: str
+
         guild_id: str
         channel_id: str
         author_id: str
-        thread_id: str
-        date_time: str
         t: str
         event_id: str
 
