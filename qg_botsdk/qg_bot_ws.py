@@ -59,16 +59,17 @@ class BotWs:
         self.bot_qid = ''
         self.heartbeat_time = 0
         self.loop = get_event_loop()
-        self.s = 1
+        self.s = 0
         self.reconnect_times = 0
         self.re_connect = False
         self.running = True
         self.session_id = 0
         self.flag = False
         self.heartbeat = None
+        self.op9_flag = False
 
-    def hello(self):
-        hello_json = {
+    def send_connect(self):
+        connect_paras = {
             "op": 2,
             "d": {
                 "token": "Bot " + str(self.bot_id) + "." + str(self.bot_token),
@@ -81,7 +82,18 @@ class BotWs:
                 }
             }
         }
-        return dumps(hello_json)
+        self.loop.create_task(self.ws_send(dumps(connect_paras)))
+
+    def send_reconnect(self):
+        reconnect_paras = {
+            "op": 6,
+            "d": {
+                "token": "Bot " + str(self.bot_id) + "." + str(self.bot_token),
+                "session_id": self.session_id,
+                "seq": self.s
+            }
+        }
+        self.loop.create_task(self.ws_send(dumps(reconnect_paras)))
 
     async def ws_send(self, msg):
         if not self.ws.closed:
@@ -91,7 +103,10 @@ class BotWs:
         while True:
             await sleep(self.heartbeat_time)
             if not self.ws.closed:
-                await self.ws.send_str(dumps({"op": self.s, "d": 'null'}))
+                if self.s:
+                    await self.ws.send_str(dumps({"op": 1, "d": self.s}))
+                else:
+                    await self.ws.send_str(dumps({"op": 1, "d": None}))
 
     def start_heartbeat(self):
         tasks = [task.get_name() for task in all_tasks()]
@@ -126,10 +141,7 @@ class BotWs:
                         return
                 self.distribute(self.on_delete_function, data)
             elif data["t"] == "DIRECT_MESSAGE_CREATE":
-                if 'content' not in data["d"]:
-                    raw_msg = ''
-                else:
-                    raw_msg = data["d"]["content"]
+                raw_msg = '' if 'content' not in data["d"] else data["d"]["content"]
                 if self.msg_treat:
                     data["d"]["treated_msg"] = treat_msg(raw_msg)
                 self.distribute(self.on_dm_function, data)
@@ -167,22 +179,15 @@ class BotWs:
         if data["op"] == 11:
             self.logger.debug('心跳发送成功')
         elif data["op"] == 9:
+            if not self.op9_flag:
+                self.op9_flag = True
+                self.send_connect() if not self.re_connect else self.send_reconnect()
+                return
             self.logger.error('[错误] 参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）')
             exit()
         elif data["op"] == 10:
             self.heartbeat_time = float(int(data["d"]["heartbeat_interval"]) * 0.001)
-            if not self.re_connect:
-                self.loop.create_task(self.ws_send(self.hello()))
-            else:
-                reconnect_paras = {
-                    "op": 6,
-                    "d": {
-                        "token": "Bot " + str(self.bot_id) + "." + str(self.bot_token),
-                        "session_id": self.session_id,
-                        "seq": self.s
-                    }
-                }
-                self.loop.create_task(self.ws_send(dumps(reconnect_paras)))
+            self.send_connect() if not self.re_connect else self.send_reconnect()
         elif data["op"] == 0:
             if data["t"] == "READY":
                 self.session_id = data["d"]["session_id"]
@@ -220,7 +225,7 @@ class BotWs:
                                 self.logger.info('WS进程已结束')
                                 return
                             self.main(message.data)
-                        elif message.type == WSMsgType.CLOSE:
+                        elif message.type in [WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.ERROR]:
                             if self.running:
                                 self.re_connect = True
                                 if self.heartbeat is not None and not self.heartbeat.cancelled():
@@ -238,12 +243,10 @@ class BotWs:
     def ws_starter(self):
         self.loop.run_until_complete(self.connect())
         while self.running:
-            if self.reconnect_times >= 20:
-                self.re_connect = False
+            self.re_connect = False if self.reconnect_times >= 20 else True
             try:
                 self.loop.run_until_complete(self.connect())
                 t_sleep(5)
             except WSServerHandshakeError:
                 self.logger.warning('网络连线不稳定或已断开，请检查网络链接')
                 t_sleep(5)
-                pass

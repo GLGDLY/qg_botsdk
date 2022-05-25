@@ -28,9 +28,13 @@
 
 ##### -   保留官方http API中Json数据的结构字段，带你学习官方结构，日后可自行开发适合自己的SDK
 
+##### -   迅速的更新速度，跟上最新潮流（v2.1.3已更新当日上新的本地上传图片能力，使用例子可参阅<https://github.com/GLGDLY/qg_botsdk/blob/master/example/example_10(%E5%8F%91%E9%80%81%E6%9C%AC%E5%9C%B0%E5%9B%BE%E7%89%87).py）>
+
 #### 当前应用
 
 ##### - 自用（爱萌AM）：<https://qun.qq.com/qunpro/robot/share?robot_appid=101986932>
+
+##### - 自用（网文小助手-私域）：<https://qun.qq.com/qunpro/robot/share?robot_appid=101987294>
 
 * * *
 
@@ -163,3 +167,4 @@ if __name__ == '__main__':
 -   文档：<https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51>
 -   官方注册机器人：<https://q.qq.com/#/>
 -   官方API文档：<https://bot.q.qq.com/wiki/develop/api/>
+-   QQ交流群：<https://jq.qq.com/?_wv=1027&k=3NnWvGpz>

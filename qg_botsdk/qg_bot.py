@@ -1,6 +1,7 @@
 # !/usr/bin/env python3
 # encoding: utf-8
-from os import getpid
+from os import getpid, PathLike
+from os.path import exists
 from asyncio import get_event_loop, sleep
 from json import loads
 from json.decoder import JSONDecodeError
@@ -9,7 +10,8 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from time import time
 from threading import Thread
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, BinaryIO
+from io import BufferedReader
 from .logger import Logger
 from .model import Model
 from ._api_model import api_converter, api_converter_re, ReplyModel
@@ -20,7 +22,7 @@ reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
-version = '2.1.2'
+version = '2.1.3'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 
@@ -100,7 +102,6 @@ class BOT:
             except Exception as error:
                 self.logger.error(error)
                 self.logger.debug(exception_handler(error))
-                pass
             await sleep(self.check_interval)
 
     def bind_msg(self, on_msg_function: Callable[[Model.MESSAGE], Any], treated_data: bool = True):
@@ -266,16 +267,43 @@ class BOT:
         return False
 
     @staticmethod
-    def __http_temp(http_return, code: int):
-        trace_id = http_return.headers['X-Tps-Trace-Id']
-        if http_return.status_code == code:
+    def __http_temp(return_, code: int):
+        trace_id = return_.headers['X-Tps-Trace-Id']
+        if return_.status_code == code:
             return objectize({'data': None, 'trace_id': trace_id, 'result': True})
         else:
             try:
-                return_dict = http_return.json()
+                return_dict = return_.json()
                 return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
             except JSONDecodeError:
                 return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+
+    @staticmethod
+    def __regular_temp(return_):
+        trace_id = return_.headers['X-Tps-Trace-Id']
+        try:
+            return_dict = return_.json()
+            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
+                result = False
+            else:
+                result = True
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+        except JSONDecodeError:
+            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+
+    @staticmethod
+    def __empty_temp(return_):
+        trace_id = return_.headers['X-Tps-Trace-Id']
+        try:
+            return_dict = return_.json()
+            if not return_dict:
+                result = True
+                return_dict = None
+            else:
+                result = False
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+        except JSONDecodeError:
+            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
 
     def get_bot_id(self) -> reply_model.get_bot_id():
         """
@@ -292,17 +320,8 @@ class BOT:
         获取机器人详情
         :return:返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/users/@me')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
-        return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+        return_ = self.__session.get(f'{self.bot_url}/users/@me')
+        return self.__regular_temp(return_)
 
     def get_bot_guilds(self) -> reply_model.get_bot_guilds():
         """
@@ -316,13 +335,13 @@ class BOT:
         try:
             while True:
                 if return_dict is None:
-                    get_return = self.__session.get(f'{self.bot_url}/users/@me/guilds')
+                    return_ = self.__session.get(f'{self.bot_url}/users/@me/guilds')
                 elif len(return_dict) == 100:
-                    get_return = self.__session.get(f'{self.bot_url}/users/@me/guilds?after=' + return_dict[-1]['id'])
+                    return_ = self.__session.get(f'{self.bot_url}/users/@me/guilds?after=' + return_dict[-1]['id'])
                 else:
                     break
-                trace_ids.append(get_return.headers['X-Tps-Trace-Id'])
-                return_dict = get_return.json()
+                trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                return_dict = return_.json()
                 if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                     results.append(False)
                     data.append(return_dict)
@@ -341,17 +360,8 @@ class BOT:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/guilds/{guild_id}')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}')
+        return self.__regular_temp(return_)
 
     def get_guild_channels(self, guild_id: str) -> reply_model.get_guild_channels():
         """
@@ -359,17 +369,8 @@ class BOT:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/channels')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/channels')
+        return self.__regular_temp(return_)
 
     def get_channels_info(self, channel_id: str) -> reply_model.get_channels_info():
         """
@@ -377,17 +378,8 @@ class BOT:
         :param channel_id: 子频道id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/channels/{channel_id}')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}')
+        return self.__regular_temp(return_)
 
     def create_channels(self, guild_id: str, name: str, type_: int, position: int, parent_id: str, sub_type: int,
                         private_type: int, private_user_ids: list[str], speak_permission: int,
@@ -406,20 +398,11 @@ class BOT:
         :param application_id: 需要创建的应用类型子频道应用 AppID，仅应用子频道需要该字段
         :return: 返回的.data中为解析后的json数据
         """
-        post_json = {"name": name, "type": type_, "position": position, "parent_id": parent_id, "sub_type": sub_type,
-                     "private_type": private_type, "private_user_ids": private_user_ids,
-                     "speak_permission": speak_permission, "application_id": application_id}
-        post_return = self.__session.post(f'{self.bot_url}/guilds/{guild_id}/channels', json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {"name": name, "type": type_, "position": position, "parent_id": parent_id, "sub_type": sub_type,
+                 "private_type": private_type, "private_user_ids": private_user_ids,
+                 "speak_permission": speak_permission, "application_id": application_id}
+        return_ = self.__session.post(f'{self.bot_url}/guilds/{guild_id}/channels', json=json_)
+        return self.__regular_temp(return_)
 
     def patch_channels(self, channel_id: str, name: Optional[str] = None, position: Optional[int] = None,
                        parent_id: Optional[str] = None, private_type: Optional[int] = None,
@@ -434,19 +417,10 @@ class BOT:
         :param speak_permission: 子频道发言权限
         :return: 返回的.data中为解析后的json数据
         """
-        pat_json = {"name": name, "position": position, "parent_id": parent_id, "private_type": private_type,
-                    "speak_permission": speak_permission}
-        pat_return = self.__session.patch(f'{self.bot_url}/channels/{channel_id}', json=pat_json)
-        trace_id = pat_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = pat_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {"name": name, "position": position, "parent_id": parent_id, "private_type": private_type,
+                 "speak_permission": speak_permission}
+        return_ = self.__session.patch(f'{self.bot_url}/channels/{channel_id}', json=json_)
+        return self.__regular_temp(return_)
 
     def delete_channels(self, channel_id) -> reply_model.delete_channels():
         """
@@ -454,8 +428,8 @@ class BOT:
         :param channel_id: 子频道id
         :return: 返回的.result显示是否成功
         """
-        delete_return = self.__session.delete(f'{self.bot_url}/channels/{channel_id}')
-        return self.__http_temp(delete_return, 200)
+        return_ = self.__session.delete(f'{self.bot_url}/channels/{channel_id}')
+        return self.__http_temp(return_, 200)
 
     def get_guild_members(self, guild_id: str) -> reply_model.get_guild_members():
         """
@@ -463,12 +437,12 @@ class BOT:
         :param guild_id: 频道id
         :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400')
-        trace_ids = [get_return.headers['X-Tps-Trace-Id']]
+        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400')
+        trace_ids = [return_.headers['X-Tps-Trace-Id']]
         results = []
         data = []
         try:
-            return_dict = get_return.json()
+            return_dict = return_.json()
             if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                 results.append(False)
                 return objectize({'data': [return_dict], 'trace_id': trace_ids, 'result': results})
@@ -478,10 +452,10 @@ class BOT:
                     data.append(items)
             while True:
                 if len(return_dict) == 400:
-                    get_return = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400&after=' +
-                                                    return_dict[-1]['user']['id'])
-                    trace_ids.append(get_return.headers['X-Tps-Trace-Id'])
-                    return_dict = get_return.json()
+                    return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400&after=' +
+                                                 return_dict[-1]['user']['id'])
+                    trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                    return_dict = return_.json()
                     if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                         results.append(False)
                     else:
@@ -505,17 +479,8 @@ class BOT:
         :param user_id: 成员id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}')
+        return self.__regular_temp(return_)
 
     def delete_member(self, guild_id: str, user_id: str, add_blacklist: bool = False,
                       delete_history_msg_days: int = 0) -> reply_model.delete_member():
@@ -531,14 +496,14 @@ class BOT:
             return objectize({'data': {
                 'code': -1, 'message': '这是来自SDK的错误信息：注意delete_history_msg_days的数值只能是3，7，15，30，0，-1'},
                 'trace_id': None, 'result': False})
-        del_json = {'add_blacklist': add_blacklist, 'delete_history_msg_days': delete_history_msg_days}
-        del_return = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}', json=del_json)
-        trace_id = del_return.headers['X-Tps-Trace-Id']
-        if del_return.status_code == 204:
+        json_ = {'add_blacklist': add_blacklist, 'delete_history_msg_days': delete_history_msg_days}
+        return_ = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}', json=json_)
+        trace_id = return_.headers['X-Tps-Trace-Id']
+        if return_.status_code == 204:
             return objectize({'data': None, 'trace_id': trace_id, 'result': True})
         else:
             try:
-                return_dict = del_return.json()
+                return_dict = return_.json()
                 if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                     result = False
                 else:
@@ -553,17 +518,8 @@ class BOT:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/roles')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/roles')
+        return self.__regular_temp(return_)
 
     def create_role(self, guild_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
                     color: Optional[Union[str, tuple[int, int, int]]] = None) -> reply_model.create_role():
@@ -586,18 +542,9 @@ class BOT:
             color_ = convert_color(color)
         else:
             color_ = None
-        post_json = {'name': name, 'color': color_, 'hoist': hoist_}
-        post_return = self.__session.post(f'{self.bot_url}/guilds/{guild_id}/roles', json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {'name': name, 'color': color_, 'hoist': hoist_}
+        return_ = self.__session.post(f'{self.bot_url}/guilds/{guild_id}/roles', json=json_)
+        return self.__regular_temp(return_)
 
     def patch_role(self, guild_id: str, role_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
                    color: Optional[Union[str, tuple[int, int, int]]] = None) -> reply_model.patch_role():
@@ -621,18 +568,9 @@ class BOT:
             color_ = convert_color(color)
         else:
             color_ = None
-        patch_json = {'name': name, 'color': color_, 'hoist': hoist_}
-        patch_return = self.__session.patch(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}', json=patch_json)
-        trace_id = patch_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = patch_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {'name': name, 'color': color_, 'hoist': hoist_}
+        return_ = self.__session.patch(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}', json=json_)
+        return self.__regular_temp(return_)
 
     def delete_role(self, guild_id: str, role_id: str) -> reply_model.delete_role():
         """
@@ -641,8 +579,8 @@ class BOT:
         :param role_id: 需要删除的身份组ID
         :return: 返回的.result显示是否成功
         """
-        delete_return = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}')
-        return self.__http_temp(delete_return, 204)
+        return_ = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}')
+        return self.__http_temp(return_, 204)
 
     def create_role_member(self, user_id: str, guild_id: str, role_id: str,
                            channel_id: Optional[str] = None) -> reply_model.role_members():
@@ -656,24 +594,16 @@ class BOT:
         """
         if role_id == '5':
             if channel_id is not None:
-                put_return = self.__session.put(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}',
-                                                json={"channel": {"id": channel_id}})
+                return_ = self.__session.put(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}',
+                                             json={"channel": {"id": channel_id}})
             else:
                 return objectize({
                     'data': {'code': -1, 'message': '这是来自SDK的错误信息：注意如果要增加的身份组ID是5-子频道管理员，'
                                                     '需要输入此项来指定具体是哪个子频道'},
                     'trace_id': None, 'result': False})
         else:
-            put_return = self.__session.put(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}')
-        trace_id = put_return.headers['X-Tps-Trace-Id']
-        if put_return.status_code == 204:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': True})
-        else:
-            try:
-                return_dict = put_return.json()
-                return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
-            except JSONDecodeError:
-                return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+            return_ = self.__session.put(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}')
+        return self.__http_temp(return_, 204)
 
     def delete_role_member(self, user_id: str, guild_id: str, role_id: str,
                            channel_id: Optional[str] = None) -> reply_model.role_members():
@@ -687,16 +617,16 @@ class BOT:
         """
         if role_id == '5':
             if channel_id is not None:
-                delete_return = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/'
-                                                      f'{role_id}', json={"channel": {"id": channel_id}})
+                return_ = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/'
+                                                f'{role_id}', json={"channel": {"id": channel_id}})
             else:
                 return objectize({
                     'data': {'code': -1, 'message': '这是来自SDK的错误信息：注意如果要删除的身份组ID是5-子频道管理员，'
                                                     '需要输入此项来指定具体是哪个子频道'},
                     'trace_id': None, 'result': False})
         else:
-            delete_return = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}')
-        return self.__http_temp(delete_return, 204)
+            return_ = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}')
+        return self.__http_temp(return_, 204)
 
     def get_channel_member_permission(self, channel_id: str, user_id: str) -> \
             reply_model.get_channel_member_permission():
@@ -706,17 +636,8 @@ class BOT:
         :param user_id: 用户id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions')
+        return self.__regular_temp(return_)
 
     def put_channel_member_permission(self, channel_id: str, user_id: str, add: Optional[str] = None,
                                       remove: Optional[str] = None) -> reply_model.put_channel_mr_permission():
@@ -732,18 +653,10 @@ class BOT:
             return objectize({'data': {'code': -1,
                                        'message': '这是来自SDK的错误信息：注意add或remove的值只能为1、2或4的文本格式内容'},
                               'trace_id': None, 'result': False})
-        put_json = {'add': add, 'remove': remove}
-        put_return = self.__session.put(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions',
-                                        json=put_json)
-        trace_id = put_return.headers['X-Tps-Trace-Id']
-        if put_return.status_code == 204:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': True})
-        else:
-            try:
-                return_dict = put_return.json()
-                return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
-            except JSONDecodeError:
-                return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {'add': add, 'remove': remove}
+        return_ = self.__session.put(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions',
+                                     json=json_)
+        return self.__http_temp(return_, 204)
 
     def get_channel_role_permission(self, channel_id: str, role_id: str) -> \
             reply_model.get_channel_role_permission():
@@ -753,17 +666,8 @@ class BOT:
         :param role_id: 身份组id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions')
+        return self.__regular_temp(return_)
 
     def put_channel_role_permission(self, channel_id: str, role_id: str, add: Optional[str] = None,
                                     remove: Optional[str] = None) -> reply_model.put_channel_mr_permission():
@@ -779,18 +683,10 @@ class BOT:
             return objectize({'data': {'code': -1,
                                        'message': '这是来自SDK的错误信息：注意add或remove的值只能为1、2或4的文本格式内容'},
                               'trace_id': None, 'result': False})
-        put_json = {'add': add, 'remove': remove}
-        put_return = self.__session.put(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions',
-                                        json=put_json)
-        trace_id = put_return.headers['X-Tps-Trace-Id']
-        if put_return.status_code == 204:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': True})
-        else:
-            try:
-                return_dict = put_return.json()
-                return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
-            except JSONDecodeError:
-                return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {'add': add, 'remove': remove}
+        return_ = self.__session.put(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions',
+                                     json=json_)
+        return self.__http_temp(return_, 204)
 
     def get_message_info(self, channel_id: str, message_id: str) -> reply_model.get_message_info():
         """
@@ -799,19 +695,11 @@ class BOT:
         :param message_id: 目标消息ID
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}')
+        return self.__regular_temp(return_)
 
-    def send_msg(self, channel_id: str, content: Optional[str], image: Optional[str] = None,
+    def send_msg(self, channel_id: str, content: Optional[str] = None, image: Optional[str] = None,
+                 file_image: Optional[Union[bytes, BinaryIO, str, PathLike[str]]] = None,
                  message_id: Optional[str] = None, event_id: Optional[str] = None,
                  message_reference_id: Optional[str] = None,
                  ignore_message_reference_error: Optional[bool] = None) -> reply_model.send_msg():
@@ -820,6 +708,7 @@ class BOT:
         :param channel_id: 子频道id
         :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
         :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
+        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
         :param message_id: 消息id（选填）
         :param event_id: 事件id（选填）
         :param message_reference_id: 引用消息的id（选填）
@@ -829,23 +718,27 @@ class BOT:
         if message_reference_id is not None:
             if ignore_message_reference_error is None:
                 ignore_message_reference_error = False
-            post_json = {'content': content, 'msg_id': message_id, 'event_id': event_id, 'image': image,
-                         'message_reference': {'message_id': message_reference_id,
-                                               'ignore_get_message_error': ignore_message_reference_error}}
+            json_ = {'content': content, 'msg_id': message_id, 'event_id': event_id, 'image': image,
+                     'message_reference': {'message_id': message_reference_id,
+                                           'ignore_get_message_error': ignore_message_reference_error}}
         else:
-            post_json = {'content': content, 'msg_id': message_id, 'event_id': event_id, 'image': image}
-        post_return = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id),
-                                          json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+            json_ = {'content': content, 'msg_id': message_id, 'event_id': event_id, 'image': image}
+        if file_image is not None:
+            if isinstance(file_image, BufferedReader):
+                file_image = file_image.read()
+            elif isinstance(file_image, str):
+                if exists(file_image):
+                    with open(file_image, 'rb') as img:
+                        file_image = img.read()
+                else:
+                    return objectize({'data': {'code': -1, 'message': '这是来自SDK的错误信息：目标图片路径不存在，无法发送'},
+                                      'trace_id': None, 'result': False})
+            files = {'file_image': file_image}
+            return_ = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id), data=json_,
+                                          files=files)
+        else:
+            return_ = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id), json=json_)
+        return self.__regular_temp(return_)
 
     def send_embed(self, channel_id: str, title: Optional[str] = None, content: Optional[list[str]] = None,
                    image: Optional[str] = None, prompt: Optional[str] = None, message_id: Optional[str] = None,
@@ -861,23 +754,13 @@ class BOT:
         :param event_id: 事件id（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        post_json = {"embed": {"title": title, "prompt": prompt, "thumbnail": {"url": image}, "fields": []},
-                     'msg_id': message_id, 'event_id': event_id}
+        json_ = {"embed": {"title": title, "prompt": prompt, "thumbnail": {"url": image}, "fields": []},
+                 'msg_id': message_id, 'event_id': event_id}
         if content is not None:
             for items in content:
-                post_json["embed"]["fields"].append({"name": items})
-        post_return = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id),
-                                          json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+                json_["embed"]["fields"].append({"name": items})
+        return_ = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id), json=json_)
+        return self.__regular_temp(return_)
 
     def send_ark_23(self, channel_id: str, content: list[str], link: list[str], desc: Optional[str] = None,
                     prompt: Optional[str] = None, message_id: Optional[str] = None,
@@ -897,24 +780,15 @@ class BOT:
             return objectize({'data': {'code': -1,
                                        'message': '这是来自SDK的错误信息：注意内容列表长度应与链接列表长度一致'},
                               'trace_id': None, 'result': False})
-        post_json = {"ark": {"template_id": 23,
-                             "kv": [{"key": "#DESC#", "value": desc}, {"key": "#PROMPT#", "value": prompt},
-                                    {"key": "#LIST#", "obj": []}]}, 'msg_id': message_id, 'event_id': event_id}
+        json_ = {"ark": {"template_id": 23,
+                         "kv": [{"key": "#DESC#", "value": desc}, {"key": "#PROMPT#", "value": prompt},
+                                {"key": "#LIST#", "obj": []}]}, 'msg_id': message_id, 'event_id': event_id}
         for i, items in enumerate(content):
-            post_json["ark"]["kv"][2]["obj"].append({"obj_kv": [{"key": "desc", "value": items},
-                                                                {"key": "link", "value": link[i]}]})
-        post_return = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id),
-                                          json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+            json_["ark"]["kv"][2]["obj"].append({"obj_kv": [{"key": "desc", "value": items},
+                                                            {"key": "link", "value": link[i]}]})
+        return_ = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id),
+                                      json=json_)
+        return self.__regular_temp(return_)
 
     def send_ark_24(self, channel_id: str, title: Optional[str] = None, content: Optional[str] = None,
                     subtitile: Optional[str] = None, link: Optional[str] = None, image: Optional[str] = None,
@@ -934,26 +808,17 @@ class BOT:
         :param event_id: 事件id（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        post_json = {'ark': {'template_id': 24, 'kv': [{'key': '#DESC#', 'value': desc},
-                                                       {'key': '#PROMPT#', 'value': prompt},
-                                                       {'key': '#TITLE#', 'value': title},
-                                                       {'key': '#METADESC#', 'value': content},
-                                                       {'key': '#IMG#', 'value': image},
-                                                       {'key': '#LINK#', 'value': link},
-                                                       {'key': '#SUBTITLE#', 'value': subtitile}]},
-                     'msg_id': message_id, 'event_id': event_id}
-        post_return = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id),
-                                          json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {'ark': {'template_id': 24, 'kv': [{'key': '#DESC#', 'value': desc},
+                                                   {'key': '#PROMPT#', 'value': prompt},
+                                                   {'key': '#TITLE#', 'value': title},
+                                                   {'key': '#METADESC#', 'value': content},
+                                                   {'key': '#IMG#', 'value': image},
+                                                   {'key': '#LINK#', 'value': link},
+                                                   {'key': '#SUBTITLE#', 'value': subtitile}]},
+                 'msg_id': message_id, 'event_id': event_id}
+        return_ = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id),
+                                      json=json_)
+        return self.__regular_temp(return_)
 
     def send_ark_37(self, channel_id: str, title: Optional[str] = None, content: Optional[str] = None,
                     link: Optional[str] = None, image: Optional[str] = None, prompt: Optional[str] = None,
@@ -970,24 +835,15 @@ class BOT:
         :param event_id: 事件id（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        post_json = {"ark": {"template_id": 37, "kv": [{"key": "#PROMPT#", "value": prompt},
-                                                       {"key": "#METATITLE#", "value": title},
-                                                       {"key": "#METASUBTITLE#", "value": content},
-                                                       {"key": "#METACOVER#", "value": image},
-                                                       {"key": "#METAURL#", "value": link}]},
-                     'msg_id': message_id, 'event_id': event_id}
-        post_return = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id),
-                                          json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {"ark": {"template_id": 37, "kv": [{"key": "#PROMPT#", "value": prompt},
+                                                   {"key": "#METATITLE#", "value": title},
+                                                   {"key": "#METASUBTITLE#", "value": content},
+                                                   {"key": "#METACOVER#", "value": image},
+                                                   {"key": "#METAURL#", "value": link}]},
+                 'msg_id': message_id, 'event_id': event_id}
+        return_ = self.__session.post(self.bot_url + '/channels/{}/messages'.format(channel_id),
+                                      json=json_)
+        return self.__regular_temp(return_)
 
     def delete_msg(self, channel_id: str, message_id: str, hidetip: bool = False) -> reply_model.delete_msg():
         """
@@ -997,9 +853,9 @@ class BOT:
         :param hidetip: 是否隐藏提示小灰条，True为隐藏，False为显示（选填）
         :return: 返回的.result显示是否成功
         """
-        delete_return = self.__session.delete(
+        return_ = self.__session.delete(
             self.bot_url + f'/channels/{channel_id}/messages/{message_id}?hidetip={str(hidetip).lower()}')
-        return self.__http_temp(delete_return, 200)
+        return self.__http_temp(return_, 200)
 
     def get_guild_setting(self, guild_id: str) -> reply_model.get_guild_setting():
         """
@@ -1007,17 +863,8 @@ class BOT:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/message/setting')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/message/setting')
+        return self.__regular_temp(return_)
 
     def create_dm_guild(self, target_id: str, guild_id: str) -> reply_model.create_dm_guild():
         """
@@ -1026,18 +873,9 @@ class BOT:
         :param guild_id: 机器人跟目标用户所在的频道id
         :return: 返回的.data中为解析后的json数据，注意发送私信仅需要使用guild_id这一项虚拟频道id的数据
         """
-        post_json = {"recipient_id": target_id, "source_guild_id": guild_id}
-        post_return = self.__session.post(self.bot_url + '/users/@me/dms', json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {"recipient_id": target_id, "source_guild_id": guild_id}
+        return_ = self.__session.post(self.bot_url + '/users/@me/dms', json=json_)
+        return self.__regular_temp(return_)
 
     def send_dm(self, guild_id: str, content: Optional[str] = None, image: Optional[str] = None,
                 message_id: Optional[str] = None, event_id: Optional[str] = None,
@@ -1057,22 +895,13 @@ class BOT:
         if message_reference_id is not None:
             if ignore_message_reference_error is None:
                 ignore_message_reference_error = False
-            post_json = {'content': content, 'msg_id': message_id, 'event_id': event_id, 'image': image,
-                         'message_reference': {'message_id': message_reference_id,
-                                               'ignore_get_message_error': ignore_message_reference_error}}
+            json_ = {'content': content, 'msg_id': message_id, 'event_id': event_id, 'image': image,
+                     'message_reference': {'message_id': message_reference_id,
+                                           'ignore_get_message_error': ignore_message_reference_error}}
         else:
-            post_json = {'content': content, 'msg_id': message_id, 'event_id': event_id, 'image': image}
-        post_return = self.__session.post(self.bot_url + f'/dms/{guild_id}/messages', json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+            json_ = {'content': content, 'msg_id': message_id, 'event_id': event_id, 'image': image}
+        return_ = self.__session.post(self.bot_url + f'/dms/{guild_id}/messages', json=json_)
+        return self.__regular_temp(return_)
 
     def delete_dm_msg(self, guild_id: str, message_id: str, hidetip: bool = False) -> reply_model.delete_msg():
         """
@@ -1082,9 +911,9 @@ class BOT:
         :param hidetip: 是否隐藏提示小灰条，True为隐藏，False为显示（选填）
         :return: 返回的.result显示是否成功
         """
-        delete_return = self.__session.delete(self.bot_url +
-                                              f'/dms/{guild_id}/messages/{message_id}?hidetip={str(hidetip).lower()}')
-        return self.__http_temp(delete_return, 200)
+        return_ = self.__session.delete(self.bot_url +
+                                        f'/dms/{guild_id}/messages/{message_id}?hidetip={str(hidetip).lower()}')
+        return self.__http_temp(return_, 200)
 
     def mute_all_member(self, guild_id: str, mute_end_timestamp: Optional[str], mute_seconds: Optional[str]) -> \
             reply_model.mute_member():
@@ -1095,17 +924,9 @@ class BOT:
         :param mute_seconds: 禁言多少秒（两个字段二选一，默认以 mute_end_timestamp 为准）
         :return: 返回的.result显示是否成功
         """
-        patch_json = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds}
-        patch_return = self.__session.patch(self.bot_url + f'/guilds/{guild_id}/mute', json=patch_json)
-        trace_id = patch_return.headers['X-Tps-Trace-Id']
-        if patch_return.status_code == 204:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': True})
-        else:
-            try:
-                return_dict = patch_return.json()
-                return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
-            except JSONDecodeError:
-                return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds}
+        return_ = self.__session.patch(self.bot_url + f'/guilds/{guild_id}/mute', json=json_)
+        return self.__http_temp(return_, 204)
 
     def mute_member(self, guild_id: str, user_id: str, mute_end_timestamp: Optional[str],
                     mute_seconds: Optional[str]) -> reply_model.mute_member():
@@ -1117,18 +938,10 @@ class BOT:
         :param mute_seconds: 禁言多少秒（两个字段二选一，默认以 mute_end_timestamp 为准）
         :return: 返回的.result显示是否成功
         """
-        patch_json = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds}
-        patch_return = self.__session.patch(self.bot_url + f'/guilds/{guild_id}/members/{user_id}/mute',
-                                            json=patch_json)
-        trace_id = patch_return.headers['X-Tps-Trace-Id']
-        if patch_return.status_code == 204:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': True})
-        else:
-            try:
-                return_dict = patch_return.json()
-                return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
-            except JSONDecodeError:
-                return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds}
+        return_ = self.__session.patch(self.bot_url + f'/guilds/{guild_id}/members/{user_id}/mute',
+                                       json=json_)
+        return self.__http_temp(return_, 204)
 
     def mute_members(self, guild_id: str, user_id: list[str], mute_end_timestamp: Optional[str],
                      mute_seconds: Optional[str]) -> reply_model.mute_members():
@@ -1140,12 +953,12 @@ class BOT:
         :param mute_seconds: 禁言多少秒（两个字段二选一，默认以 mute_end_timestamp 为准）
         :return: 返回的.data中为解析后的json数据
         """
-        patch_json = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds, 'user_ids': user_id}
-        patch_return = self.__session.patch(self.bot_url + f'/guilds/{guild_id}/mute', json=patch_json)
-        trace_id = patch_return.headers['X-Tps-Trace-Id']
+        json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds, 'user_ids': user_id}
+        return_ = self.__session.patch(self.bot_url + f'/guilds/{guild_id}/mute', json=json_)
+        trace_id = return_.headers['X-Tps-Trace-Id']
         try:
-            return_dict = patch_return.json()
-            if patch_return.status_code == 200:
+            return_dict = return_.json()
+            if return_.status_code == 200:
                 result = False
             else:
                 result = True
@@ -1166,29 +979,19 @@ class BOT:
         :param recommend_channels_introduce: 推荐子频道推荐语列表，列表长度应与recommend_channels_id一致
         :return: 返回的.data中为解析后的json数据
         """
-        post_json = {"channel_id": channel_id, "message_id": message_id,
-                     "announces_type": announces_type, "recommend_channels": []}
+        json_ = {"channel_id": channel_id, "message_id": message_id, "announces_type": announces_type,
+                 "recommend_channels": []}
         if recommend_channels_id is not None and recommend_channels_id:
             if len(recommend_channels_id) == len(recommend_channels_introduce):
                 for i, items in enumerate(recommend_channels_id):
-                    post_json["recommend_channels"].append({"channel_id": items,
-                                                            "introduce": recommend_channels_introduce[i]})
+                    json_["recommend_channels"].append({"channel_id": items,
+                                                        "introduce": recommend_channels_introduce[i]})
             else:
                 return objectize({'data': {'code': -1, 'message': '这是来自SDK的错误信息：注意推荐子频道ID列表长度，'
                                                                   '应与推荐子频道推荐语列表长度一致'},
                                   'trace_id': None, 'result': False})
-        post_return = self.__session.post(self.bot_url + f'/guilds/{guild_id}/announces', json=post_json)
-        print(post_return.text)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.post(self.bot_url + f'/guilds/{guild_id}/announces', json=json_)
+        return self.__regular_temp(return_)
 
     def delete_announce(self, guild_id: str, message_id: str = 'all') -> reply_model.delete_announce():
         """
@@ -1197,8 +1000,8 @@ class BOT:
         :param message_id: message_id有值时会校验message_id合法性；若不校验，请将message_id设置为all（默认为all）
         :return: 返回的.result显示是否成功
         """
-        delete_return = self.__session.delete(self.bot_url + f'/guilds/{guild_id}/announces/{message_id}')
-        return self.__http_temp(delete_return, 204)
+        return_ = self.__session.delete(self.bot_url + f'/guilds/{guild_id}/announces/{message_id}')
+        return self.__http_temp(return_, 204)
 
     def create_pinmsg(self, channel_id: str, message_id: str) -> reply_model.pinmsg():
         """
@@ -1207,17 +1010,8 @@ class BOT:
         :param message_id: 目标消息id
         :return: 返回的.data中为解析后的json数据
         """
-        put_return = self.__session.put(self.bot_url + f'/channels/{channel_id}/pins/{message_id}')
-        trace_id = put_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = put_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.put(self.bot_url + f'/channels/{channel_id}/pins/{message_id}')
+        return self.__regular_temp(return_)
 
     def delete_pinmsg(self, channel_id: str, message_id: str) -> reply_model.delete_pinmsg():
         """
@@ -1226,8 +1020,8 @@ class BOT:
         :param message_id: 目标消息id
         :return: 返回的.result显示是否成功
         """
-        delete_return = self.__session.delete(self.bot_url + f'/channels/{channel_id}/pins/{message_id}')
-        return self.__http_temp(delete_return, 204)
+        return_ = self.__session.delete(self.bot_url + f'/channels/{channel_id}/pins/{message_id}')
+        return self.__http_temp(return_, 204)
 
     def get_pinmsg(self, channel_id: str) -> reply_model.pinmsg():
         """
@@ -1235,17 +1029,8 @@ class BOT:
         :param channel_id: 子频道id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(self.bot_url + f'/channels/{channel_id}/pins')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(self.bot_url + f'/channels/{channel_id}/pins')
+        return self.__regular_temp(return_)
 
     def get_schedules(self, channel_id: str, since: Optional[int] = None) -> reply_model.get_schedules():
         """
@@ -1254,18 +1039,9 @@ class BOT:
         :param since: 起始时间戳(ms)
         :return: 返回的.data中为解析后的json数据
         """
-        get_json = {"since": since}
-        get_return = self.__session.get(self.bot_url + f'/channels/{channel_id}/schedules', json=get_json)
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {"since": since}
+        return_ = self.__session.get(self.bot_url + f'/channels/{channel_id}/schedules', json=json_)
+        return self.__regular_temp(return_)
 
     def get_schedule_info(self, channel_id: str, schedule_id: str) -> reply_model.schedule_info():
         """
@@ -1274,17 +1050,8 @@ class BOT:
         :param schedule_id: 日程id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(self.bot_url + f'/channels/{channel_id}/schedules/{schedule_id}')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(self.bot_url + f'/channels/{channel_id}/schedules/{schedule_id}')
+        return self.__regular_temp(return_)
 
     def create_schedule(self, channel_id: str, schedule_name: str, start_timestamp: str, end_timestamp: str,
                         jump_channel_id: str, remind_type: str) -> reply_model.schedule_info():
@@ -1298,21 +1065,12 @@ class BOT:
         :param remind_type: 日程提醒类型
         :return: 返回的.data中为解析后的json数据
         """
-        post_json = {"schedule": {"name": schedule_name, "start_timestamp": start_timestamp,
-                                  "end_timestamp": end_timestamp, "jump_channel_id": jump_channel_id,
-                                  "remind_type": remind_type}}
-        post_return = self.__session.post(self.bot_url + f'/channels/{channel_id}/schedules',
-                                          json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {"schedule": {"name": schedule_name, "start_timestamp": start_timestamp,
+                              "end_timestamp": end_timestamp, "jump_channel_id": jump_channel_id,
+                              "remind_type": remind_type}}
+        return_ = self.__session.post(self.bot_url + f'/channels/{channel_id}/schedules',
+                                      json=json_)
+        return self.__regular_temp(return_)
 
     def patch_schedule(self, channel_id: str, schedule_id: str, schedule_name: str, start_timestamp: str,
                        end_timestamp: str, jump_channel_id: str, remind_type: str) -> reply_model.schedule_info():
@@ -1327,21 +1085,12 @@ class BOT:
         :param remind_type: 日程提醒类型
         :return: 返回的.data中为解析后的json数据
         """
-        patch_json = {"schedule": {"name": schedule_name, "start_timestamp": start_timestamp,
-                                   "end_timestamp": end_timestamp, "jump_channel_id": jump_channel_id,
-                                   "remind_type": remind_type}}
-        patch_return = self.__session.patch(self.bot_url + f'/channels/{channel_id}/schedules/{schedule_id}',
-                                            json=patch_json)
-        trace_id = patch_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = patch_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {"schedule": {"name": schedule_name, "start_timestamp": start_timestamp,
+                              "end_timestamp": end_timestamp, "jump_channel_id": jump_channel_id,
+                              "remind_type": remind_type}}
+        return_ = self.__session.patch(self.bot_url + f'/channels/{channel_id}/schedules/{schedule_id}',
+                                       json=json_)
+        return self.__regular_temp(return_)
 
     def delete_schedule(self, channel_id: str, schedule_id: str) -> reply_model.delete_schedule():
         """
@@ -1350,8 +1099,8 @@ class BOT:
         :param schedule_id: 日程id
         :return: 返回的.result显示是否成功
         """
-        delete_return = self.__session.delete(self.bot_url + f'/channels/{channel_id}/schedules/{schedule_id}')
-        return self.__http_temp(delete_return, 204)
+        return_ = self.__session.delete(self.bot_url + f'/channels/{channel_id}/schedules/{schedule_id}')
+        return self.__http_temp(return_, 204)
 
     def create_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> reply_model.reactions():
         """
@@ -1362,9 +1111,9 @@ class BOT:
         :param id_: 表情id
         :return: 返回的.result显示是否成功
         """
-        put_return = self.__session.put(self.bot_url +
-                                        f'/channels/{channel_id}/messages/{message_id}/reactions/{type_}/{id_}')
-        return self.__http_temp(put_return, 204)
+        return_ = self.__session.put(self.bot_url +
+                                     f'/channels/{channel_id}/messages/{message_id}/reactions/{type_}/{id_}')
+        return self.__http_temp(return_, 204)
 
     def delete_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> reply_model.reactions():
         """
@@ -1375,9 +1124,9 @@ class BOT:
         :param id_: 表情id
         :return: 返回的.result显示是否成功
         """
-        delete_return = self.__session.delete(self.bot_url +
-                                              f'/channels/{channel_id}/messages/{message_id}/reactions/{type_}/{id_}')
-        return self.__http_temp(delete_return, 204)
+        return_ = self.__session.delete(self.bot_url +
+                                        f'/channels/{channel_id}/messages/{message_id}/reactions/{type_}/{id_}')
+        return self.__http_temp(return_, 204)
 
     def get_reaction_users(self, channel_id: str, message_id: str, type_: str, id_: str) -> \
             reply_model.get_reaction_users():
@@ -1389,12 +1138,12 @@ class BOT:
         :param id_: 表情id
         :return: 返回的.data中为解析后的json数据列表
         """
-        get_return = self.__session.get(self.bot_url + f'/channels/{channel_id}/messages/{message_id}/reactions/'
-                                                       f'{type_}/{id_}?cookie=&limit=50')
-        trace_ids = [get_return.headers['X-Tps-Trace-Id']]
+        return_ = self.__session.get(self.bot_url + f'/channels/{channel_id}/messages/{message_id}/reactions/'
+                                                    f'{type_}/{id_}?cookie=&limit=50')
+        trace_ids = [return_.headers['X-Tps-Trace-Id']]
         all_users = []
         try:
-            return_dict = get_return.json()
+            return_dict = return_.json()
             if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                 all_users.append(return_dict)
                 results = [False]
@@ -1405,11 +1154,11 @@ class BOT:
                 while True:
                     if return_dict['is_end']:
                         break
-                    get_return = self.__session.get(
+                    return_ = self.__session.get(
                         self.bot_url + f'/channels/{channel_id}/messages/{message_id}/reactions/'
                                        f'{type_}/{id_}?cookies={return_dict["cookie"]}')
-                    trace_ids.append(get_return.headers['X-Tps-Trace-Id'])
-                    return_dict = get_return.json()
+                    trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                    return_dict = return_.json()
                     if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                         results.append(False)
                         all_users.append(return_dict)
@@ -1432,20 +1181,10 @@ class BOT:
         :param text: 状态文本（比如：简单爱-周杰伦），可选，status为0时传，其他操作不传
         :return: 返回的.result显示是否成功
         """
-        post_json = {"audio_url": audio_url, "text": text, "status": status}
-        post_return = self.__session.post(self.bot_url + f'/channels/{channel_id}/audio',
-                                          json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if not return_dict:
-                result = True
-                return_dict = None
-            else:
-                result = False
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {"audio_url": audio_url, "text": text, "status": status}
+        return_ = self.__session.post(self.bot_url + f'/channels/{channel_id}/audio',
+                                      json=json_)
+        return self.__empty_temp(return_)
 
     def bot_on_mic(self, channel_id: str) -> reply_model.audio():
         """
@@ -1453,18 +1192,8 @@ class BOT:
         :param channel_id: 子频道id
         :return: 返回的.result显示是否成功
         """
-        put_return = self.__session.put(self.bot_url + f'/channels/{channel_id}/mic')
-        trace_id = put_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = put_return.json()
-            if not return_dict:
-                result = True
-                return_dict = None
-            else:
-                result = False
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.put(self.bot_url + f'/channels/{channel_id}/mic')
+        return self.__empty_temp(return_)
 
     def bot_off_mic(self, channel_id: str) -> reply_model.audio():
         """
@@ -1472,18 +1201,8 @@ class BOT:
         :param channel_id: 子频道id
         :return: 返回的.result显示是否成功
         """
-        delete_return = self.__session.delete(self.bot_url + f'/channels/{channel_id}/mic')
-        trace_id = delete_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = delete_return.json()
-            if not return_dict:
-                result = True
-                return_dict = None
-            else:
-                result = False
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.delete(self.bot_url + f'/channels/{channel_id}/mic')
+        return self.__empty_temp(return_)
 
     def get_threads(self, channel_id) -> reply_model.get_threads():
         """
@@ -1491,11 +1210,11 @@ class BOT:
         :param channel_id: 目标论坛子频道id
         :return: 返回的.data中为解析后的json数据列表
         """
-        get_return = self.__session.get(self.bot_url + f'/channels/{channel_id}/threads')
-        trace_ids = [get_return.headers['X-Tps-Trace-Id']]
+        return_ = self.__session.get(self.bot_url + f'/channels/{channel_id}/threads')
+        trace_ids = [return_.headers['X-Tps-Trace-Id']]
         all_threads = []
         try:
-            return_dict = get_return.json()
+            return_dict = return_.json()
             if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                 all_threads.append(return_dict)
                 results = [False]
@@ -1508,9 +1227,9 @@ class BOT:
                 while True:
                     if return_dict['is_finish']:
                         break
-                    get_return = self.__session.get(self.bot_url + f'/channels/{channel_id}/threads')
-                    trace_ids.append(get_return.headers['X-Tps-Trace-Id'])
-                    return_dict = get_return.json()
+                    return_ = self.__session.get(self.bot_url + f'/channels/{channel_id}/threads')
+                    trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                    return_dict = return_.json()
                     if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                         results.append(False)
                         all_threads.append(return_dict)
@@ -1532,17 +1251,8 @@ class BOT:
         :param thread_id: 帖子id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(self.bot_url + f'/channels/{channel_id}/threads/{thread_id}')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = get_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return_ = self.__session.get(self.bot_url + f'/channels/{channel_id}/threads/{thread_id}')
+        return self.__regular_temp(return_)
 
     def create_thread(self, channel_id: str, title: str, content: str, format_: int) -> reply_model.create_thread():
         """
@@ -1553,18 +1263,9 @@ class BOT:
         :param format_: 帖子文本格式（1：普通文本、2：HTML、3：Markdown、4：Json）
         :return: 返回的.data中为解析后的json数据
         """
-        put_json = {'title': title, 'content': content, 'format': format_}
-        put_return = self.__session.put(self.bot_url + f'/channels/{channel_id}/threads', json=put_json)
-        trace_id = put_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = put_return.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                result = False
-            else:
-                result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {'title': title, 'content': content, 'format': format_}
+        return_ = self.__session.put(self.bot_url + f'/channels/{channel_id}/threads', json=json_)
+        return self.__regular_temp(return_)
 
     def delete_thread(self, channel_id: str, thread_id: str) -> reply_model.delete_thread():
         """
@@ -1573,8 +1274,8 @@ class BOT:
         :param thread_id: 帖子id
         :return: 返回的.result显示是否成功
         """
-        delete_return = self.__session.delete(self.bot_url + f'/channels/{channel_id}/threads/{thread_id}')
-        return self.__http_temp(delete_return, 204)
+        return_ = self.__session.delete(self.bot_url + f'/channels/{channel_id}/threads/{thread_id}')
+        return self.__http_temp(return_, 204)
 
     def get_guild_permissions(self, guild_id: str) -> reply_model.get_guild_permissions():
         """
@@ -1582,10 +1283,10 @@ class BOT:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        get_return = self.__session.get(self.bot_url + f'/guilds/{guild_id}/api_permission')
-        trace_id = get_return.headers['X-Tps-Trace-Id']
+        return_ = self.__session.get(self.bot_url + f'/guilds/{guild_id}/api_permission')
+        trace_id = return_.headers['X-Tps-Trace-Id']
         try:
-            return_dict = get_return.json()
+            return_dict = return_.json()
             if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                 result = False
             else:
@@ -1611,20 +1312,10 @@ class BOT:
         if not path:
             return objectize({'data': {'code': -1, 'message': '这是来自SDK的错误信息：目标API不存在，请检查名字是否正确'},
                               'trace_id': None, 'result': False})
-        post_json = {"channel_id": channel_id, "api_identify": {"path": path, "method": method.upper()}, "desc": desc}
-        post_return = self.__session.post(self.bot_url + f'/guilds/{guild_id}/api_permission/demand',
-                                          json=post_json)
-        trace_id = post_return.headers['X-Tps-Trace-Id']
-        try:
-            return_dict = post_return.json()
-            if not return_dict:
-                result = True
-                return_dict = None
-            else:
-                result = False
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
-        except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        json_ = {"channel_id": channel_id, "api_identify": {"path": path, "method": method.upper()}, "desc": desc}
+        return_ = self.__session.post(self.bot_url + f'/guilds/{guild_id}/api_permission/demand',
+                                      json=json_)
+        return self.__empty_temp(return_)
 
     def start(self):
         """

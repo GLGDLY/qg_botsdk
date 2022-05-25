@@ -71,6 +71,10 @@ class Model:
         seq: int
         seq_in_channel: str
         timestamp: str
+        tts: bool
+        pinned: bool
+        type: int
+        flags: int
         treated_msg: str
         t: str
         event_id: str
