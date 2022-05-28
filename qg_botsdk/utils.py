@@ -4,6 +4,7 @@ from sys import exc_info
 from traceback import extract_tb
 from inspect import stack
 from json import dumps
+from json.decoder import JSONDecodeError
 
 
 def __getattr__(identifier: str) -> object:
@@ -69,8 +70,50 @@ def convert_color(color: tuple or str):
 def treat_msg(raw_msg: str):
     if not raw_msg:
         return None
-    if '\xa0' in raw_msg:
-        raw_msg = raw_msg.replace('\xa0', ' ')
     if raw_msg[0] == '/':
         raw_msg = raw_msg[1:]
-    return raw_msg.strip().replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
+    return raw_msg.strip().replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('\xa0', ' ')
+
+
+def http_temp(return_, code: int):
+    trace_id = return_.headers['X-Tps-Trace-Id']
+    if return_.status_code == code:
+        return objectize({'data': None, 'trace_id': trace_id, 'result': True})
+    else:
+        try:
+            return_dict = return_.json()
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
+        except JSONDecodeError:
+            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+
+
+def regular_temp(return_):
+    trace_id = return_.headers['X-Tps-Trace-Id']
+    try:
+        return_dict = return_.json()
+        if isinstance(return_dict, dict) and 'code' in return_dict.keys():
+            result = False
+        else:
+            result = True
+        return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+    except JSONDecodeError:
+        return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+
+
+def empty_temp(return_):
+    trace_id = return_.headers['X-Tps-Trace-Id']
+    try:
+        return_dict = return_.json()
+        if not return_dict:
+            result = True
+            return_dict = None
+        else:
+            result = False
+        return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+    except JSONDecodeError:
+        return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+
+
+def sdk_error_temp(message):
+    return objectize({'data': {'code': -1, 'message': f'这是来自SDK的错误信息：{message}'}, 'trace_id': None,
+                      'result': False})

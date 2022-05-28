@@ -25,20 +25,20 @@ def forums_event(data: Model.FORUMS_EVENT):
     原type 4：表情，目前为空子字段，无任何内容反馈
     原type 5：#子频道，目前为空子字段，无任何内容反馈
     """
+    print(data.__doc__)   # 可借此获取json格式的实际数据结构
     if data.t == 'FORUM_THREAD_CREATE':
         title = data.thread_info.title.paragraphs[0].elems[0].text.text
         content = ''
         for items in data.thread_info.content.paragraphs:
             d = items.elems[0]
-            if d:
+            if 'type' in d.__dict__:
                 if d.type == 1:
                     content += d.text.text
                 elif d.type == 4:
                     content += f'{d.url.desc}（链接：{d.url.url}）'
         bot.logger.info(f'收到了一条新帖子！\n标题：{title}\n内容：{content}')
-        print(bot.get_thread_info(data.channel_id, data.thread_info.thread_id).__doc__)
         if not bot.security_check(content):
-            # 删除帖子接口存在官方bug，503013：thread_id is invalid
+            # 删除帖子接口疑似存在官方bug，503013：thread_id is invalid
             dt = bot.delete_thread(data.channel_id, data.thread_info.thread_id)
             if not dt.result:
                 bot.logger.warning(f'上述帖子内容存在风险，但机器人无法自动删除（{dt.data.code}：{dt.data.message}）')

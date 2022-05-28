@@ -30,6 +30,10 @@ class BotWs:
                  on_start_function: Callable[[], Any]):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
+
+        .. seealso::
+            更多教程和相关资讯可参阅：
+            https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b52
         """
         if stack()[1].filename.split('\\')[-1] != 'qg_bot.py':
             raise AssertionError("此为SDK内部使用类，无法使用，注册机器人请使用from qg_botsdk.qg_bot import BOT")
@@ -67,6 +71,15 @@ class BotWs:
         self.flag = False
         self.heartbeat = None
         self.op9_flag = False
+        self.events = {
+            ("GUILD_CREATE", "GUILD_UPDATE", "GUILD_DELETE", "CHANNEL_CREATE", "CHANNEL_UPDATE", "CHANNEL_DELETE"):
+                self.on_guild_event_function,
+            ("GUILD_MEMBER_ADD", "GUILD_MEMBER_UPDATE", "GUILD_MEMBER_REMOVE"): self.on_guild_member_function,
+            ("MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE"): self.on_reaction_function,
+            ("INTERACTION_CREATE",): self.on_interaction_function,
+            ("MESSAGE_AUDIT_PASS", "MESSAGE_AUDIT_REJECT"): self.on_audit_function,
+            ("AUDIO_START", "AUDIO_FINISH", "AUDIO_ON_MIC", "AUDIO_OFF_MIC"): self.on_audio_function
+        }
 
     def send_connect(self):
         connect_paras = {
@@ -121,56 +134,38 @@ class BotWs:
             Thread(target=function, args=[objectize(data["d"])], name=f'EventThread-{self.s}').start()
 
     def data_process(self, data):
-        try:
-            if data["t"] in ("AT_MESSAGE_CREATE", 'MESSAGE_CREATE'):
-                if 'content' not in data["d"]:
-                    raw_msg = ''
-                elif '<@!{}>'.format(self.bot_qid) in data["d"]["content"]:
-                    raw_msg = data["d"]["content"][data["d"]["content"].find('<@!{}>'.format(
-                        self.bot_qid)) + len(self.bot_qid) + 4:].strip()
-                else:
-                    raw_msg = data["d"]["content"]
-                if self.msg_treat:
-                    data["d"]["treated_msg"] = treat_msg(raw_msg)
-                self.distribute(self.on_msg_function, data)
-            elif data["t"] in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE", "DIRECT_MESSAGE_DELETE"):
-                if self.is_filter_self:
-                    target = data['d']['message']['author']['id']
-                    op_user = data['d']['op_user']['id']
-                    if op_user == target:
-                        return
-                self.distribute(self.on_delete_function, data)
-            elif data["t"] == "DIRECT_MESSAGE_CREATE":
-                raw_msg = '' if 'content' not in data["d"] else data["d"]["content"]
-                if self.msg_treat:
-                    data["d"]["treated_msg"] = treat_msg(raw_msg)
-                self.distribute(self.on_dm_function, data)
-            elif data["t"] in ("GUILD_CREATE", "GUILD_UPDATE", "GUILD_DELETE", "CHANNEL_CREATE", "CHANNEL_UPDATE",
-                               "CHANNEL_DELETE"):
-                self.distribute(self.on_guild_event_function, data)
-            elif data["t"] in ("GUILD_MEMBER_ADD", "GUILD_MEMBER_UPDATE", "GUILD_MEMBER_REMOVE"):
-                self.distribute(self.on_guild_member_function, data)
-            elif data["t"] in ("MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE"):
-                self.distribute(self.on_reaction_function, data)
-            elif data["t"] == "INTERACTION_CREATE":
-                self.distribute(self.on_interaction_function, data)
-            elif data["t"] in ("MESSAGE_AUDIT_PASS", "MESSAGE_AUDIT_REJECT"):
-                self.distribute(self.on_audit_function, data)
-            elif data["t"] in ("FORUM_THREAD_CREATE", "FORUM_THREAD_UPDATE", "FORUM_THREAD_DELETE", "FORUM_POST_CREATE",
-                               "FORUM_POST_DELETE", "FORUM_REPLY_CREATE", "FORUM_REPLY_DELETE",
-                               "FORUM_PUBLISH_AUDIT_RESULT"):
-                for items in ["content", "title"]:
-                    try:
-                        data["d"]["thread_info"][items] = loads(data["d"]["thread_info"][items])
-                    except JSONDecodeError:
-                        pass
-                self.distribute(self.on_forum_function, data)
-            elif data["t"] in ("AUDIO_START", "AUDIO_FINISH", "AUDIO_ON_MIC", "AUDIO_OFF_MIC"):
-                self.distribute(self.on_audio_function, data)
-        except Exception as error:
-            self.logger.error(error)
-            self.logger.debug(exception_handler(error))
-            return
+        t = data["t"]
+        if t in ("AT_MESSAGE_CREATE", 'MESSAGE_CREATE'):
+            if self.msg_treat:
+                raw_msg = '' if 'content' not in data["d"] else data["d"]["content"].strip()
+                treated_msg = treat_msg(raw_msg)
+                at = f'<@!{self.bot_qid}>'
+                data["d"]["treated_msg"] = treated_msg if treated_msg.find(at) else treated_msg.replace(at, '', 1)
+            self.distribute(self.on_msg_function, data)
+        elif t in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE", "DIRECT_MESSAGE_DELETE"):
+            if self.is_filter_self:
+                target = data['d']['message']['author']['id']
+                op_user = data['d']['op_user']['id']
+                if op_user == target:
+                    return
+            self.distribute(self.on_delete_function, data)
+        elif t == "DIRECT_MESSAGE_CREATE":
+            if self.msg_treat:
+                raw_msg = '' if 'content' not in data["d"] else data["d"]["content"].strip()
+                data["d"]["treated_msg"] = treat_msg(raw_msg)
+            self.distribute(self.on_dm_function, data)
+        elif t in ("FORUM_THREAD_CREATE", "FORUM_THREAD_UPDATE", "FORUM_THREAD_DELETE", "FORUM_POST_CREATE",
+                   "FORUM_POST_DELETE", "FORUM_REPLY_CREATE", "FORUM_REPLY_DELETE", "FORUM_PUBLISH_AUDIT_RESULT"):
+            for items in ["content", "title"]:
+                try:
+                    data["d"]["thread_info"][items] = loads(data["d"]["thread_info"][items])
+                except JSONDecodeError:
+                    pass
+            self.distribute(self.on_forum_function, data)
+        else:
+            for keys, values in self.events:
+                if t in keys:
+                    self.distribute(values, data)
 
     def main(self, msg):
         data = loads(msg)
@@ -181,13 +176,19 @@ class BotWs:
         elif data["op"] == 9:
             if not self.op9_flag:
                 self.op9_flag = True
-                self.send_connect() if not self.re_connect else self.send_reconnect()
+                if not self.re_connect:
+                    self.send_connect()
+                else:
+                    self.send_reconnect()
                 return
             self.logger.error('[错误] 参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）')
             exit()
         elif data["op"] == 10:
             self.heartbeat_time = float(int(data["d"]["heartbeat_interval"]) * 0.001)
-            self.send_connect() if not self.re_connect else self.send_reconnect()
+            if not self.re_connect:
+                self.send_connect()
+            else:
+                self.send_reconnect()
         elif data["op"] == 0:
             if data["t"] == "READY":
                 self.session_id = data["d"]["session_id"]
@@ -206,7 +207,12 @@ class BotWs:
                 self.start_heartbeat()
                 self.logger.info('重连成功，机器人继续运行')
             else:
-                self.data_process(data)
+                try:
+                    self.data_process(data)
+                except Exception as error:
+                    self.logger.error(error)
+                    self.logger.debug(exception_handler(error))
+                    return
         else:
             self.logger.debug('[其他WS消息] ' + str(data))
 

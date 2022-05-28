@@ -7,10 +7,10 @@ from qg_botsdk.model import Model
 
 
 def deliver(data: Model.MESSAGE):
-    bot.logger.debug(data)
     bot.logger.info('收到消息啦！')
     if '你好' in data.treated_msg:
         bot.send_msg(data.channel_id, '你好，世界', message_id=data.id)
+        bot.logger.info(f'发送消息【你好，世界】到子频道{data.channel_id}')
 
 
 if __name__ == '__main__':

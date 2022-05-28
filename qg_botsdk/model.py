@@ -1,10 +1,27 @@
 # !/usr/bin/env python3
 # encoding: utf-8
 class Model:
-    def __init__(self):
-        self._MsgMentions: object
+    """
+    使用此Model库可用作验证事件数据的准确性，目前可用的模型如下：
 
+    GUILDS - 频道事件
+    GUILD_MEMBERS -
+    """
     class GUILDS:
+        """
+        频道事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - GUILD_CREATE - 当机器人加入新guild时
+        - GUILD_UPDATE - 当guild资料发生变更时
+        - GUILD_DELETE - 当机器人退出guild时
+        - CHANNEL_CREATE - 当channel被创建时
+        - CHANNEL_UPDATE - 当channel被更新时
+        - CHANNEL_DELETE - 当channel被删除时
+
+        .. seealso::
+            其子字段数据可参阅：
+            https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+        """
         description: str
         icon: str
         id: str
@@ -18,6 +35,17 @@ class Model:
         event_id: str
 
     class GUILD_MEMBERS:
+        """
+        频道成员事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - GUILD_MEMBER_ADD - 当成员加入时
+        - GUILD_MEMBER_UPDATE - 当成员资料变更时
+        - GUILD_MEMBER_REMOVE - 当成员被移除时
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+        """
         class user:
             avatar: str
             bot: bool
@@ -33,6 +61,19 @@ class Model:
         event_id: str
 
     class MESSAGE:
+        """
+        消息事件的数据模，可从t字段判断具体事件，其中包含：
+
+        - MESSAGE_CREATE - 发送消息事件，代表频道内的全部消息，而不只是 at 机器人的消息
+        - AT_MESSAGE_CREATE - 当收到@机器人的消息时
+
+        .. note::
+            私域机器人可接收全部消息事件、公域机器人仅能接收艾特机器人的消息事件
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+        """
         class __MsgMentions:
             avatar: str
             bot: bool
@@ -80,6 +121,20 @@ class Model:
         event_id: str
 
     class MESSAGE_DELETE:
+        """
+        消息撤回事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - MESSAGE_DELETE - 删除（撤回）消息事件
+        - PUBLIC_MESSAGE_DELETE - 当频道的消息被删除时
+        - DIRECT_MESSAGE_DELETE - 删除（撤回）私信消息事件
+
+        .. note::
+            私域机器人可接收MESSAGE_DELETE、公域机器人仅能接收PUBLIC_MESSAGE_DELETE
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+        """
         class message:
             class author:
                 bot: bool
@@ -97,6 +152,15 @@ class Model:
         event_id: str
 
     class DIRECT_MESSAGE:
+        """
+        私信消息事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - DIRECT_MESSAGE_CREATE - 当收到用户发给机器人的私信消息时
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+        """
         class __MsgAttachments:
             content_type: str
             filename: str
@@ -135,7 +199,17 @@ class Model:
 
     class MESSAGE_AUDIT:
         """
-        只有审核通过事件才会有message_id的值
+        主动消息审核事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - MESSAGE_AUDIT_PASS - 消息审核通过
+        - MESSAGE_AUDIT_REJECT - 消息审核不通过
+
+        .. note::
+            注意，只有审核通过事件（MESSAGE_AUDIT_PASS）才会有message_id的值
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
         """
         audit_id: str
         audit_time: str
@@ -148,16 +222,31 @@ class Model:
 
     class FORUMS_EVENT:
         """
-        现有推送的type字段：
-        type 1：普通文本，子字段text
-        type 2：图片，子字段image
-        type 3：视频，子字段video
-        type 4：url信息，子字段url
+        论坛事件的数据模型，可从t字段判断具体事件，其中包含：
 
-        现无推送，根据文档列出的type：
-        原type 2：at信息，目前为空子字段，无任何内容反馈
-        原type 4：表情，目前为空子字段，无任何内容反馈
-        原type 5：#子频道，目前为空子字段，无任何内容反馈
+        - FORUM_THREAD_CREATE - 当用户创建主题（帖子）时
+        - FORUM_THREAD_UPDATE - 当用户更新主题（帖子）时
+        - FORUM_THREAD_DELETE - 当用户删除主题（帖子）时
+
+        *剩余论坛事件（如回帖和回复回帖）暂未有相关推送*
+
+        .. note::
+            现有推送的type字段：
+
+            - type 1 - 普通文本，子字段text
+            - type 2 - 图片，子字段image
+            - type 3 - 视频，子字段video
+            - type 4 - url信息，子字段url
+
+            现无推送，根据文档列出的type：
+
+            - 原type 2 - at信息，目前为空子字段，无任何内容反馈
+            - 原type 4 - 表情，目前为空子字段，无任何内容反馈
+            - 原type 5 - #子频道，目前为空子字段，无任何内容反馈
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
         """
 
         class thread_info:
@@ -221,7 +310,19 @@ class Model:
 
     class AUDIO_ACTION:
         """
-        只有AUDIO_START、AUDIO_FINISH拥有audio_url和text字段
+        音频事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - AUDIO_START - 音频开始播放时
+        - AUDIO_FINISH - 音频播放结束时
+        - AUDIO_ON_MIC - 上麦时
+        - AUDIO_OFF_MIC - 下麦时
+
+        .. note::
+            注意，只有AUDIO_START、AUDIO_FINISH拥有audio_url和text字段
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
         """
         channel_id: str
         guild_id: str
@@ -231,6 +332,16 @@ class Model:
         event_id: str
 
     class REACTION:
+        """
+        表情表态事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - MESSAGE_REACTION_ADD - 为消息添加表情表态
+        - MESSAGE_REACTION_REMOVE - 为消息删除表情表态
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+        """
         class emoji:
             id: str
             type: int
