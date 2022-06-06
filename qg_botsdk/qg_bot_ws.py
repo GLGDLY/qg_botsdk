@@ -150,7 +150,7 @@ class BotWs:
                     return
             self.distribute(self.on_delete_function, data)
         elif t == "DIRECT_MESSAGE_CREATE":
-            if self.msg_treat:
+            if self.dm_treat:
                 raw_msg = '' if 'content' not in data["d"] else data["d"]["content"].strip()
                 data["d"]["treated_msg"] = treat_msg(raw_msg)
             self.distribute(self.on_dm_function, data)

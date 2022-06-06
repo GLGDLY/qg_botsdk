@@ -21,7 +21,22 @@ def deliver(data: Model.MESSAGE):
         bot.send_msg(data.channel_id, file_image='example_10_image.jpg',  message_id=data.id)
 
 
+def deliver_dm(data: Model.DIRECT_MESSAGE):
+    print(data.__doc__)
+    if '图片' in data.treated_msg:
+        # 方法1（阅读档案后传入bytes类型图片数据）：
+        with open('example_10_image.jpg', 'rb') as img:
+            img_bytes = img.read()
+            bot.send_dm(data.guild_id, file_image=img_bytes, message_id=data.id)
+        # 方法2（打开档案后直接传入档案）：
+        with open('example_10_image.jpg', 'rb') as img:
+            bot.send_dm(data.guild_id, file_image=img, message_id=data.id)
+        # 方法3（直接传入图片路径）：
+        bot.send_dm(data.guild_id, file_image='example_10_image.jpg', message_id=data.id)
+
+
 if __name__ == '__main__':
-    bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=True)
-    bot.bind_msg(deliver, treated_data=True)
+    bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=False)
+    bot.bind_msg(deliver)
+    bot.bind_dm(deliver_dm)
     bot.start()

@@ -7,7 +7,7 @@ from json import loads
 from json.decoder import JSONDecodeError
 from requests import Session
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util.retry import Retry
 from time import time
 from threading import Thread
 from typing import Any, Callable, Optional, Union, BinaryIO
@@ -22,7 +22,8 @@ reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
-version = '2.1.4'
+version = '2.1.5'
+pid = getpid()
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 
@@ -40,7 +41,7 @@ class BOT:
         :param is_private: 机器人是否为私域机器人，默认False
         :param is_sandbox: 是否开启沙箱环境，默认False
         :param max_shard: 最大分片数，请根据配置自行判断，默认5
-        :param no_permission_warning: 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认
+        :param no_permission_warning: 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启
         """
         self.logger = Logger(bot_id)
         self.bot_id = bot_id
@@ -861,6 +862,7 @@ class BOT:
         return regular_temp(return_)
 
     def send_dm(self, guild_id: str, content: Optional[str] = None, image: Optional[str] = None,
+                file_image: Optional[Union[bytes, BinaryIO, str, PathLike[str]]] = None,
                 message_id: Optional[str] = None, event_id: Optional[str] = None,
                 message_reference_id: Optional[str] = None,
                 ignore_message_reference_error: Optional[bool] = None) -> reply_model.send_msg():
@@ -870,6 +872,7 @@ class BOT:
         :param guild_id: 虚拟频道id（非子频道id），从用户主动私信机器人的事件、或机器人主动创建私信的API中获取
         :param content: 消息内容文本
         :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
+        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
         :param message_id: 消息id（选填）
         :param event_id: 事件id（选填）
         :param message_reference_id: 引用消息的id（选填）
@@ -884,7 +887,19 @@ class BOT:
                                            'ignore_get_message_error': ignore_message_reference_error}}
         else:
             json_ = {'content': content, 'msg_id': message_id, 'event_id': event_id, 'image': image}
-        return_ = self.__session.post(self.bot_url + f'/dms/{guild_id}/messages', json=json_)
+        if file_image is not None:
+            if isinstance(file_image, BufferedReader):
+                file_image = file_image.read()
+            elif isinstance(file_image, str):
+                if exists(file_image):
+                    with open(file_image, 'rb') as img:
+                        file_image = img.read()
+                else:
+                    return sdk_error_temp('目标图片路径不存在，无法发送')
+            files = {'file_image': file_image}
+            return_ = self.__session.post(self.bot_url + f'/dms/{guild_id}/messages', data=json_, files=files)
+        else:
+            return_ = self.__session.post(self.bot_url + f'/dms/{guild_id}/messages', json=json_)
         return regular_temp(return_)
 
     def delete_dm_msg(self, guild_id: str, message_id: str, hidetip: bool = False) -> reply_model.delete_msg():
