@@ -9,11 +9,11 @@ from qg_botsdk.model import Model
 def deliver(data: Model.MESSAGE):
     content = data.content
     if '内容检测' in content:
-        if not bot.security_check(content[content.find('内容检测') + 4:]):
+        if not bot.api.security_check(content[content.find('内容检测') + 4:]):
             send_msg = '检测不通过，内容有违规'
         else:
             send_msg = '检测通过，内容并无违规'
-        bot.send_msg(data.channel_id, send_msg, message_id=data.id)
+        bot.api.send_msg(data.channel_id, send_msg, message_id=data.id)
     return
 
 

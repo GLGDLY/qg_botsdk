@@ -11,8 +11,8 @@ some_emojis = ['4', '5', '8', '9', '10', '12', '14', '16', '21', '23', '24', '25
 def deliver(data: Model.MESSAGE):
     if '来个表态' in data.treated_msg:
         chosen_emoji = choice(some_emojis)
-        bot.create_reaction(data.channel_id, data.id, '1', chosen_emoji)
-        gru = bot.get_reaction_users(data.channel_id, data.id, '1', chosen_emoji)
+        bot.api.create_reaction(data.channel_id, data.id, '1', chosen_emoji)
+        gru = bot.api.get_reaction_users(data.channel_id, data.id, '1', chosen_emoji)
         if all(gru.result):
             info = f'该消息使用QQ系统表情（id={chosen_emoji}）的全部表态用户：'
             for items in gru.data:

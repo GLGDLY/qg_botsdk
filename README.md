@@ -63,7 +63,7 @@ from qg_botsdk.model import Model   # 导入所有数据模型
 
 def deliver(data: Model.MESSAGE):   # 创建接收消息事件的函数
     if '你好' in data.treated_msg:   # 判断消息是否存在特定内容
-        bot.send_msg(data.channel_id, '你好，世界', message_id=data.id)   # 发送被动回复（带message_id）
+        bot.api.send_msg(data.channel_id, '你好，世界', message_id=data.id)   # 发送被动回复（带message_id）
 
 
 if __name__ == '__main__':

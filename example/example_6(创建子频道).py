@@ -7,10 +7,10 @@ from qg_botsdk.model import Model
 
 def deliver(data: Model.MESSAGE):
     if data.treated_msg == '来个我的子频道':
-        current_channel = bot.get_channels_info(data.channel_id)
-        create_return = bot.create_channels(data.guild_id, f'{data.author.username}的子频道', 0,
-                                            current_channel.data.position + 1, current_channel.data.parent_id, 0, 2,
-                                            [data.author.id], 1)
+        current_channel = bot.api.get_channels_info(data.channel_id)
+        create_return = bot.api.create_channels(data.guild_id, f'{data.author.username}的子频道', 0,
+                                                current_channel.data.position + 1, current_channel.data.parent_id, 0, 2,
+                                                [data.author.id], 1)
         if create_return.result:
             bot.logger.info('创建成功！')
         else:

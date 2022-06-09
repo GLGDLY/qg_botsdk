@@ -6,12 +6,12 @@ from qg_botsdk.model import Model
 
 
 def on_start():
-    bot.send_msg(channel_id='xxx', content='这是主动消息')
+    bot.api.send_msg(channel_id='xxx', content='这是主动消息')
 
 
 def deliver(data: Model.MESSAGE):
     if '你好' in data.treated_msg:
-        bot.send_msg(data.channel_id, '你好，世界', message_id=data.id)
+        bot.api.send_msg(data.channel_id, '你好，世界', message_id=data.id)
 
 
 def msg_audit(data: Model.MESSAGE_AUDIT):

@@ -8,7 +8,7 @@ from json.decoder import JSONDecodeError
 
 
 def __getattr__(identifier: str) -> object:
-    if stack()[1].filename.split('\\')[-1] not in ('qg_bot.py', 'qg_bot_ws.py', 'qg_bot_ws_async.py', 'model.py'):
+    if stack()[1].filename.split('\\')[-1] not in ('qg_bot.py', 'qg_bot_ws.py', 'qg_bot_ws_async.py', 'model.py', 'api.py', 'async_api.py'):
         raise AssertionError("为SDK内部使用类，无法使用")
 
     return globals()[identifier.__path__]
@@ -69,7 +69,7 @@ def convert_color(color: tuple or str):
 
 def treat_msg(raw_msg: str):
     if not raw_msg:
-        return None
+        return ''
     if raw_msg[0] == '/':
         raw_msg = raw_msg[1:]
     return raw_msg.strip().replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('\xa0', ' ')
@@ -82,6 +82,18 @@ def http_temp(return_, code: int):
     else:
         try:
             return_dict = return_.json()
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
+        except JSONDecodeError:
+            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+
+
+async def async_http_temp(return_, code: int):
+    trace_id = return_.headers['X-Tps-Trace-Id']
+    if return_.status == code:
+        return objectize({'data': None, 'trace_id': trace_id, 'result': True})
+    else:
+        try:
+            return_dict = await return_.json()
             return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
         except JSONDecodeError:
             return objectize({'data': None, 'trace_id': trace_id, 'result': False})
@@ -100,10 +112,37 @@ def regular_temp(return_):
         return objectize({'data': None, 'trace_id': trace_id, 'result': False})
 
 
+async def async_regular_temp(return_):
+    trace_id = return_.headers['X-Tps-Trace-Id']
+    try:
+        return_dict = await return_.json()
+        if isinstance(return_dict, dict) and 'code' in return_dict.keys():
+            result = False
+        else:
+            result = True
+        return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+    except JSONDecodeError:
+        return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+
+
 def empty_temp(return_):
     trace_id = return_.headers['X-Tps-Trace-Id']
     try:
         return_dict = return_.json()
+        if not return_dict:
+            result = True
+            return_dict = None
+        else:
+            result = False
+        return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+    except JSONDecodeError:
+        return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+
+
+async def async_empty_temp(return_):
+    trace_id = return_.headers['X-Tps-Trace-Id']
+    try:
+        return_dict = await return_.json()
         if not return_dict:
             result = True
             return_dict = None

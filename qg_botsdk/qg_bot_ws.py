@@ -4,7 +4,6 @@ from inspect import stack
 from json import loads, dumps
 from json.decoder import JSONDecodeError
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
-from ssl import SSLContext
 from typing import Any, Callable
 from asyncio import get_event_loop, all_tasks, sleep
 from time import sleep as t_sleep
@@ -20,14 +19,14 @@ def __getattr__(identifier: str) -> object:
 
 
 class BotWs:
-    def __init__(self, session, logger, shard: int, shard_no: int, url: str, bot_id: str, bot_token: str,
+    def __init__(self, session, ssl, logger, shard: int, shard_no: int, url: str, bot_id: str, bot_token: str,
                  bot_url: str, on_msg_function: Callable[[Any], Any], on_dm_function: Callable[[Any], Any],
                  on_delete_function: Callable[[Any], Any], is_filter_self: bool,
                  on_guild_event_function: Callable[[Any], Any], on_guild_member_function: Callable[[Any], Any],
                  on_reaction_function: Callable[[Any], Any], on_interaction_function: Callable[[Any], Any],
                  on_audit_function: Callable[[Any], Any], on_forum_function: Callable[[Any], Any],
                  on_audio_function: Callable[[Any], Any], intents: int, msg_treat: bool, dm_treat: bool,
-                 on_start_function: Callable[[], Any]):
+                 on_start_function: Callable[[], Any], is_async: bool):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
 
@@ -38,6 +37,7 @@ class BotWs:
         if stack()[1].filename.split('\\')[-1] != 'qg_bot.py':
             raise AssertionError("此为SDK内部使用类，无法使用，注册机器人请使用from qg_botsdk.qg_bot import BOT")
         self.session = session
+        self.ssl = ssl
         self.logger = logger
         self.shard = shard
         self.shard_no = shard_no
@@ -71,6 +71,7 @@ class BotWs:
         self.flag = False
         self.heartbeat = None
         self.op9_flag = False
+        self.is_async = is_async
         self.events = {
             ("GUILD_CREATE", "GUILD_UPDATE", "GUILD_DELETE", "CHANNEL_CREATE", "CHANNEL_UPDATE", "CHANNEL_DELETE"):
                 self.on_guild_event_function,
@@ -127,13 +128,16 @@ class BotWs:
             self.heartbeat = self.loop.create_task(self.heart())
             self.heartbeat.set_name('heartbeat_task')
 
-    def distribute(self, function, data):
+    async def distribute(self, function, data):
         data["d"]["t"] = data["t"]
         data["d"]["event_id"] = data["id"]
         if function is not None:
-            Thread(target=function, args=[objectize(data["d"])], name=f'EventThread-{self.s}').start()
+            if not self.is_async:
+                Thread(target=function, args=[objectize(data["d"])], name=f'EventThread-{self.s}').start()
+            else:
+                await function(objectize(data["d"]))
 
-    def data_process(self, data):
+    async def data_process(self, data):
         t = data["t"]
         if t in ("AT_MESSAGE_CREATE", 'MESSAGE_CREATE'):
             if self.msg_treat:
@@ -141,19 +145,19 @@ class BotWs:
                 treated_msg = treat_msg(raw_msg)
                 at = f'<@!{self.bot_qid}>'
                 data["d"]["treated_msg"] = treated_msg if treated_msg.find(at) else treated_msg.replace(at, '', 1)
-            self.distribute(self.on_msg_function, data)
+            await self.distribute(self.on_msg_function, data)
         elif t in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE", "DIRECT_MESSAGE_DELETE"):
             if self.is_filter_self:
                 target = data['d']['message']['author']['id']
                 op_user = data['d']['op_user']['id']
                 if op_user == target:
                     return
-            self.distribute(self.on_delete_function, data)
+            await self.distribute(self.on_delete_function, data)
         elif t == "DIRECT_MESSAGE_CREATE":
             if self.dm_treat:
                 raw_msg = '' if 'content' not in data["d"] else data["d"]["content"].strip()
                 data["d"]["treated_msg"] = treat_msg(raw_msg)
-            self.distribute(self.on_dm_function, data)
+            await self.distribute(self.on_dm_function, data)
         elif t in ("FORUM_THREAD_CREATE", "FORUM_THREAD_UPDATE", "FORUM_THREAD_DELETE", "FORUM_POST_CREATE",
                    "FORUM_POST_DELETE", "FORUM_REPLY_CREATE", "FORUM_REPLY_DELETE", "FORUM_PUBLISH_AUDIT_RESULT"):
             for items in ["content", "title"]:
@@ -161,13 +165,13 @@ class BotWs:
                     data["d"]["thread_info"][items] = loads(data["d"]["thread_info"][items])
                 except JSONDecodeError:
                     pass
-            self.distribute(self.on_forum_function, data)
+            await self.distribute(self.on_forum_function, data)
         else:
-            for keys, values in self.events:
+            for keys, values in self.events.items():
                 if t in keys:
-                    self.distribute(values, data)
+                    await self.distribute(values, data)
 
-    def main(self, msg):
+    async def main(self, msg):
         data = loads(msg)
         if "s" in data.keys():
             self.s = data["s"]
@@ -201,14 +205,17 @@ class BotWs:
                     self.bot_qid = me_qid['id']
                     self.logger.info('机器人频道用户ID：' + self.bot_qid)
                     if self.on_start_function is not None:
-                        self.on_start_function()
+                        if self.is_async:
+                            self.loop.create_task(self.on_start_function())
+                        else:
+                            self.on_start_function()
             elif data["t"] == "RESUMED":
                 self.reconnect_times = 0
                 self.start_heartbeat()
                 self.logger.info('重连成功，机器人继续运行')
             else:
                 try:
-                    self.data_process(data)
+                    await self.data_process(data)
                 except Exception as error:
                     self.logger.error(error)
                     self.logger.debug(exception_handler(error))
@@ -220,7 +227,7 @@ class BotWs:
         self.reconnect_times += 1
         try:
             async with ClientSession() as ws_session:
-                async with ws_session.ws_connect(self.url, ssl=SSLContext()) as self.ws:
+                async with ws_session.ws_connect(self.url, ssl=self.ssl) as self.ws:
                     while not self.ws.closed:
                         message = await self.ws.receive()
                         if message.type == WSMsgType.TEXT:
@@ -230,7 +237,7 @@ class BotWs:
                                 await self.ws.close()
                                 self.logger.info('WS进程已结束')
                                 return
-                            self.main(message.data)
+                            await self.main(message.data)
                         elif message.type in [WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.ERROR]:
                             if self.running:
                                 self.re_connect = True
