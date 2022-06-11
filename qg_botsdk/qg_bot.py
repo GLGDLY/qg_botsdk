@@ -1,6 +1,6 @@
 # !/usr/bin/env python3
 # encoding: utf-8
-from os import getpid
+from os import getpid, system
 from asyncio import get_event_loop, sleep
 from time import sleep as t_sleep
 from ssl import SSLContext
@@ -16,10 +16,11 @@ from .qg_bot_ws import BotWs
 from .utils import objectize, exception_handler
 from .api import API
 
+system("")
 reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.2.0'
+version = '2.2.1'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 t_sleep(0.5)

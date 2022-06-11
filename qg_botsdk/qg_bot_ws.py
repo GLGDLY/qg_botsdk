@@ -3,7 +3,7 @@
 from inspect import stack
 from json import loads, dumps
 from json.decoder import JSONDecodeError
-from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
+from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError, TCPConnector
 from typing import Any, Callable
 from asyncio import get_event_loop, all_tasks, sleep
 from time import sleep as t_sleep
@@ -37,7 +37,7 @@ class BotWs:
         if stack()[1].filename.split('\\')[-1] != 'qg_bot.py':
             raise AssertionError("此为SDK内部使用类，无法使用，注册机器人请使用from qg_botsdk.qg_bot import BOT")
         self.session = session
-        self.ssl = ssl
+        self.__tcp_conn = TCPConnector(limit=10, ssl=ssl)
         self.logger = logger
         self.shard = shard
         self.shard_no = shard_no
@@ -86,7 +86,7 @@ class BotWs:
         connect_paras = {
             "op": 2,
             "d": {
-                "token": "Bot " + str(self.bot_id) + "." + str(self.bot_token),
+                "token": f"Bot {self.bot_id}.{self.bot_token}",
                 "intents": self.intents,
                 "shard": [self.shard_no, self.shard],
                 "properties": {
@@ -102,7 +102,7 @@ class BotWs:
         reconnect_paras = {
             "op": 6,
             "d": {
-                "token": "Bot " + str(self.bot_id) + "." + str(self.bot_token),
+                "token": f"Bot {self.bot_id}.{self.bot_token}",
                 "session_id": self.session_id,
                 "seq": self.s
             }
@@ -226,8 +226,8 @@ class BotWs:
     async def connect(self):
         self.reconnect_times += 1
         try:
-            async with ClientSession() as ws_session:
-                async with ws_session.ws_connect(self.url, ssl=self.ssl) as self.ws:
+            async with ClientSession(connector=self.__tcp_conn) as ws_session:
+                async with ws_session.ws_connect(self.url) as self.ws:
                     while not self.ws.closed:
                         message = await self.ws.receive()
                         if message.type == WSMsgType.TEXT:

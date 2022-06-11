@@ -29,5 +29,8 @@ def deliver(data: Model.MESSAGE):
 if __name__ == '__main__':
     bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=True, max_shard=1)
     bot.bind_msg(deliver, treated_data=True)
-    bot.logger.set_formatter('[%(asctime)s] [%(levelname)s](%(name)s): %(message)s', '%m-%d %H:%M:%S')  # 更改log格式
+
+    # 更改log格式 --- 把info层级的日志显示颜色从绿色改为蓝色
+    bot.logger.set_formatter(info_format='\033[1;34m[%(asctime)s] [%(levelname)s]\033[0m %(message)s')
+
     bot.start()
