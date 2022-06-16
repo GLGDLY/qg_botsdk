@@ -20,7 +20,7 @@ system("")
 reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.2.2'
+version = '2.2.3'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 t_sleep(0.5)
@@ -116,7 +116,7 @@ class BOT:
         self.__on_msg_function = on_msg_function
         if not treated_data:
             self.msg_treat = False
-        if all_msg is not None:
+        if all_msg is None:
             if not self.is_private:
                 self.intents = self.intents | 1 << 30
                 self.logger.info('消息（所有消息）接收函数订阅成功')
