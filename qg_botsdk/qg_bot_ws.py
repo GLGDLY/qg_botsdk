@@ -3,7 +3,7 @@
 from inspect import stack
 from json import loads, dumps
 from json.decoder import JSONDecodeError
-from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError, TCPConnector
+from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 from typing import Any, Callable
 from asyncio import get_event_loop, all_tasks, sleep
 from time import sleep as t_sleep
@@ -37,7 +37,7 @@ class BotWs:
         if stack()[1].filename.split('\\')[-1] != 'qg_bot.py':
             raise AssertionError("此为SDK内部使用类，无法使用，注册机器人请使用from qg_botsdk.qg_bot import BOT")
         self.session = session
-        self.__tcp_conn = TCPConnector(limit=10, ssl=ssl)
+        self.__ssl = ssl
         self.logger = logger
         self.shard = shard
         self.shard_no = shard_no
@@ -114,13 +114,13 @@ class BotWs:
             await self.ws.send_str(msg)
 
     async def heart(self):
+        heart_json = {"op": 1, "d": None}
         while True:
             await sleep(self.heartbeat_time)
             if not self.ws.closed:
                 if self.s:
-                    await self.ws.send_str(dumps({"op": 1, "d": self.s}))
-                else:
-                    await self.ws.send_str(dumps({"op": 1, "d": None}))
+                    heart_json['d'] = self.s
+                    await self.ws.send_str(dumps(heart_json))
 
     def start_heartbeat(self):
         tasks = [task.get_name() for task in all_tasks()]
@@ -226,8 +226,8 @@ class BotWs:
     async def connect(self):
         self.reconnect_times += 1
         try:
-            async with ClientSession(connector=self.__tcp_conn) as ws_session:
-                async with ws_session.ws_connect(self.url) as self.ws:
+            async with ClientSession() as ws_session:
+                async with ws_session.ws_connect(self.url, ssl=self.__ssl) as self.ws:
                     while not self.ws.closed:
                         message = await self.ws.receive()
                         if message.type == WSMsgType.TEXT:

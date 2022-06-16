@@ -20,7 +20,7 @@ system("")
 reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.2.1'
+version = '2.2.2'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 t_sleep(0.5)
@@ -83,7 +83,7 @@ class BOT:
         self.__bot_classes = []
         self.__bot_threads = []
         self.__loop = get_event_loop()
-        self.msg_treat = False
+        self.msg_treat = True
         self.dm_treat = False
         self.no_permission_warning = no_permission_warning
         self.is_async = is_async
@@ -104,22 +104,28 @@ class BOT:
                 self.logger.debug(exception_handler(error))
             await sleep(self.check_interval)
 
-    def bind_msg(self, on_msg_function: Callable[[Model.MESSAGE], Any], treated_data: bool = True):
+    def bind_msg(self, on_msg_function: Callable[[Model.MESSAGE], Any], treated_data: bool = True,
+                 all_msg: bool = None):
         """
         用作绑定接收消息的函数，将根据机器人是否公域自动判断接收艾特或所有消息
 
         :param on_msg_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         :param treated_data: 是否返回经转义处理的文本，如是则会在返回的Object中添加一个treated_msg的子类，默认True
+        :param all_msg: 是否无视公私域限制，强制开启全部消息接收，默认None（不判断此项参数）
         """
         self.__on_msg_function = on_msg_function
-        if treated_data:
-            self.msg_treat = True
-        if not self.is_private:
+        if not treated_data:
+            self.msg_treat = False
+        if all_msg is not None:
+            if not self.is_private:
+                self.intents = self.intents | 1 << 30
+                self.logger.info('消息（所有消息）接收函数订阅成功')
+            else:
+                self.intents = self.intents | 1 << 9
+                self.logger.info('消息（艾特消息）接收函数订阅成功')
+        else:
             self.intents = self.intents | 1 << 30
             self.logger.info('消息（所有消息）接收函数订阅成功')
-        else:
-            self.intents = self.intents | 1 << 9
-            self.logger.info('消息（艾特消息）接收函数订阅成功')
 
     def bind_dm(self, on_dm_function: Callable[[Model.DIRECT_MESSAGE], Any], treated_data: bool = True):
         """
