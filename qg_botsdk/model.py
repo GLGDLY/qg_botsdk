@@ -14,13 +14,10 @@ class Model:
         - GUILD_CREATE - 当机器人加入新guild时
         - GUILD_UPDATE - 当guild资料发生变更时
         - GUILD_DELETE - 当机器人退出guild时
-        - CHANNEL_CREATE - 当channel被创建时
-        - CHANNEL_UPDATE - 当channel被更新时
-        - CHANNEL_DELETE - 当channel被删除时
 
         .. seealso::
             其子字段数据可参阅：
-            https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+            https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#62777ff1e5cc8b00129a9f2d
         """
         description: str
         icon: str
@@ -34,6 +31,34 @@ class Model:
         t: str
         event_id: str
 
+    class CHANNELS:
+        """
+        子频道事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - CHANNEL_CREATE - 当channel被创建时
+        - CHANNEL_UPDATE - 当channel被更新时
+        - CHANNEL_DELETE - 当channel被删除时
+
+        .. seealso::
+            其子字段数据可参阅：
+            https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#62ac93d90f38ae0012fb0079
+        """
+        application_id: str
+        guild_id: str
+        id: str
+        name: str
+        op_user_id: str
+        owner_id: str
+        parent_id: str
+        permissions: str
+        position: int
+        private_type: int
+        speak_permission: int
+        sub_type: int
+        type: int
+        t: str
+        event_id: str
+
     class GUILD_MEMBERS:
         """
         频道成员事件的数据模型，可从t字段判断具体事件，其中包含：
@@ -44,7 +69,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#627795cdc4773b0012899ec4
         """
         class user:
             avatar: str
@@ -72,7 +97,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#627797dfc4773b0012899ec7
         """
         class __MsgMentions:
             avatar: str
@@ -133,7 +158,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#62779e66c4773b0012899efb
         """
         class message:
             class author:
@@ -159,7 +184,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#62779fecc4773b0012899f05
         """
         class __MsgAttachments:
             content_type: str
@@ -175,18 +200,16 @@ class Model:
 
         class author:
             avatar: str
-            bot: bool
             id: str
             username: str
 
         class member:
             joined_at: str
-            nick: str
-            roles: list[str]
 
         channel_id: str
         guild_id: str
         content: str
+        direct_message: bool
         id: str
         attachments = [__MsgAttachments]
         seq: int
@@ -209,7 +232,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#6277a091c4773b0012899f10
         """
         audit_id: str
         audit_time: str
@@ -246,7 +269,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#6277a163c4773b0012899f14
         """
 
         class thread_info:
@@ -322,7 +345,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#6277ba728e0a81001252e202
         """
         channel_id: str
         guild_id: str
@@ -340,7 +363,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/workspaces/62750c8f3fe5d8004141092b/docs/627748cece56760001153f4d
+             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#6277bb178e0a81001252e20a
         """
         class emoji:
             id: str

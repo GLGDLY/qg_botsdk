@@ -22,11 +22,11 @@ class BotWs:
     def __init__(self, session, ssl, logger, shard: int, shard_no: int, url: str, bot_id: str, bot_token: str,
                  bot_url: str, on_msg_function: Callable[[Any], Any], on_dm_function: Callable[[Any], Any],
                  on_delete_function: Callable[[Any], Any], is_filter_self: bool,
-                 on_guild_event_function: Callable[[Any], Any], on_guild_member_function: Callable[[Any], Any],
-                 on_reaction_function: Callable[[Any], Any], on_interaction_function: Callable[[Any], Any],
-                 on_audit_function: Callable[[Any], Any], on_forum_function: Callable[[Any], Any],
-                 on_audio_function: Callable[[Any], Any], intents: int, msg_treat: bool, dm_treat: bool,
-                 on_start_function: Callable[[], Any], is_async: bool):
+                 on_guild_event_function: Callable[[Any], Any], on_channel_event_function: Callable[[Any], Any],
+                 on_guild_member_function: Callable[[Any], Any], on_reaction_function: Callable[[Any], Any],
+                 on_interaction_function: Callable[[Any], Any], on_audit_function: Callable[[Any], Any],
+                 on_forum_function: Callable[[Any], Any], on_audio_function: Callable[[Any], Any],
+                 intents: int, msg_treat: bool, dm_treat: bool, on_start_function: Callable[[], Any], is_async: bool):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
 
@@ -51,6 +51,7 @@ class BotWs:
         self.on_delete_function = on_delete_function
         self.is_filter_self = is_filter_self
         self.on_guild_event_function = on_guild_event_function
+        self.on_channel_event_function = on_channel_event_function
         self.on_guild_member_function = on_guild_member_function
         self.on_reaction_function = on_reaction_function
         self.on_interaction_function = on_interaction_function
@@ -73,8 +74,8 @@ class BotWs:
         self.op9_flag = False
         self.is_async = is_async
         self.events = {
-            ("GUILD_CREATE", "GUILD_UPDATE", "GUILD_DELETE", "CHANNEL_CREATE", "CHANNEL_UPDATE", "CHANNEL_DELETE"):
-                self.on_guild_event_function,
+            ("GUILD_CREATE", "GUILD_UPDATE", "GUILD_DELETE"): self.on_guild_event_function,
+            ("CHANNEL_CREATE", "CHANNEL_UPDATE", "CHANNEL_DELETE"): self.on_channel_event_function,
             ("GUILD_MEMBER_ADD", "GUILD_MEMBER_UPDATE", "GUILD_MEMBER_REMOVE"): self.on_guild_member_function,
             ("MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE"): self.on_reaction_function,
             ("INTERACTION_CREATE",): self.on_interaction_function,

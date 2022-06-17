@@ -20,7 +20,7 @@ system("")
 reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.2.3'
+version = '2.2.4'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 t_sleep(0.5)
@@ -62,6 +62,7 @@ class BOT:
         self.__on_msg_function = None
         self.__on_dm_function = None
         self.__on_guild_event_function = None
+        self.__on_channel_event_function = None
         self.__on_guild_member_function = None
         self.__on_reaction_function = None
         self.__on_interaction_function = None
@@ -164,6 +165,16 @@ class BOT:
         self.__on_guild_event_function = on_guild_event_function
         self.intents = self.intents | 1 << 0
         self.logger.info('频道事件订阅成功')
+
+    def bind_channel_event(self, on_channel_event_function: Callable[[Model.CHANNELS], Any]):
+        """
+        用作绑定接收子频道信息的函数
+
+        :param on_channel_event_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        """
+        self.__on_channel_event_function = on_channel_event_function
+        self.intents = self.intents | 1 << 0
+        self.logger.info('子频道事件订阅成功')
 
     def bind_guild_member(self, on_guild_member_function: Callable[[Model.GUILD_MEMBERS], Any]):
         """
@@ -300,9 +311,9 @@ class BOT:
                 for shard_no in range(0, _shard):
                     self.__bot_classes.append(
                         BotWs(self.__session, self.__ssl, self.logger, _shard, shard_no, url, self.bot_id,
-                              self.bot_token,
-                              self.bot_url, self.__on_msg_function, self.__on_dm_function, self.__on_delete_function,
-                              self.is_filter_self, self.__on_guild_event_function, self.__on_guild_member_function,
+                              self.bot_token, self.bot_url, self.__on_msg_function, self.__on_dm_function,
+                              self.__on_delete_function, self.is_filter_self, self.__on_guild_event_function,
+                              self.__on_channel_event_function, self.__on_guild_member_function,
                               self.__on_reaction_function, self.__on_interaction_function, self.__on_audit_function,
                               self.__on_forum_function, self.__on_audio_function, self.intents, self.msg_treat,
                               self.dm_treat, self.__on_start_function, self.is_async))

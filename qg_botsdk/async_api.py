@@ -433,12 +433,12 @@ class AsyncAPI:
 
         :param channel_id: 子频道id
         :param user_id: 用户id
-        :param add: 需要添加的权限，string格式，可选：1，2，4
-        :param remove:需要删除的权限，string格式，可选：1，2，4
+        :param add: 需要添加的权限，string格式，可选：1，2，4，8
+        :param remove:需要删除的权限，string格式，可选：1，2，4，8
         :return: 返回的.result显示是否成功
         """
-        if not all([items in ('1', '2', '4', None) for items in (add, remove)]):
-            return sdk_error_temp('注意add或remove的值只能为1、2或4的文本格式内容')
+        if not all([items in ('1', '2', '4', '8', None) for items in (add, remove)]):
+            return sdk_error_temp('注意add或remove的值只能为为1、2、4或8的文本格式内容')
         json_ = {'add': add, 'remove': remove}
         return_ = await self.__session.put(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions',
                                       json=json_)
@@ -463,12 +463,12 @@ class AsyncAPI:
 
         :param channel_id: 子频道id
         :param role_id: 身份组id
-        :param add: 需要添加的权限，string格式，可选：1，2，4
-        :param remove:需要删除的权限，string格式，可选：1，2，4
+        :param add: 需要添加的权限，string格式，可选：1，2，4，8
+        :param remove:需要删除的权限，string格式，可选：1，2，4，8
         :return: 返回的.result显示是否成功
         """
-        if not all([items in ('1', '2', '4', None) for items in (add, remove)]):
-            return sdk_error_temp('注意add或remove的值只能为1、2或4的文本格式内容')
+        if not all([items in ('1', '2', '4', '8', None) for items in (add, remove)]):
+            return sdk_error_temp('注意add或remove的值只能为为1、2、4或8的文本格式内容')
         json_ = {'add': add, 'remove': remove}
         return_ = await self.__session.put(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions',
                                       json=json_)
