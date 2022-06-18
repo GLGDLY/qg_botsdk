@@ -1,16 +1,14 @@
-# qg_botsdk
-
 <div align="center">
     
-<img src="https://groupprohead.gtimg.cn/13887241636967950/40?t=1650772396134" width="128"/>
-
-✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
+![qg_botsdk](https://socialify.git.ci/GLGDLY/qg_botsdk/image?description=1&font=Source%20Code%20Pro&forks=1&issues=1&language=1&logo=https%3A%2F%2Fgithub.com%2Ftencent-connect%2Fbot-docs%2Fblob%2Fmain%2Fdocs%2F.vuepress%2Fpublic%2Ffavicon-64px.png%3Fraw%3Dtrue&name=1&owner=1&pattern=Floating%20Cogs&pulls=1&stargazers=1&theme=Light)
 
 [![Language](https://img.shields.io/badge/language-python-green.svg?style=plastic)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg?style=plastic)](https://github.com/GLGDLY/qg_botsdk/blob/master/LICENSE)
 [![Releases](https://img.shields.io/github/v/release/GLGDLY/qg_botsdk?style=plastic)](https://github.com/GLGDLY/qg_botsdk/releases)
 [![Pypi](https://img.shields.io/pypi/dw/qg-botsdk?style=plastic&color=blue)](https://pypi.org/project/qg-botsdk/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5)](https://www.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=github.com&utm_medium=referral&utm_content=GLGDLY/qg_botsdk&utm_campaign=Badge_Grade)
+
+✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
 
 [文档](https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51)
 ·
@@ -28,13 +26,13 @@
 
 ##### -   保留官方http API中Json数据的结构字段，带你学习官方结构，日后可自行开发适合自己的SDK
 
-##### -   迅速的更新速度，跟上最新潮流（v2.1.3已更新当日上新的本地上传图片能力，使用例子可参阅<https://github.com/GLGDLY/qg_botsdk/blob/master/example/example_10(%E5%8F%91%E9%80%81%E6%9C%AC%E5%9C%B0%E5%9B%BE%E7%89%87).py>
+##### -   迅速的更新速度，跟上最新潮流（v2.1.3已更新当日上新的本地上传图片能力，使用例子可参阅> [example_10(发送本地图片).py](./example/example_10(发送本地图片).py)
 
 #### 当前应用
 
-##### - 自用（爱萌AM）：<https://qun.qq.com/qunpro/robot/share?robot_appid=101986932>
+##### - [爱萌AM](https://qun.qq.com/qunpro/robot/share?robot_appid=101986932)
 
-##### - 自用（网文小助手-私域）：<https://qun.qq.com/qunpro/robot/share?robot_appid=101987294>
+##### - [网文小助手-私域](https://qun.qq.com/qunpro/robot/share?robot_appid=101987294)
 
 * * *
 
