@@ -20,7 +20,7 @@ system("")
 reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.2.4'
+version = '2.2.5'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 t_sleep(0.5)
@@ -99,7 +99,10 @@ class BOT:
     async def __time_event_check(self):
         while self.running:
             try:
-                self.__repeat_function()
+                if self.is_async:
+                    await self.__repeat_function()
+                else:
+                    self.__repeat_function()
             except Exception as error:
                 self.logger.error(error)
                 self.logger.debug(exception_handler(error))
