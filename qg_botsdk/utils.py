@@ -20,21 +20,25 @@ def exception_handler(error):
     return "[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0], error_info[1], error_info[2])
 
 
-def objectize(data: dict, flag: bool = True):
+class object_class(type):
+    def __repr__(self):
+        return self.__doc__
+
+
+def objectize(data: dict):
     doc = dumps(data)
     if isinstance(data, dict):
         for keys, values in data.items():
             if keys.isnumeric():
                 return data
             if isinstance(values, dict):
-                data[keys] = objectize(values, False)
+                data[keys] = objectize(values)
             elif isinstance(values, list):
                 for i, items in enumerate(values):
                     if isinstance(items, dict):
-                        data[keys][i] = objectize(items, False)
-        object_data = type('object', (object,), data)
-        if flag:
-            setattr(object_data, '__doc__', doc)
+                        data[keys][i] = objectize(items)
+        data['__doc__'] = doc
+        object_data = object_class('object', (object,), data)
         return object_data
     else:
         return None
