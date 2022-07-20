@@ -198,34 +198,30 @@ class API:
         :param guild_id: 频道id
         :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400')
-        trace_ids = [return_.headers['X-Tps-Trace-Id']]
+        trace_ids = []
         results = []
         data = []
+        return_dict = None
         try:
-            return_dict = return_.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                results.append(False)
-                return objectize({'data': [return_dict], 'trace_id': trace_ids, 'result': results})
-            else:
-                results.append(True)
-                for items in return_dict:
-                    data.append(items)
             while True:
-                if len(return_dict) == 400:
+                if return_dict is None:
+                    return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400')
+                elif not return_dict:
+                    break
+                else:
                     return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400&after=' +
                                                  return_dict[-1]['user']['id'])
-                    trace_ids.append(return_.headers['X-Tps-Trace-Id'])
-                    return_dict = return_.json()
-                    if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                        results.append(False)
-                    else:
-                        results.append(True)
-                        for items in return_dict:
-                            if items not in data:
-                                data.append(items)
-                else:
+                trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                return_dict = return_.json()
+                if isinstance(return_dict, dict) and 'code' in return_dict.keys():
+                    results.append(False)
+                    data.append(return_dict)
                     break
+                else:
+                    results.append(True)
+                    for items in return_dict:
+                        if items not in data:
+                            data.append(items)
         except JSONDecodeError:
             return objectize({'data': [], 'trace_id': trace_ids, 'result': [False]})
         if data:

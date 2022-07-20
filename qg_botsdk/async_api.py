@@ -1,6 +1,7 @@
 from os import PathLike
 from os.path import exists
 from time import time
+from asyncio import get_event_loop
 from aiohttp import ClientSession, TCPConnector, FormData
 from json import loads
 from json.decoder import JSONDecodeError
@@ -18,6 +19,11 @@ class _Session:
         self.kwargs = kwargs
         self.__session: Optional[ClientSession] = None
         loop.run_until_complete(self.check_session())
+
+    def __del__(self):
+        if self.__session and not self.__session.closed:
+            _loop = get_event_loop()
+            _loop.run_until_complete(self.__session.close())
 
     async def check_session(self):
         if not self.__session or self.__session.closed:
@@ -64,7 +70,7 @@ class AsyncAPI:
             self.logger.error('无法调用内容安全检测接口（备注：没有填入机器人密钥）')
             return None
         return_ = await self.__session.get(f'https://api.q.qq.com/api/getToken?grant_type=client_credential&'
-                                      f'appid={self.bot_id}&secret={self.bot_secret}')
+                                           f'appid={self.bot_id}&secret={self.bot_secret}')
         code = await return_.json()
         try:
             self.security_code = code['access_token']
@@ -83,14 +89,16 @@ class AsyncAPI:
         """
         if not self.security_code or time() >= self.code_expire:
             await self.__security_check_code()
-        return_ = await self.__session.post(f'https://api.q.qq.com/api/json/security/MsgSecCheck?access_token='
-                                       f'{self.security_code}', json={'content': content})
+        return_ = await self.__session.post(
+            f'https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self.security_code}',
+            json={'content': content}, headers=security_header)
         check = await return_.json()
         self.logger.debug(check)
         if check['errCode'] in (-1800110107, -1800110108):
             await self.__security_check_code()
-            return_ = await self.__session.post(f'https://api.q.qq.com/api/json/security/MsgSecCheck?access_token='
-                                           f'{self.security_code}', json={'content': content})
+            return_ = await self.__session.post(
+                f'https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self.security_code}',
+                json={'content': content}, headers=security_header)
             check = await return_.json()
             self.logger.debug(check)
         if check['errCode'] == 0:
@@ -234,34 +242,30 @@ class AsyncAPI:
         :param guild_id: 频道id
         :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
         """
-        return_ = await self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400')
-        trace_ids = [return_.headers['X-Tps-Trace-Id']]
+        trace_ids = []
         results = []
         data = []
+        return_dict = None
         try:
-            return_dict = await return_.json()
-            if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                results.append(False)
-                return objectize({'data': [return_dict], 'trace_id': trace_ids, 'result': results})
-            else:
-                results.append(True)
-                for items in return_dict:
-                    data.append(items)
             while True:
-                if len(return_dict) == 400:
+                if return_dict is None:
+                    return_ = await self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400')
+                elif not return_dict:
+                    break
+                else:
                     return_ = await self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400&after=' +
                                                        return_dict[-1]['user']['id'])
-                    trace_ids.append(return_.headers['X-Tps-Trace-Id'])
-                    return_dict = await return_.json()
-                    if isinstance(return_dict, dict) and 'code' in return_dict.keys():
-                        results.append(False)
-                    else:
-                        results.append(True)
-                        for items in return_dict:
-                            if items not in data:
-                                data.append(items)
-                else:
+                trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                return_dict = await return_.json()
+                if isinstance(return_dict, dict) and 'code' in return_dict.keys():
+                    results.append(False)
+                    data.append(return_dict)
                     break
+                else:
+                    results.append(True)
+                    for items in return_dict:
+                        if items not in data:
+                            data.append(items)
         except JSONDecodeError:
             return objectize({'data': [], 'trace_id': trace_ids, 'result': [False]})
         if data:
@@ -441,7 +445,7 @@ class AsyncAPI:
             return sdk_error_temp('注意add或remove的值只能为为1、2、4或8的文本格式内容')
         json_ = {'add': add, 'remove': remove}
         return_ = await self.__session.put(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions',
-                                      json=json_)
+                                           json=json_)
         return await async_http_temp(return_, 204)
 
     async def get_channel_role_permission(self, channel_id: str, role_id: str) -> \
@@ -471,7 +475,7 @@ class AsyncAPI:
             return sdk_error_temp('注意add或remove的值只能为为1、2、4或8的文本格式内容')
         json_ = {'add': add, 'remove': remove}
         return_ = await self.__session.put(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions',
-                                      json=json_)
+                                           json=json_)
         return await async_http_temp(return_, 204)
 
     async def get_message_info(self, channel_id: str, message_id: str) -> reply_model.get_message_info():
@@ -645,7 +649,7 @@ class AsyncAPI:
         """
         self.check_warning('撤回消息')
         return_ = await self.__session.delete(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}'
-                                         f'?hidetip={str(hidetip).lower()}')
+                                              f'?hidetip={str(hidetip).lower()}')
         return await async_http_temp(return_, 200)
 
     async def get_guild_setting(self, guild_id: str) -> reply_model.get_guild_setting():
@@ -726,7 +730,7 @@ class AsyncAPI:
         """
         self.check_warning('撤回私信消息')
         return_ = await self.__session.delete(f'{self.bot_url}/dms/{guild_id}/messages/{message_id}?'
-                                         f'hidetip={str(hidetip).lower()}')
+                                              f'hidetip={str(hidetip).lower()}')
         return await async_http_temp(return_, 200)
 
     async def mute_all_member(self, guild_id: str, mute_end_timestamp: Optional[str], mute_seconds: Optional[str]) -> \
@@ -756,7 +760,7 @@ class AsyncAPI:
         """
         json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds}
         return_ = await self.__session.patch(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/mute',
-                                        json=json_)
+                                             json=json_)
         return await async_http_temp(return_, 204)
 
     async def mute_members(self, guild_id: str, user_id: list[str], mute_end_timestamp: Optional[str],
@@ -913,7 +917,7 @@ class AsyncAPI:
                               "end_timestamp": end_timestamp, "jump_channel_id": jump_channel_id,
                               "remind_type": remind_type}}
         return_ = await self.__session.patch(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}',
-                                        json=json_)
+                                             json=json_)
         return await async_regular_temp(return_)
 
     async def delete_schedule(self, channel_id: str, schedule_id: str) -> reply_model.delete_schedule():
@@ -938,7 +942,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self.__session.put(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
-                                      f'{type_}/{id_}')
+                                           f'{type_}/{id_}')
         return await async_http_temp(return_, 204)
 
     async def delete_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> reply_model.reactions():
@@ -952,7 +956,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self.__session.delete(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
-                                         f'{type_}/{id_}')
+                                              f'{type_}/{id_}')
         return await async_http_temp(return_, 204)
 
     async def get_reaction_users(self, channel_id: str, message_id: str, type_: str, id_: str) -> \
@@ -999,7 +1003,7 @@ class AsyncAPI:
             return objectize({'data': None, 'trace_id': trace_ids, 'result': [False]})
 
     async def control_audio(self, channel_id: str, status: int, audio_url: Optional[str] = None,
-                      text: Optional[str] = None) -> reply_model.audio():
+                            text: Optional[str] = None) -> reply_model.audio():
         """
         用于控制子频道 channel_id 下的音频
 
@@ -1153,5 +1157,5 @@ class AsyncAPI:
             return sdk_error_temp('目标API不存在，请检查API名称是否正确')
         json_ = {"channel_id": channel_id, "api_identify": {"path": path, "method": method.upper()}, "desc": desc}
         return_ = await self.__session.post(f'{self.bot_url}/guilds/{guild_id}/api_permission/demand',
-                                       json=json_)
+                                            json=json_)
         return await async_empty_temp(return_)

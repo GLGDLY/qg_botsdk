@@ -38,7 +38,6 @@ def forums_event(data: Model.FORUMS_EVENT):
                     content += f'{d.url.desc}（链接：{d.url.url}）'
         bot.logger.info(f'收到了一条新帖子！\n标题：{title}\n内容：{content}')
         if not bot.api.security_check(content):
-            # 删除帖子接口疑似存在官方bug，503013：thread_id is invalid
             dt = bot.api.delete_thread(data.channel_id, data.thread_info.thread_id)
             if not dt.result:
                 bot.logger.warning(f'上述帖子内容存在风险，但机器人无法自动删除（{dt.data.code}：{dt.data.message}）')
