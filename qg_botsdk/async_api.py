@@ -36,56 +36,66 @@ class _Session:
     async def get(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.get(url, timeout=self._timeout, **kwargs)
+        if resp.ok:
+            return resp
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     return resp
-            return self.get(url, True, **kwargs)
+            return await self.get(url, True, **kwargs)
         return resp
 
     async def post(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.post(url, timeout=self._timeout, **kwargs)
+        if resp.ok:
+            return resp
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     return resp
-            return self.get(url, True, **kwargs)
+            return await self.post(url, True, **kwargs)
         return resp
 
     async def patch(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.patch(url, timeout=self._timeout, **kwargs)
+        if resp.ok:
+            return resp
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     return resp
-            return self.get(url, True, **kwargs)
+            return await self.patch(url, True, **kwargs)
         return resp
 
     async def delete(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.delete(url, timeout=self._timeout, **kwargs)
+        if resp.ok:
+            return resp
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     return resp
-            return self.get(url, True, **kwargs)
+            return await self.delete(url, True, **kwargs)
         return resp
 
     async def put(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.put(url, timeout=self._timeout, **kwargs)
+        if resp.ok:
+            return resp
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     return resp
-            return self.get(url, True, **kwargs)
+            return await self.put(url, True, **kwargs)
         return resp
 
 

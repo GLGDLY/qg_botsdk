@@ -49,6 +49,7 @@ async def deliver(data: Model.MESSAGE):
     # example_8 创建身份组模块的异步版本
     elif '创建我的身份组' in data.treated_msg:
         cr = await bot.api.create_role(data.guild_id, name=f'{data.author.username}的身份组', color='#019F86', hoist=True)
+        await bot.api.create_role_member(data.author.id, data.guild_id, cr.data.role_id)
         if cr.result:
             await bot.api.send_msg(data.channel_id, f'【{data.author.username}的身份组】（id:{cr.data.role_id}）'
                                                     f'已经被创建好啦！', message_id=data.id)

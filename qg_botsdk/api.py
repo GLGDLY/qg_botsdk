@@ -21,6 +21,8 @@ class _Session:
 
     def get(self, url, retry=False, **kwargs):
         resp = self._session.get(url, timeout=20, **kwargs)
+        if resp.status_code < 400:
+            return resp
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = resp.json()
@@ -31,6 +33,8 @@ class _Session:
 
     def post(self, url, retry=False, **kwargs):
         resp = self._session.post(url, timeout=20, **kwargs)
+        if resp.status_code < 400:
+            return resp
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = resp.json()
@@ -41,32 +45,38 @@ class _Session:
 
     def patch(self, url, retry=False, **kwargs):
         resp = self._session.patch(url, timeout=20, **kwargs)
+        if resp.status_code < 400:
+            return resp
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     return resp
-            return self.post(url, True, **kwargs)
+            return self.patch(url, True, **kwargs)
         return resp
 
     def delete(self, url, retry=False, **kwargs):
         resp = self._session.delete(url, timeout=20, **kwargs)
+        if resp.status_code < 400:
+            return resp
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     return resp
-            return self.post(url, True, **kwargs)
+            return self.delete(url, True, **kwargs)
         return resp
 
     def put(self, url, retry=0, **kwargs):
         resp = self._session.put(url, timeout=20, **kwargs)
+        if resp.status_code < 400:
+            return resp
         if self._is_retry and retry < 2:
             if resp.headers['content-type'] == 'application/json':
                 json_ = resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     return resp
-            return self.post(url, retry + 1, **kwargs)
+            return self.put(url, retry + 1, **kwargs)
         return resp
 
 
