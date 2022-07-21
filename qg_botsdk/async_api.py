@@ -2,56 +2,95 @@ from os import PathLike
 from os.path import exists
 from time import time
 from asyncio import get_event_loop
-from aiohttp import ClientSession, TCPConnector, FormData
+from aiohttp import ClientSession, TCPConnector, FormData, ClientTimeout
 from json import loads
 from json.decoder import JSONDecodeError
 from io import BufferedReader
-from typing import Optional, Union, BinaryIO
+from typing import Optional, Union, BinaryIO, List
 from ._api_model import ReplyModel, api_converter, api_converter_re
 from .utils import objectize, convert_color, async_regular_temp, async_http_temp, async_empty_temp, sdk_error_temp
 
 reply_model = ReplyModel()
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
+retry_err_code = ('11281', '11252', '11263', '11242', '306003', '306005', '306006', '501002', '501003', '501004',
+                  '501006', '501007', '501011', '501012', '620007')
 
 
 class _Session:
-    def __init__(self, loop, **kwargs):
-        self.kwargs = kwargs
-        self.__session: Optional[ClientSession] = None
+    def __init__(self, loop, is_retry, **kwargs):
+        self._is_retry = is_retry
+        self._kwargs = kwargs
+        self._session: Optional[ClientSession] = None
+        self._timeout = ClientTimeout(total=20)
         loop.run_until_complete(self.check_session())
 
     def __del__(self):
-        if self.__session and not self.__session.closed:
+        if self._session and not self._session.closed:
             _loop = get_event_loop()
-            _loop.run_until_complete(self.__session.close())
+            _loop.run_until_complete(self._session.close())
 
     async def check_session(self):
-        if not self.__session or self.__session.closed:
-            self.__session = ClientSession(**self.kwargs)
+        if not self._session or self._session.closed:
+            self._session = ClientSession(**self._kwargs)
 
-    async def get(self, url, **kwargs):
+    async def get(self, url, retry=False, **kwargs):
         await self.check_session()
-        return await self.__session.get(url, **kwargs)
+        resp = await self._session.get(url, timeout=self._timeout, **kwargs)
+        if self._is_retry and not retry:
+            if resp.headers['content-type'] == 'application/json':
+                json_ = await resp.json()
+                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    return resp
+            return self.get(url, True, **kwargs)
+        return resp
 
-    async def post(self, url, **kwargs):
+    async def post(self, url, retry=False, **kwargs):
         await self.check_session()
-        return await self.__session.post(url, **kwargs)
+        resp = await self._session.post(url, timeout=self._timeout, **kwargs)
+        if self._is_retry and not retry:
+            if resp.headers['content-type'] == 'application/json':
+                json_ = await resp.json()
+                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    return resp
+            return self.get(url, True, **kwargs)
+        return resp
 
-    async def patch(self, url, **kwargs):
+    async def patch(self, url, retry=False, **kwargs):
         await self.check_session()
-        return await self.__session.patch(url, **kwargs)
+        resp = await self._session.patch(url, timeout=self._timeout, **kwargs)
+        if self._is_retry and not retry:
+            if resp.headers['content-type'] == 'application/json':
+                json_ = await resp.json()
+                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    return resp
+            return self.get(url, True, **kwargs)
+        return resp
 
-    async def delete(self, url, **kwargs):
+    async def delete(self, url, retry=False, **kwargs):
         await self.check_session()
-        return await self.__session.delete(url, **kwargs)
+        resp = await self._session.delete(url, timeout=self._timeout, **kwargs)
+        if self._is_retry and not retry:
+            if resp.headers['content-type'] == 'application/json':
+                json_ = await resp.json()
+                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    return resp
+            return self.get(url, True, **kwargs)
+        return resp
 
-    async def put(self, url, **kwargs):
+    async def put(self, url, retry=False, **kwargs):
         await self.check_session()
-        return await self.__session.put(url, **kwargs)
+        resp = await self._session.put(url, timeout=self._timeout, **kwargs)
+        if self._is_retry and not retry:
+            if resp.headers['content-type'] == 'application/json':
+                json_ = await resp.json()
+                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    return resp
+            return self.get(url, True, **kwargs)
+        return resp
 
 
 class AsyncAPI:
-    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, get_bot_id):
+    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, get_bot_id, is_retry):
         self.bot_url = bot_url
         self.bot_id = bot_id
         self.bot_secret = bot_secret
@@ -59,8 +98,8 @@ class AsyncAPI:
         self.logger = logger
         self.loop = loop
         self.check_warning = check_warning
-        self.__client_conn = TCPConnector(limit=500, ssl=ssl)
-        self.__session = _Session(loop, headers=headers, connector=self.__client_conn)
+        self.__client_conn = TCPConnector(limit=500, ssl=ssl, force_close=True)
+        self.__session = _Session(loop, is_retry, headers=headers, connector=self.__client_conn)
         self.__get_function = get_bot_id
         self.security_code = ''
         self.code_expire = 0
@@ -180,7 +219,7 @@ class AsyncAPI:
         return await async_regular_temp(return_)
 
     async def create_channels(self, guild_id: str, name: str, type_: int, position: int, parent_id: str, sub_type: int,
-                              private_type: int, private_user_ids: list[str], speak_permission: int,
+                              private_type: int, private_user_ids: List[str], speak_permission: int,
                               application_id: Optional[str] = None) -> reply_model.create_channels():
         """
         用于在 guild_id 指定的频道下创建一个子频道，一般仅私域机器人可用
@@ -534,7 +573,7 @@ class AsyncAPI:
             return_ = await self.__session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
         return await async_regular_temp(return_)
 
-    async def send_embed(self, channel_id: str, title: Optional[str] = None, content: Optional[list[str]] = None,
+    async def send_embed(self, channel_id: str, title: Optional[str] = None, content: Optional[List[str]] = None,
                          image: Optional[str] = None, prompt: Optional[str] = None, message_id: Optional[str] = None,
                          event_id: Optional[str] = None) -> reply_model.send_msg():
         """
@@ -557,7 +596,7 @@ class AsyncAPI:
         return_ = await self.__session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
         return await async_regular_temp(return_)
 
-    async def send_ark_23(self, channel_id: str, content: list[str], link: list[str], desc: Optional[str] = None,
+    async def send_ark_23(self, channel_id: str, content: List[str], link: List[str], desc: Optional[str] = None,
                           prompt: Optional[str] = None, message_id: Optional[str] = None,
                           event_id: Optional[str] = None) -> reply_model.send_msg():
         """
@@ -763,7 +802,7 @@ class AsyncAPI:
                                              json=json_)
         return await async_http_temp(return_, 204)
 
-    async def mute_members(self, guild_id: str, user_id: list[str], mute_end_timestamp: Optional[str],
+    async def mute_members(self, guild_id: str, user_id: List[str], mute_end_timestamp: Optional[str],
                            mute_seconds: Optional[str]) -> reply_model.mute_members():
         """
         用于将频道的指定批量成员（非管理员）禁言
@@ -788,8 +827,8 @@ class AsyncAPI:
             return objectize({'data': None, 'trace_id': trace_id, 'result': False})
 
     async def create_announce(self, guild_id, channel_id: Optional[str] = None, message_id: Optional[str] = None,
-                              announces_type: Optional[int] = None, recommend_channels_id: Optional[list[str]] = None,
-                              recommend_channels_introduce: Optional[list[str]] = None) -> \
+                              announces_type: Optional[int] = None, recommend_channels_id: Optional[List[str]] = None,
+                              recommend_channels_introduce: Optional[List[str]] = None) -> \
             reply_model.create_announce():
         """
         用于创建频道全局公告，公告类型分为 消息类型的频道公告 和 推荐子频道类型的频道公告

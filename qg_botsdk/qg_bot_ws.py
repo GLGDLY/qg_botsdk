@@ -119,9 +119,8 @@ class BotWs:
         while True:
             await sleep(self.heartbeat_time)
             if not self.ws.closed:
-                if self.s:
-                    heart_json['d'] = self.s
-                    await self.ws.send_str(dumps(heart_json))
+                heart_json['d'] = self.s if self.s else None
+                await self.ws.send_str(dumps(heart_json))
 
     def start_heartbeat(self):
         tasks = [task.get_name() for task in all_tasks()]

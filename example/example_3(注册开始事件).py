@@ -39,7 +39,8 @@ def on_start():
 
 def deliver(data: Model.MESSAGE):
     if '你好' in data.treated_msg:
-        bot.api.send_embed(data.channel_id, content=['【@机器人 我的】\n查看我的资料卡','【@机器人 我的】\n查看我的资料卡'], message_id=data.id)
+        bot.api.send_embed(data.channel_id, content=['【@机器人 我的】\n查看我的资料卡', '【@机器人 我的】\n查看我的资料卡'],
+                           message_id=data.id)
 
 
 if __name__ == '__main__':

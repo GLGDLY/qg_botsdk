@@ -28,12 +28,6 @@
 
 ##### -   迅速的更新速度，跟上最新潮流（v2.1.3已更新当日上新的本地上传图片能力，使用例子可参阅> [example_10(发送本地图片).py](./example/example_10(发送本地图片).py)
 
-#### 当前应用
-
-##### - [爱萌AM](https://qun.qq.com/qunpro/robot/share?robot_appid=101986932)
-
-##### - [网文小助手-私域](https://qun.qq.com/qunpro/robot/share?robot_appid=101987294)
-
 * * *
 
 ### 下载方式

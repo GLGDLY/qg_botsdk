@@ -6,6 +6,9 @@ from os.path import exists
 from time import strftime, localtime
 from inspect import stack
 from functools import wraps
+from colorama import init as color_init
+
+color_init(strip=False)
 
 
 def __getattr__(identifier: str) -> object:

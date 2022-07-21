@@ -4,23 +4,81 @@ from time import time
 from json import loads
 from json.decoder import JSONDecodeError
 from io import BufferedReader
-from typing import Optional, Union, BinaryIO
+from typing import Optional, Union, BinaryIO, List
 from ._api_model import ReplyModel, api_converter, api_converter_re
 from .utils import objectize, convert_color, regular_temp, http_temp, empty_temp, sdk_error_temp
 
 reply_model = ReplyModel()
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
+retry_err_code = ('11281', '11252', '11263', '11242', '306003', '306005', '306006', '501002', '501003', '501004',
+                  '501006', '501007', '501011', '501012', '620007')
+
+
+class _Session:
+    def __init__(self, session, is_retry):
+        self._session = session
+        self._is_retry = is_retry
+
+    def get(self, url, retry=False, **kwargs):
+        resp = self._session.get(url, timeout=20, **kwargs)
+        if self._is_retry and not retry:
+            if resp.headers['content-type'] == 'application/json':
+                json_ = resp.json()
+                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    return resp
+            return self.get(url, True, **kwargs)
+        return resp
+
+    def post(self, url, retry=False, **kwargs):
+        resp = self._session.post(url, timeout=20, **kwargs)
+        if self._is_retry and not retry:
+            if resp.headers['content-type'] == 'application/json':
+                json_ = resp.json()
+                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    return resp
+            return self.post(url, True, **kwargs)
+        return resp
+
+    def patch(self, url, retry=False, **kwargs):
+        resp = self._session.patch(url, timeout=20, **kwargs)
+        if self._is_retry and not retry:
+            if resp.headers['content-type'] == 'application/json':
+                json_ = resp.json()
+                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    return resp
+            return self.post(url, True, **kwargs)
+        return resp
+
+    def delete(self, url, retry=False, **kwargs):
+        resp = self._session.delete(url, timeout=20, **kwargs)
+        if self._is_retry and not retry:
+            if resp.headers['content-type'] == 'application/json':
+                json_ = resp.json()
+                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    return resp
+            return self.post(url, True, **kwargs)
+        return resp
+
+    def put(self, url, retry=0, **kwargs):
+        resp = self._session.put(url, timeout=20, **kwargs)
+        if self._is_retry and retry < 2:
+            if resp.headers['content-type'] == 'application/json':
+                json_ = resp.json()
+                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    return resp
+            return self.post(url, retry + 1, **kwargs)
+        return resp
 
 
 class API:
-    def __init__(self, bot_url, bot_id, bot_secret, session, logger, check_warning, get_bot_id):
+    def __init__(self, bot_url, bot_id, bot_secret, session, logger, check_warning, get_bot_id, is_retry):
         self.bot_url = bot_url
         self.bot_id = bot_id
         self.bot_secret = bot_secret
-        self.__session = session
+        self._session = _Session(session, is_retry)
         self.logger = logger
         self.check_warning = check_warning
-        self.__get_function = get_bot_id
+        self._get_function = get_bot_id
         self.security_code = ''
         self.code_expire = 0
 
@@ -28,8 +86,8 @@ class API:
         if self.bot_secret is None:
             self.logger.error('无法调用内容安全检测接口（备注：没有填入机器人密钥）')
             return None
-        code = self.__session.get(f'https://api.q.qq.com/api/getToken?grant_type=client_credential&appid={self.bot_id}&'
-                                  f'secret={self.bot_secret}').json()
+        code = self._session.get(f'https://api.q.qq.com/api/getToken?grant_type=client_credential&appid={self.bot_id}&'
+                                 f'secret={self.bot_secret}').json()
         try:
             self.security_code = code['access_token']
             self.code_expire = time() + 7000
@@ -47,22 +105,22 @@ class API:
         """
         if not self.security_code or time() >= self.code_expire:
             self.__security_check_code()
-        check = self.__session.post(
+        check = self._session.post(
             f'https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self.security_code}',
             headers=security_header, json={'content': content}).json()
         self.logger.debug(check)
         if check['errCode'] in (-1800110107, -1800110108):
             self.__security_check_code()
-            check = self.__session.post(f'https://api.q.qq.com/api/json/security/MsgSecCheck?'
-                                        f'access_token={self.security_code}', headers=security_header,
-                                        json={'content': content}).json()
+            check = self._session.post(f'https://api.q.qq.com/api/json/security/MsgSecCheck?'
+                                       f'access_token={self.security_code}', headers=security_header,
+                                       json={'content': content}).json()
             self.logger.debug(check)
         if check['errCode'] == 0:
             return True
         return False
 
     def get_bot_id(self) -> reply_model.get_bot_id():
-        return self.__get_function()
+        return self._get_function()
 
     def get_bot_info(self) -> reply_model.get_bot_info():
         """
@@ -70,7 +128,7 @@ class API:
 
         :return:返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/users/@me')
+        return_ = self._session.get(f'{self.bot_url}/users/@me')
         return regular_temp(return_)
 
     def get_bot_guilds(self) -> reply_model.get_bot_guilds():
@@ -86,9 +144,9 @@ class API:
         try:
             while True:
                 if return_dict is None:
-                    return_ = self.__session.get(f'{self.bot_url}/users/@me/guilds')
+                    return_ = self._session.get(f'{self.bot_url}/users/@me/guilds')
                 elif len(return_dict) == 100:
-                    return_ = self.__session.get(f'{self.bot_url}/users/@me/guilds?after={return_dict[-1]["id"]}')
+                    return_ = self._session.get(f'{self.bot_url}/users/@me/guilds?after={return_dict[-1]["id"]}')
                 else:
                     break
                 trace_ids.append(return_.headers['X-Tps-Trace-Id'])
@@ -112,7 +170,7 @@ class API:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}')
+        return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}')
         return regular_temp(return_)
 
     def get_guild_channels(self, guild_id: str) -> reply_model.get_guild_channels():
@@ -122,7 +180,7 @@ class API:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/channels')
+        return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}/channels')
         return regular_temp(return_)
 
     def get_channels_info(self, channel_id: str) -> reply_model.get_channels_info():
@@ -132,11 +190,11 @@ class API:
         :param channel_id: 子频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}')
+        return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}')
         return regular_temp(return_)
 
     def create_channels(self, guild_id: str, name: str, type_: int, position: int, parent_id: str, sub_type: int,
-                        private_type: int, private_user_ids: list[str], speak_permission: int,
+                        private_type: int, private_user_ids: List[str], speak_permission: int,
                         application_id: Optional[str] = None) -> reply_model.create_channels():
         """
         用于在 guild_id 指定的频道下创建一个子频道，一般仅私域机器人可用
@@ -157,7 +215,7 @@ class API:
         json_ = {"name": name, "type": type_, "position": position, "parent_id": parent_id, "sub_type": sub_type,
                  "private_type": private_type, "private_user_ids": private_user_ids,
                  "speak_permission": speak_permission, "application_id": application_id}
-        return_ = self.__session.post(f'{self.bot_url}/guilds/{guild_id}/channels', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/guilds/{guild_id}/channels', json=json_)
         return regular_temp(return_)
 
     def patch_channels(self, channel_id: str, name: Optional[str] = None, position: Optional[int] = None,
@@ -177,7 +235,7 @@ class API:
         self.check_warning('修改子频道')
         json_ = {"name": name, "position": position, "parent_id": parent_id, "private_type": private_type,
                  "speak_permission": speak_permission}
-        return_ = self.__session.patch(f'{self.bot_url}/channels/{channel_id}', json=json_)
+        return_ = self._session.patch(f'{self.bot_url}/channels/{channel_id}', json=json_)
         return regular_temp(return_)
 
     def delete_channels(self, channel_id) -> reply_model.delete_channels():
@@ -188,7 +246,7 @@ class API:
         :return: 返回的.result显示是否成功
         """
         self.check_warning('删除子频道')
-        return_ = self.__session.delete(f'{self.bot_url}/channels/{channel_id}')
+        return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}')
         return http_temp(return_, 200)
 
     def get_guild_members(self, guild_id: str) -> reply_model.get_guild_members():
@@ -205,12 +263,12 @@ class API:
         try:
             while True:
                 if return_dict is None:
-                    return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400')
+                    return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400')
                 elif not return_dict:
                     break
                 else:
-                    return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400&after=' +
-                                                 return_dict[-1]['user']['id'])
+                    return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400&after=' +
+                                                return_dict[-1]['user']['id'])
                 trace_ids.append(return_.headers['X-Tps-Trace-Id'])
                 return_dict = return_.json()
                 if isinstance(return_dict, dict) and 'code' in return_dict.keys():
@@ -237,7 +295,7 @@ class API:
         :param user_id: 成员id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}')
+        return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}')
         return regular_temp(return_)
 
     def delete_member(self, guild_id: str, user_id: str, add_blacklist: bool = False,
@@ -255,7 +313,7 @@ class API:
         if delete_history_msg_days not in (3, 7, 15, 30, 0, -1):
             return sdk_error_temp('注意delete_history_msg_days的数值只能是3，7，15，30，0，-1')
         json_ = {'add_blacklist': add_blacklist, 'delete_history_msg_days': delete_history_msg_days}
-        return_ = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}', json=json_)
+        return_ = self._session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}', json=json_)
         return http_temp(return_, 204)
 
     def get_guild_roles(self, guild_id: str) -> reply_model.get_guild_roles():
@@ -265,7 +323,7 @@ class API:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/roles')
+        return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}/roles')
         return regular_temp(return_)
 
     def create_role(self, guild_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
@@ -291,7 +349,7 @@ class API:
         else:
             color_ = None
         json_ = {'name': name, 'color': color_, 'hoist': hoist_}
-        return_ = self.__session.post(f'{self.bot_url}/guilds/{guild_id}/roles', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/guilds/{guild_id}/roles', json=json_)
         return regular_temp(return_)
 
     def patch_role(self, guild_id: str, role_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
@@ -318,7 +376,7 @@ class API:
         else:
             color_ = None
         json_ = {'name': name, 'color': color_, 'hoist': hoist_}
-        return_ = self.__session.patch(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}', json=json_)
+        return_ = self._session.patch(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}', json=json_)
         return regular_temp(return_)
 
     def delete_role(self, guild_id: str, role_id: str) -> reply_model.delete_role():
@@ -329,7 +387,7 @@ class API:
         :param role_id: 需要删除的身份组ID
         :return: 返回的.result显示是否成功
         """
-        return_ = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}')
+        return_ = self._session.delete(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}')
         return http_temp(return_, 204)
 
     def create_role_member(self, user_id: str, guild_id: str, role_id: str,
@@ -345,12 +403,12 @@ class API:
         """
         if role_id == '5':
             if channel_id is not None:
-                return_ = self.__session.put(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}',
-                                             json={"channel": {"id": channel_id}})
+                return_ = self._session.put(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}',
+                                            json={"channel": {"id": channel_id}})
             else:
                 return sdk_error_temp('注意如果要增加的身份组ID是5-子频道管理员，需要输入channel_id项来指定具体是哪个子频道')
         else:
-            return_ = self.__session.put(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}')
+            return_ = self._session.put(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}')
         return http_temp(return_, 204)
 
     def delete_role_member(self, user_id: str, guild_id: str, role_id: str,
@@ -366,12 +424,12 @@ class API:
         """
         if role_id == '5':
             if channel_id is not None:
-                return_ = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/'
-                                                f'{role_id}', json={"channel": {"id": channel_id}})
+                return_ = self._session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/'
+                                               f'{role_id}', json={"channel": {"id": channel_id}})
             else:
                 return sdk_error_temp('注意如果要增加的身份组ID是5-子频道管理员，需要输入channel_id项来指定具体是哪个子频道')
         else:
-            return_ = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}')
+            return_ = self._session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}')
         return http_temp(return_, 204)
 
     def get_channel_member_permission(self, channel_id: str, user_id: str) -> \
@@ -383,7 +441,7 @@ class API:
         :param user_id: 用户id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions')
+        return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions')
         return regular_temp(return_)
 
     def put_channel_member_permission(self, channel_id: str, user_id: str, add: Optional[str] = None,
@@ -400,8 +458,8 @@ class API:
         if not all([items in ('1', '2', '4', '8', None) for items in (add, remove)]):
             return sdk_error_temp('注意add或remove的值只能为1、2、4或8的文本格式内容')
         json_ = {'add': add, 'remove': remove}
-        return_ = self.__session.put(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions',
-                                     json=json_)
+        return_ = self._session.put(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions',
+                                    json=json_)
         return http_temp(return_, 204)
 
     def get_channel_role_permission(self, channel_id: str, role_id: str) -> \
@@ -413,7 +471,7 @@ class API:
         :param role_id: 身份组id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions')
+        return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions')
         return regular_temp(return_)
 
     def put_channel_role_permission(self, channel_id: str, role_id: str, add: Optional[str] = None,
@@ -430,8 +488,8 @@ class API:
         if not all([items in ('1', '2', '4', '8', None) for items in (add, remove)]):
             return sdk_error_temp('注意add或remove的值只能为1、2、4或8的文本格式内容')
         json_ = {'add': add, 'remove': remove}
-        return_ = self.__session.put(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions',
-                                     json=json_)
+        return_ = self._session.put(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions',
+                                    json=json_)
         return http_temp(return_, 204)
 
     def get_message_info(self, channel_id: str, message_id: str) -> reply_model.get_message_info():
@@ -442,7 +500,7 @@ class API:
         :param message_id: 目标消息ID
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}')
+        return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}')
         return regular_temp(return_)
 
     def send_msg(self, channel_id: str, content: Optional[str] = None, image: Optional[str] = None,
@@ -481,12 +539,12 @@ class API:
                 else:
                     return sdk_error_temp('目标图片路径不存在，无法发送')
             files = {'file_image': file_image}
-            return_ = self.__session.post(f'{self.bot_url}/channels/{channel_id}/messages', data=json_, files=files)
+            return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', data=json_, files=files)
         else:
-            return_ = self.__session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
+            return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
         return regular_temp(return_)
 
-    def send_embed(self, channel_id: str, title: Optional[str] = None, content: Optional[list[str]] = None,
+    def send_embed(self, channel_id: str, title: Optional[str] = None, content: Optional[List[str]] = None,
                    image: Optional[str] = None, prompt: Optional[str] = None, message_id: Optional[str] = None,
                    event_id: Optional[str] = None) -> reply_model.send_msg():
         """
@@ -506,10 +564,10 @@ class API:
         if content is not None:
             for items in content:
                 json_["embed"]["fields"].append({"name": items})
-        return_ = self.__session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
         return regular_temp(return_)
 
-    def send_ark_23(self, channel_id: str, content: list[str], link: list[str], desc: Optional[str] = None,
+    def send_ark_23(self, channel_id: str, content: List[str], link: List[str], desc: Optional[str] = None,
                     prompt: Optional[str] = None, message_id: Optional[str] = None,
                     event_id: Optional[str] = None) -> reply_model.send_msg():
         """
@@ -532,7 +590,7 @@ class API:
         for i, items in enumerate(content):
             json_["ark"]["kv"][2]["obj"].append({"obj_kv": [{"key": "desc", "value": items},
                                                             {"key": "link", "value": link[i]}]})
-        return_ = self.__session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
         return regular_temp(return_)
 
     def send_ark_24(self, channel_id: str, title: Optional[str] = None, content: Optional[str] = None,
@@ -562,7 +620,7 @@ class API:
                                                    {'key': '#LINK#', 'value': link},
                                                    {'key': '#SUBTITLE#', 'value': subtitile}]},
                  'msg_id': message_id, 'event_id': event_id}
-        return_ = self.__session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
         return regular_temp(return_)
 
     def send_ark_37(self, channel_id: str, title: Optional[str] = None, content: Optional[str] = None,
@@ -587,7 +645,7 @@ class API:
                                                    {"key": "#METACOVER#", "value": image},
                                                    {"key": "#METAURL#", "value": link}]},
                  'msg_id': message_id, 'event_id': event_id}
-        return_ = self.__session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
         return regular_temp(return_)
 
     def delete_msg(self, channel_id: str, message_id: str, hidetip: bool = False) -> reply_model.delete_msg():
@@ -600,8 +658,8 @@ class API:
         :return: 返回的.result显示是否成功
         """
         self.check_warning('撤回消息')
-        return_ = self.__session.delete(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}'
-                                        f'?hidetip={str(hidetip).lower()}')
+        return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}'
+                                       f'?hidetip={str(hidetip).lower()}')
         return http_temp(return_, 200)
 
     def get_guild_setting(self, guild_id: str) -> reply_model.get_guild_setting():
@@ -611,7 +669,7 @@ class API:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/message/setting')
+        return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}/message/setting')
         return regular_temp(return_)
 
     def create_dm_guild(self, target_id: str, guild_id: str) -> reply_model.create_dm_guild():
@@ -623,7 +681,7 @@ class API:
         :return: 返回的.data中为解析后的json数据，注意发送私信仅需要使用guild_id这一项虚拟频道id的数据
         """
         json_ = {"recipient_id": target_id, "source_guild_id": guild_id}
-        return_ = self.__session.post(f'{self.bot_url}/users/@me/dms', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/users/@me/dms', json=json_)
         return regular_temp(return_)
 
     def send_dm(self, guild_id: str, content: Optional[str] = None, image: Optional[str] = None,
@@ -662,9 +720,9 @@ class API:
                 else:
                     return sdk_error_temp('目标图片路径不存在，无法发送')
             files = {'file_image': file_image}
-            return_ = self.__session.post(f'{self.bot_url}/dms/{guild_id}/messages', data=json_, files=files)
+            return_ = self._session.post(f'{self.bot_url}/dms/{guild_id}/messages', data=json_, files=files)
         else:
-            return_ = self.__session.post(f'{self.bot_url}/dms/{guild_id}/messages', json=json_)
+            return_ = self._session.post(f'{self.bot_url}/dms/{guild_id}/messages', json=json_)
         return regular_temp(return_)
 
     def delete_dm_msg(self, guild_id: str, message_id: str, hidetip: bool = False) -> reply_model.delete_msg():
@@ -677,8 +735,8 @@ class API:
         :return: 返回的.result显示是否成功
         """
         self.check_warning('撤回私信消息')
-        return_ = self.__session.delete(f'{self.bot_url}/dms/{guild_id}/messages/{message_id}?'
-                                        f'hidetip={str(hidetip).lower()}')
+        return_ = self._session.delete(f'{self.bot_url}/dms/{guild_id}/messages/{message_id}?'
+                                       f'hidetip={str(hidetip).lower()}')
         return http_temp(return_, 200)
 
     def mute_all_member(self, guild_id: str, mute_end_timestamp: Optional[str], mute_seconds: Optional[str]) -> \
@@ -692,7 +750,7 @@ class API:
         :return: 返回的.result显示是否成功
         """
         json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds}
-        return_ = self.__session.patch(f'{self.bot_url}/guilds/{guild_id}/mute', json=json_)
+        return_ = self._session.patch(f'{self.bot_url}/guilds/{guild_id}/mute', json=json_)
         return http_temp(return_, 204)
 
     def mute_member(self, guild_id: str, user_id: str, mute_end_timestamp: Optional[str],
@@ -707,11 +765,11 @@ class API:
         :return: 返回的.result显示是否成功
         """
         json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds}
-        return_ = self.__session.patch(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/mute',
-                                       json=json_)
+        return_ = self._session.patch(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/mute',
+                                      json=json_)
         return http_temp(return_, 204)
 
-    def mute_members(self, guild_id: str, user_id: list[str], mute_end_timestamp: Optional[str],
+    def mute_members(self, guild_id: str, user_id: List[str], mute_end_timestamp: Optional[str],
                      mute_seconds: Optional[str]) -> reply_model.mute_members():
         """
         用于将频道的指定批量成员（非管理员）禁言
@@ -723,7 +781,7 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds, 'user_ids': user_id}
-        return_ = self.__session.patch(f'{self.bot_url}/guilds/{guild_id}/mute', json=json_)
+        return_ = self._session.patch(f'{self.bot_url}/guilds/{guild_id}/mute', json=json_)
         trace_id = return_.headers['X-Tps-Trace-Id']
         try:
             return_dict = return_.json()
@@ -736,8 +794,8 @@ class API:
             return objectize({'data': None, 'trace_id': trace_id, 'result': False})
 
     def create_announce(self, guild_id, channel_id: Optional[str] = None, message_id: Optional[str] = None,
-                        announces_type: Optional[int] = None, recommend_channels_id: Optional[list[str]] = None,
-                        recommend_channels_introduce: Optional[list[str]] = None) -> reply_model.create_announce():
+                        announces_type: Optional[int] = None, recommend_channels_id: Optional[List[str]] = None,
+                        recommend_channels_introduce: Optional[List[str]] = None) -> reply_model.create_announce():
         """
         用于创建频道全局公告，公告类型分为 消息类型的频道公告 和 推荐子频道类型的频道公告
 
@@ -758,7 +816,7 @@ class API:
                                                         "introduce": recommend_channels_introduce[i]})
             else:
                 return sdk_error_temp('注意推荐子频道ID列表长度，应与推荐子频道推荐语列表长度一致')
-        return_ = self.__session.post(f'{self.bot_url}/guilds/{guild_id}/announces', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/guilds/{guild_id}/announces', json=json_)
         return regular_temp(return_)
 
     def delete_announce(self, guild_id: str, message_id: str = 'all') -> reply_model.delete_announce():
@@ -769,7 +827,7 @@ class API:
         :param message_id: message_id有值时会校验message_id合法性；若不校验，请将message_id设置为all（默认为all）
         :return: 返回的.result显示是否成功
         """
-        return_ = self.__session.delete(f'{self.bot_url}/guilds/{guild_id}/announces/{message_id}')
+        return_ = self._session.delete(f'{self.bot_url}/guilds/{guild_id}/announces/{message_id}')
         return http_temp(return_, 204)
 
     def create_pinmsg(self, channel_id: str, message_id: str) -> reply_model.pinmsg():
@@ -780,7 +838,7 @@ class API:
         :param message_id: 目标消息id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.put(f'{self.bot_url}/channels/{channel_id}/pins/{message_id}')
+        return_ = self._session.put(f'{self.bot_url}/channels/{channel_id}/pins/{message_id}')
         return regular_temp(return_)
 
     def delete_pinmsg(self, channel_id: str, message_id: str) -> reply_model.delete_pinmsg():
@@ -791,7 +849,7 @@ class API:
         :param message_id: 目标消息id
         :return: 返回的.result显示是否成功
         """
-        return_ = self.__session.delete(f'{self.bot_url}/channels/{channel_id}/pins/{message_id}')
+        return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}/pins/{message_id}')
         return http_temp(return_, 204)
 
     def get_pinmsg(self, channel_id: str) -> reply_model.pinmsg():
@@ -801,7 +859,7 @@ class API:
         :param channel_id: 子频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/pins')
+        return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/pins')
         return regular_temp(return_)
 
     def get_schedules(self, channel_id: str, since: Optional[int] = None) -> reply_model.get_schedules():
@@ -813,7 +871,7 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         json_ = {"since": since}
-        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/schedules', json=json_)
+        return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/schedules', json=json_)
         return regular_temp(return_)
 
     def get_schedule_info(self, channel_id: str, schedule_id: str) -> reply_model.schedule_info():
@@ -824,7 +882,7 @@ class API:
         :param schedule_id: 日程id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}')
+        return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}')
         return regular_temp(return_)
 
     def create_schedule(self, channel_id: str, schedule_name: str, start_timestamp: str, end_timestamp: str,
@@ -843,7 +901,7 @@ class API:
         json_ = {"schedule": {"name": schedule_name, "start_timestamp": start_timestamp,
                               "end_timestamp": end_timestamp, "jump_channel_id": jump_channel_id,
                               "remind_type": remind_type}}
-        return_ = self.__session.post(f'{self.bot_url}/channels/{channel_id}/schedules', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/schedules', json=json_)
         return regular_temp(return_)
 
     def patch_schedule(self, channel_id: str, schedule_id: str, schedule_name: str, start_timestamp: str,
@@ -863,7 +921,7 @@ class API:
         json_ = {"schedule": {"name": schedule_name, "start_timestamp": start_timestamp,
                               "end_timestamp": end_timestamp, "jump_channel_id": jump_channel_id,
                               "remind_type": remind_type}}
-        return_ = self.__session.patch(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}', json=json_)
+        return_ = self._session.patch(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}', json=json_)
         return regular_temp(return_)
 
     def delete_schedule(self, channel_id: str, schedule_id: str) -> reply_model.delete_schedule():
@@ -874,7 +932,7 @@ class API:
         :param schedule_id: 日程id
         :return: 返回的.result显示是否成功
         """
-        return_ = self.__session.delete(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}')
+        return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}')
         return http_temp(return_, 204)
 
     def create_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> reply_model.reactions():
@@ -887,8 +945,8 @@ class API:
         :param id_: 表情id
         :return: 返回的.result显示是否成功
         """
-        return_ = self.__session.put(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
-                                     f'{type_}/{id_}')
+        return_ = self._session.put(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
+                                    f'{type_}/{id_}')
         return http_temp(return_, 204)
 
     def delete_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> reply_model.reactions():
@@ -901,8 +959,8 @@ class API:
         :param id_: 表情id
         :return: 返回的.result显示是否成功
         """
-        return_ = self.__session.delete(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
-                                        f'{type_}/{id_}')
+        return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
+                                       f'{type_}/{id_}')
         return http_temp(return_, 204)
 
     def get_reaction_users(self, channel_id: str, message_id: str, type_: str, id_: str) -> \
@@ -916,8 +974,8 @@ class API:
         :param id_: 表情id
         :return: 返回的.data中为解析后的json数据列表
         """
-        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
-                                     f'{type_}/{id_}?cookie=&limit=50')
+        return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
+                                    f'{type_}/{id_}?cookie=&limit=50')
         trace_ids = [return_.headers['X-Tps-Trace-Id']]
         all_users = []
         try:
@@ -932,8 +990,8 @@ class API:
                 while True:
                     if return_dict['is_end']:
                         break
-                    return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/'
-                                                 f'reactions/{type_}/{id_}?cookies={return_dict["cookie"]}')
+                    return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/'
+                                                f'reactions/{type_}/{id_}?cookies={return_dict["cookie"]}')
                     trace_ids.append(return_.headers['X-Tps-Trace-Id'])
                     return_dict = return_.json()
                     if isinstance(return_dict, dict) and 'code' in return_dict.keys():
@@ -960,7 +1018,7 @@ class API:
         :return: 返回的.result显示是否成功
         """
         json_ = {"audio_url": audio_url, "text": text, "status": status}
-        return_ = self.__session.post(f'{self.bot_url}/channels/{channel_id}/audio', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/audio', json=json_)
         return empty_temp(return_)
 
     def bot_on_mic(self, channel_id: str) -> reply_model.audio():
@@ -970,7 +1028,7 @@ class API:
         :param channel_id: 子频道id
         :return: 返回的.result显示是否成功
         """
-        return_ = self.__session.put(f'{self.bot_url}/channels/{channel_id}/mic')
+        return_ = self._session.put(f'{self.bot_url}/channels/{channel_id}/mic')
         return empty_temp(return_)
 
     def bot_off_mic(self, channel_id: str) -> reply_model.audio():
@@ -980,7 +1038,7 @@ class API:
         :param channel_id: 子频道id
         :return: 返回的.result显示是否成功
         """
-        return_ = self.__session.delete(f'{self.bot_url}/channels/{channel_id}/mic')
+        return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}/mic')
         return empty_temp(return_)
 
     def get_threads(self, channel_id) -> reply_model.get_threads():
@@ -991,7 +1049,7 @@ class API:
         :return: 返回的.data中为解析后的json数据列表
         """
         self.check_warning('获取帖子列表')
-        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/threads')
+        return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/threads')
         trace_ids = [return_.headers['X-Tps-Trace-Id']]
         all_threads = []
         try:
@@ -1008,7 +1066,7 @@ class API:
                 while True:
                     if return_dict['is_finish']:
                         break
-                    return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/threads')
+                    return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/threads')
                     trace_ids.append(return_.headers['X-Tps-Trace-Id'])
                     return_dict = return_.json()
                     if isinstance(return_dict, dict) and 'code' in return_dict.keys():
@@ -1034,7 +1092,7 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         self.check_warning('获取帖子详情')
-        return_ = self.__session.get(f'{self.bot_url}/channels/{channel_id}/threads/{thread_id}')
+        return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/threads/{thread_id}')
         return regular_temp(return_)
 
     def create_thread(self, channel_id: str, title: str, content: str, format_: int) -> reply_model.create_thread():
@@ -1049,7 +1107,7 @@ class API:
         """
         self.check_warning('发表帖子')
         json_ = {'title': title, 'content': content, 'format': format_}
-        return_ = self.__session.put(f'{self.bot_url}/channels/{channel_id}/threads', json=json_)
+        return_ = self._session.put(f'{self.bot_url}/channels/{channel_id}/threads', json=json_)
         return regular_temp(return_)
 
     def delete_thread(self, channel_id: str, thread_id: str) -> reply_model.delete_thread():
@@ -1061,7 +1119,7 @@ class API:
         :return: 返回的.result显示是否成功
         """
         self.check_warning('删除帖子')
-        return_ = self.__session.delete(f'{self.bot_url}/channels/{channel_id}/threads/{thread_id}')
+        return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}/threads/{thread_id}')
         return http_temp(return_, 204)
 
     def get_guild_permissions(self, guild_id: str) -> reply_model.get_guild_permissions():
@@ -1071,7 +1129,7 @@ class API:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = self.__session.get(f'{self.bot_url}/guilds/{guild_id}/api_permission')
+        return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}/api_permission')
         trace_id = return_.headers['X-Tps-Trace-Id']
         try:
             return_dict = return_.json()
@@ -1101,5 +1159,5 @@ class API:
         if not path:
             return sdk_error_temp('目标API不存在，请检查API名称是否正确')
         json_ = {"channel_id": channel_id, "api_identify": {"path": path, "method": method.upper()}, "desc": desc}
-        return_ = self.__session.post(f'{self.bot_url}/guilds/{guild_id}/api_permission/demand', json=json_)
+        return_ = self._session.post(f'{self.bot_url}/guilds/{guild_id}/api_permission/demand', json=json_)
         return empty_temp(return_)
