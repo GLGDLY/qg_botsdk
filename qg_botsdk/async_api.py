@@ -2,7 +2,7 @@ from os import PathLike
 from os.path import exists
 from time import time
 from asyncio import get_event_loop
-from aiohttp import ClientSession, TCPConnector, FormData, ClientTimeout
+from aiohttp import ClientSession, TCPConnector, FormData, ClientTimeout, multipart, hdrs, payload
 from json import loads
 from json.decoder import JSONDecodeError
 from io import BufferedReader
@@ -12,13 +12,53 @@ from .utils import objectize, convert_color, async_regular_temp, async_http_temp
 
 reply_model = ReplyModel()
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
-retry_err_code = ('11281', '11252', '11263', '11242', '306003', '306005', '306006', '501002', '501003', '501004',
-                  '501006', '501007', '501011', '501012', '620007')
+retry_err_code = (101, 11281, 11252, 11263, 11242, 11252, 306003, 306005, 306006, 501002, 501003, 501004, 501006,
+                  501007, 501011, 501012, 620007)
+
+
+class _FormData(FormData):
+    def _gen_form_data(self) -> multipart.MultipartWriter:
+        """Encode a list of fields using the multipart/form-data MIME format"""
+        if self._is_processed:
+            return self._writer
+        for dispparams, headers, value in self._fields:
+            try:
+                if hdrs.CONTENT_TYPE in headers:
+                    part = payload.get_payload(
+                        value,
+                        content_type=headers[hdrs.CONTENT_TYPE],
+                        headers=headers,
+                        encoding=self._charset,
+                    )
+                else:
+                    part = payload.get_payload(
+                        value, headers=headers, encoding=self._charset
+                    )
+            except Exception as exc:
+                print(value)
+                raise TypeError(
+                    "Can not serialize value type: %r\n "
+                    "headers: %r\n value: %r" % (type(value), headers, value)
+                ) from exc
+
+            if dispparams:
+                part.set_content_disposition(
+                    "form-data", quote_fields=self._quote_fields, **dispparams
+                )
+                assert part.headers is not None
+                part.headers.popall(hdrs.CONTENT_LENGTH, None)
+
+            self._writer.append_payload(part)
+
+        self._is_processed = True
+        return self._writer
 
 
 class _Session:
-    def __init__(self, loop, is_retry, **kwargs):
+    def __init__(self, loop, is_retry, is_log_error, logger, **kwargs):
         self._is_retry = is_retry
+        self._is_log_error = is_log_error
+        self._logger = logger
         self._kwargs = kwargs
         self._session: Optional[ClientSession] = None
         self._timeout = ClientTimeout(total=20)
@@ -33,15 +73,23 @@ class _Session:
         if not self._session or self._session.closed:
             self._session = ClientSession(**self._kwargs)
 
+    async def _warning(self, url, resp):
+        self._logger.warning(f'HTTP API(url:{url})调用错误，详情：{await resp.text()}，'
+                             f'trace_id：{resp.headers["X-Tps-Trace-Id"]}')
+
     async def get(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.get(url, timeout=self._timeout, **kwargs)
         if resp.ok:
             return resp
+        if self._is_log_error and (not self._is_retry or retry):
+            await self._warning(url, resp)
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    if self._is_log_error:
+                        await self._warning(url, resp)
                     return resp
             return await self.get(url, True, **kwargs)
         return resp
@@ -51,10 +99,14 @@ class _Session:
         resp = await self._session.post(url, timeout=self._timeout, **kwargs)
         if resp.ok:
             return resp
+        if self._is_log_error and (not self._is_retry or retry):
+            await self._warning(url, resp)
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    if self._is_log_error:
+                        await self._warning(url, resp)
                     return resp
             return await self.post(url, True, **kwargs)
         return resp
@@ -64,10 +116,14 @@ class _Session:
         resp = await self._session.patch(url, timeout=self._timeout, **kwargs)
         if resp.ok:
             return resp
+        if self._is_log_error and (not self._is_retry or retry):
+            await self._warning(url, resp)
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    if self._is_log_error:
+                        await self._warning(url, resp)
                     return resp
             return await self.patch(url, True, **kwargs)
         return resp
@@ -77,10 +133,14 @@ class _Session:
         resp = await self._session.delete(url, timeout=self._timeout, **kwargs)
         if resp.ok:
             return resp
+        if self._is_log_error and (not self._is_retry or retry):
+            await self._warning(url, resp)
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    if self._is_log_error:
+                        await self._warning(url, resp)
                     return resp
             return await self.delete(url, True, **kwargs)
         return resp
@@ -90,17 +150,22 @@ class _Session:
         resp = await self._session.put(url, timeout=self._timeout, **kwargs)
         if resp.ok:
             return resp
+        if self._is_log_error and (not self._is_retry or retry):
+            await self._warning(url, resp)
         if self._is_retry and not retry:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    if self._is_log_error:
+                        await self._warning(url, resp)
                     return resp
             return await self.put(url, True, **kwargs)
         return resp
 
 
 class AsyncAPI:
-    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, get_bot_id, is_retry):
+    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, get_bot_id, is_retry,
+                 is_log_error):
         self.bot_url = bot_url
         self.bot_id = bot_id
         self.bot_secret = bot_secret
@@ -109,7 +174,7 @@ class AsyncAPI:
         self.loop = loop
         self.check_warning = check_warning
         self.__client_conn = TCPConnector(limit=500, ssl=ssl, force_close=True)
-        self.__session = _Session(loop, is_retry, headers=headers, connector=self.__client_conn)
+        self.__session = _Session(loop, is_retry, is_log_error, logger, headers=headers, connector=self.__client_conn)
         self.__get_function = get_bot_id
         self.security_code = ''
         self.code_expire = 0
@@ -574,7 +639,7 @@ class AsyncAPI:
                 else:
                     return sdk_error_temp('目标图片路径不存在，无法发送')
             json_['file_image'] = file_image
-            data_ = FormData()
+            data_ = _FormData()
             for keys, values in json_.items():
                 if values is not None:
                     data_.add_field(keys, values)
@@ -759,7 +824,7 @@ class AsyncAPI:
                 else:
                     return sdk_error_temp('目标图片路径不存在，无法发送')
             json_['file_image'] = file_image
-            data_ = FormData()
+            data_ = _FormData()
             for keys, values in json_.items():
                 if values is not None:
                     data_.add_field(keys, values)

@@ -19,7 +19,7 @@ from .api import API
 reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.2.9'
+version = '2.2.10'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 t_sleep(0.5)
@@ -29,7 +29,7 @@ class BOT:
 
     def __init__(self, bot_id: str, bot_token: str, bot_secret: str = None, is_private: bool = False,
                  is_sandbox: bool = False, max_shard: int = 5, no_permission_warning: bool = True,
-                 is_async: bool = False, is_retry: bool = True):
+                 is_async: bool = False, is_retry: bool = True, is_log_error: bool = True):
         """
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
 
@@ -41,7 +41,8 @@ class BOT:
         :param max_shard: 最大分片数，请根据配置自行判断，默认5
         :param no_permission_warning: 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启
         :param is_async: 使用同步api还是异步api，默认False（使用同步）
-        :param is_retry: 使用api时，如遇可重试的错误码是否自动进行重试
+        :param is_retry: 使用api时，如遇可重试的错误码是否自动进行重试，默认开启
+        :param is_log_error: 使用api时，如返回的结果为不成功，可自动log输出报错信息，默认开启
         """
         self.logger = Logger(bot_id)
         self.bot_id = bot_id
@@ -90,12 +91,12 @@ class BOT:
         self.is_async = is_async
         if not is_async:
             self.api = API(self.bot_url, bot_id, bot_secret, self.__session, self.logger, self.check_warning,
-                           self.__get_bot_id, is_retry)
+                           self.__get_bot_id, is_retry, is_log_error)
         else:
             from .async_api import AsyncAPI
             self.api: Union[API, AsyncAPI] = AsyncAPI(self.bot_url, bot_id, bot_secret, self.__ssl, self.bot_headers,
                                                       self.logger, self.__loop, self.check_warning, self.__get_bot_id,
-                                                      is_retry)
+                                                      is_retry, is_log_error)
 
     async def __time_event_check(self):
         while self.running:
