@@ -1,21 +1,15 @@
 # !/usr/bin/env python3
 # encoding: utf-8
 from logging import getLogger, Formatter, StreamHandler, FileHandler
-from os import mkdir
-from os.path import exists
+from os import makedirs, PathLike, getcwd, sep
+from os.path import exists, join, isdir
 from time import strftime, localtime
-from inspect import stack
 from functools import wraps
 from colorama import init as color_init
+from typing import Union, List
+from re import split as re_split
 
 color_init(strip=False)
-
-
-def __getattr__(identifier: str) -> object:
-    if stack()[1].filename.split('\\')[-1] != 'qg_bot.py':
-        raise AssertionError("此为SDK内部使用文件，无法使用，使用log请使用from qg_bot.py import BOT，实例化BOT后使用BOT().logger")
-
-    return globals()[identifier.__path__]
 
 
 def _check_date(func):
@@ -34,9 +28,18 @@ def _check_date(func):
 
 
 class Logger:
-    def __init__(self, bot_app_id: str):
-        for items in ["websockets.server", "websockets.protocol", "websockets.client", "asyncio"]:
-            getLogger(items).disabled = True
+    def __init__(self, bot_app_id: str, file_path: Union[str, PathLike] = None, disable_logger: List[str] = None):
+        """
+        用作logging输出的类，支持不同level的颜色log输出，可自定义格式
+
+        :param bot_app_id: 机器人ID
+        :param file_path: 可选填，自定义log文件输出路径，不填默认为：当前目录/log/[bot_app_id]/
+        :param disable_logger: 可选填，需要disable的logger名称列表，不填默认无
+        """
+        getLogger("asyncio").disabled = True
+        if disable_logger:
+            for items in disable_logger:
+                getLogger(items).disabled = True
         self._bot_app_id = bot_app_id
         self._logger = getLogger(__name__)
         self._logger.setLevel('DEBUG')
@@ -45,10 +48,19 @@ class Logger:
         self._cmdh = StreamHandler()
         self._cmdh.setFormatter(self._Stream_Formatter())
         self._cmdh.setLevel('INFO')
-        if not exists('./log'):
-            mkdir('./log')
-        if not exists(f'./log/{self._bot_app_id}'):
-            mkdir(f'./log/{self._bot_app_id}')
+        self.file_path = file_path
+        if file_path is not None:
+            file_path = re_split(r'[\\|/]', file_path)
+            if file_path[0] == '.':
+                self.file_path = join(*file_path)
+            else:
+                file_path[0] += sep
+                self.file_path = join(sep, *file_path)
+        else:
+            self.file_path = join(getcwd(), 'log', self._bot_app_id)
+        if not exists(self.file_path):
+            makedirs(self.file_path)
+        assert isdir(self.file_path), '自定义Log输出路径必须为一个directory资料夹'
         self._logh = None
         self._new_logh(strftime('%m-%d', localtime()))
         self._logger.addHandler(self._cmdh)
@@ -94,7 +106,7 @@ class Logger:
         self._logh.setFormatter(Formatter(self._format, self._date_format))
 
     def _new_logh(self, str_time):
-        self._logh = FileHandler('./log/{}/{}.log'.format(self._bot_app_id, str_time), encoding='utf-8')
+        self._logh = FileHandler(join(self.file_path, f'{str_time}.log'), encoding='utf-8')
         self._logh.setFormatter(Formatter(self._format, self._date_format))
         self._logger.addHandler(self._logh)
 

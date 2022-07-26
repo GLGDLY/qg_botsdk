@@ -13,13 +13,13 @@ from .logger import Logger
 from .model import Model
 from ._api_model import ReplyModel
 from .qg_bot_ws import BotWs
-from .utils import objectize, exception_handler
+from ._utils import objectize, exception_handler
 from .api import API
 
 reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.2.10'
+version = '2.3.0'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 t_sleep(0.5)

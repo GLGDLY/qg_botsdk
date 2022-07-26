@@ -1,7 +1,7 @@
 # !/usr/bin/env python3
 # encoding: utf-8
 from inspect import stack
-from typing import Awaitable
+from typing import List
 
 apis = {('获取用户ID', 'get_bot_id'): [False, '此API不需要请求权限'],
         ('获取用户信息', 'get_bot_info'): ['GET', '/users/@me'],
@@ -139,9 +139,9 @@ class ReplyModel:
                 code: int
                 message: str
 
-            data: list[__guild]
-            trace_id: list[str]
-            result: list[bool]
+            data: List[__guild]
+            trace_id: List[str]
+            result: List[bool]
 
         return GetBotGuilds
 
@@ -179,7 +179,7 @@ class ReplyModel:
                 code: int
                 message: str
 
-            data: list[__channels]
+            data: List[__channels]
             trace_id: str
             result: bool
 
@@ -196,7 +196,7 @@ class ReplyModel:
         op_user_id: str or None
         sub_type: int
         private_type: int
-        private_user_ids: list
+        private_user_ids: List
         speak_permission: int
         application_id: str
         permissions: str
@@ -251,7 +251,7 @@ class ReplyModel:
             bot: bool
 
         nick: str
-        roles: list
+        roles: List
         joined_at: str
         deaf: bool
         mute: bool
@@ -263,9 +263,9 @@ class ReplyModel:
         member = self._Member
 
         class GetGuildMembers:
-            data: list[member]
-            trace_id: list[str]
-            result: list[bool]
+            data: List[member]
+            trace_id: List[str]
+            result: List[bool]
 
         return GetGuildMembers
 
@@ -303,7 +303,7 @@ class ReplyModel:
         class GetGuildRoles:
             class data:
                 guild_id: str
-                roles: list[role_]
+                roles: List[role_]
                 role_num_limit: str
                 code: int
                 message: str
@@ -429,7 +429,7 @@ class ReplyModel:
 
         class member:
             joined_at: str
-            roles: list[str]
+            roles: List[str]
 
         channel_id: str
         guild_id: str
@@ -490,7 +490,7 @@ class ReplyModel:
             class data:
                 disable_create_dm: bool
                 disable_push_msg: bool
-                channel_ids: list[str]
+                channel_ids: List[str]
                 channel_push_max_num: int
                 code: int
                 message: str
@@ -527,7 +527,7 @@ class ReplyModel:
     def mute_members(self):
         class MuteMembers:
             class data:
-                user_ids: list[str]
+                user_ids: List[str]
                 code: int
                 message: str
 
@@ -547,7 +547,7 @@ class ReplyModel:
                 channel_id: str
                 message_id: str
                 announces_type: int
-                recommend_channels: list[RecommendChannels]
+                recommend_channels: List[RecommendChannels]
                 code: int
                 message: str
 
@@ -571,7 +571,7 @@ class ReplyModel:
             class data:
                 guild_id: str
                 channel_id: str
-                message_ids: list[str]
+                message_ids: List[str]
                 code: int
                 message: str
 
@@ -659,9 +659,9 @@ class ReplyModel:
             message: str
 
         class GetReactionUsers:
-            data: list[Users]
-            trace_id: list[str]
-            result: list[bool]
+            data: List[Users]
+            trace_id: List[str]
+            result: List[bool]
 
         return GetReactionUsers
 
@@ -707,10 +707,10 @@ class ReplyModel:
 
                         type = int
 
-                    elems: list[__ForumsSubContent]
+                    elems: List[__ForumsSubContent]
                     props: object
 
-                paragraphs: list[__ForumsContent]
+                paragraphs: List[__ForumsContent]
 
             thread_id: str
             title: str
@@ -726,9 +726,9 @@ class ReplyModel:
         thread = self.__Threads
 
         class GetThreads:
-            data: list[thread]
-            trace_id: list[str]
-            result: list[bool]
+            data: List[thread]
+            trace_id: List[str]
+            result: List[bool]
 
         return GetThreads
 

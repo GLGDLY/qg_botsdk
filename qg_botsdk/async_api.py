@@ -8,7 +8,26 @@ from json.decoder import JSONDecodeError
 from io import BufferedReader
 from typing import Optional, Union, BinaryIO, List
 from ._api_model import ReplyModel, api_converter, api_converter_re
-from .utils import objectize, convert_color, async_regular_temp, async_http_temp, async_empty_temp, sdk_error_temp
+from ._utils import objectize, convert_color, async_regular_temp, async_http_temp, async_empty_temp, sdk_error_temp
+
+try:
+    from importlib.metadata import version
+
+    aio_version = version('aiohttp')
+except (ImportError, ModuleNotFoundError):
+    from pkg_resources import get_distribution
+
+    aio_version = get_distribution('aiohttp').version
+
+version_checking = (3, 8, 1)
+for i in range(3):
+    try:
+        if int(aio_version[2 * i]) < version_checking[i]:
+            print(f'\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1，避免出现无法预计的错误\033[0m')
+            break
+    except (ValueError, IndexError):
+        pass
+
 
 reply_model = ReplyModel()
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}

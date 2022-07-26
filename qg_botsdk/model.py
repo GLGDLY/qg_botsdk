@@ -1,5 +1,8 @@
 # !/usr/bin/env python3
 # encoding: utf-8
+from typing import List
+
+
 class Model:
     """
     使用此Model库可用作验证事件数据的准确性，目前可用的模型如下：
@@ -81,7 +84,7 @@ class Model:
         joined_at: str
         nick: str
         op_user_id: str
-        roles: list[str]
+        roles: List[str]
         t: str
         event_id: str
 
@@ -126,7 +129,7 @@ class Model:
         class member:
             joined_at: str
             nick: str
-            roles: list[str]
+            roles: List[str]
 
         channel_id: str
         guild_id: str
@@ -281,10 +284,10 @@ class Model:
 
                         type: int
 
-                    elems: list[__ForumsSubTitle]
+                    elems: List[__ForumsSubTitle]
                     props: object
 
-                paragraphs: list[__ForumsTitle]
+                paragraphs: List[__ForumsTitle]
 
             class content:
                 class __ForumsContent:
@@ -317,10 +320,10 @@ class Model:
 
                         type = int
 
-                    elems: list[__ForumsSubContent]
+                    elems: List[__ForumsSubContent]
                     props: object
 
-                paragraphs: list[__ForumsContent]
+                paragraphs: List[__ForumsContent]
 
             thread_id: str
             date_time: str

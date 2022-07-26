@@ -8,7 +8,7 @@ from typing import Any, Callable
 from asyncio import get_event_loop, all_tasks, sleep
 from time import sleep as t_sleep
 from threading import Thread
-from .utils import objectize, treat_msg, exception_handler
+from ._utils import objectize, treat_msg, exception_handler
 
 
 def __getattr__(identifier: str) -> object:

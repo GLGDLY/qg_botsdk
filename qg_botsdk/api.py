@@ -6,7 +6,7 @@ from json.decoder import JSONDecodeError
 from io import BufferedReader
 from typing import Optional, Union, BinaryIO, List
 from ._api_model import ReplyModel, api_converter, api_converter_re
-from .utils import objectize, convert_color, regular_temp, http_temp, empty_temp, sdk_error_temp
+from ._utils import objectize, convert_color, regular_temp, http_temp, empty_temp, sdk_error_temp
 
 reply_model = ReplyModel()
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
