@@ -1,11 +1,12 @@
 # !/usr/bin/env python3
 # encoding: utf-8
+import yaml
 from sys import exc_info
 from traceback import extract_tb
 from inspect import stack
 from json import dumps
 from json.decoder import JSONDecodeError
-from typing import Union
+from typing import Union, Dict, Any
 
 
 def __getattr__(identifier: str) -> object:
@@ -161,3 +162,8 @@ async def async_empty_temp(return_):
 def sdk_error_temp(message):
     return objectize({'data': {'code': -1, 'message': f'这是来自SDK的错误信息：{message}'}, 'trace_id': None,
                       'result': False})
+
+
+def read(yaml_path) -> Dict[str, Any]:
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
