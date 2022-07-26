@@ -132,6 +132,7 @@ class Model:
         guild_id: str
         content: str
         id: str
+        member = [member]
         mentions = [__MsgMentions]
         attachments = [__MsgAttachments]
         seq: int
@@ -209,6 +210,7 @@ class Model:
         channel_id: str
         guild_id: str
         content: str
+        member = [member]
         direct_message: bool
         id: str
         attachments = [__MsgAttachments]
