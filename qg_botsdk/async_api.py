@@ -20,9 +20,9 @@ except (ImportError, ModuleNotFoundError):
     aio_version = get_distribution('aiohttp').version
 
 version_checking = (3, 8, 1)
-for i in range(3):
+for version_index in range(3):
     try:
-        if int(aio_version[2 * i]) < version_checking[i]:
+        if int(aio_version[2 * version_index]) < version_checking[version_index]:
             print(f'\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1，避免出现无法预计的错误\033[0m')
             break
     except (ValueError, IndexError):
@@ -257,6 +257,7 @@ class AsyncAPI:
         :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
         """
         trace_ids = []
+        codes = []
         results = []
         data = []
         return_dict = None
@@ -269,6 +270,7 @@ class AsyncAPI:
                 else:
                     break
                 trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                codes.append(return_.status)
                 return_dict = await return_.json()
                 if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                     results.append(False)
@@ -279,8 +281,8 @@ class AsyncAPI:
                     for items in return_dict:
                         data.append(items)
         except JSONDecodeError:
-            return objectize({'data': [], 'trace_id': trace_ids, 'result': False})
-        return objectize({'data': data, 'trace_id': trace_ids, 'result': results})
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': False})
+        return objectize({'data': data, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
 
     async def get_guild_info(self, guild_id: str) -> reply_model.get_guild_info():
         """
@@ -376,6 +378,7 @@ class AsyncAPI:
         :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
         """
         trace_ids = []
+        codes = []
         results = []
         data = []
         return_dict = None
@@ -389,6 +392,7 @@ class AsyncAPI:
                     return_ = await self.__session.get(f'{self.bot_url}/guilds/{guild_id}/members?limit=400&after=' +
                                                        return_dict[-1]['user']['id'])
                 trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                codes.append(return_.status)
                 return_dict = await return_.json()
                 if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                     results.append(False)
@@ -400,11 +404,11 @@ class AsyncAPI:
                         if items not in data:
                             data.append(items)
         except JSONDecodeError:
-            return objectize({'data': [], 'trace_id': trace_ids, 'result': [False]})
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
         if data:
-            return objectize({'data': data, 'trace_id': trace_ids, 'result': results})
+            return objectize({'data': data, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
         else:
-            return objectize({'data': [], 'trace_id': trace_ids, 'result': [False]})
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
     async def get_member_info(self, guild_id: str, user_id: str) -> reply_model.get_member_info():
         """
@@ -910,15 +914,16 @@ class AsyncAPI:
         json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds, 'user_ids': user_id}
         return_ = await self.__session.patch(f'{self.bot_url}/guilds/{guild_id}/mute', json=json_)
         trace_id = return_.headers['X-Tps-Trace-Id']
+        status_code = return_.status
         try:
             return_dict = await return_.json()
-            if return_.status == 200:
+            if status_code == 200:
                 result = False
             else:
                 result = True
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': status_code, 'result': result})
         except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+            return objectize({'data': None, 'trace_id': trace_id, 'http_code': status_code, 'result': False})
 
     async def create_announce(self, guild_id, channel_id: Optional[str] = None, message_id: Optional[str] = None,
                               announces_type: Optional[int] = None, recommend_channels_id: Optional[List[str]] = None,
@@ -1106,6 +1111,7 @@ class AsyncAPI:
         return_ = await self.__session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
                                            f'{type_}/{id_}?cookie=&limit=50')
         trace_ids = [return_.headers['X-Tps-Trace-Id']]
+        codes = [return_.status]
         all_users = []
         try:
             return_dict = await return_.json()
@@ -1122,6 +1128,7 @@ class AsyncAPI:
                     return_ = await self.__session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/'
                                                        f'reactions/{type_}/{id_}?cookies={return_dict["cookie"]}')
                     trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                    codes.append(return_.status)
                     return_dict = await return_.json()
                     if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                         results.append(False)
@@ -1131,9 +1138,9 @@ class AsyncAPI:
                         results.append(True)
                         for items in return_dict['users']:
                             all_users.append(items)
-            return objectize({'data': all_users, 'trace_id': trace_ids, 'result': results})
+            return objectize({'data': all_users, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
         except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_ids, 'result': [False]})
+            return objectize({'data': None, 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
     async def control_audio(self, channel_id: str, status: int, audio_url: Optional[str] = None,
                             text: Optional[str] = None) -> reply_model.audio():
@@ -1180,6 +1187,7 @@ class AsyncAPI:
         self.check_warning('获取帖子列表')
         return_ = await self.__session.get(f'{self.bot_url}/channels/{channel_id}/threads')
         trace_ids = [return_.headers['X-Tps-Trace-Id']]
+        codes = [return_.status]
         all_threads = []
         try:
             return_dict = await return_.json()
@@ -1197,6 +1205,7 @@ class AsyncAPI:
                         break
                     return_ = await self.__session.get(f'{self.bot_url}/channels/{channel_id}/threads')
                     trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                    codes.append(return_.status)
                     return_dict = await return_.json()
                     if isinstance(return_dict, dict) and 'code' in return_dict.keys():
                         results.append(False)
@@ -1208,9 +1217,9 @@ class AsyncAPI:
                             if 'thread_info' in items.keys() and 'content' in items['thread_info'].keys():
                                 items['thread_info']['content'] = loads(items['thread_info']['content'])
                             all_threads.append(items)
-            return objectize({'data': all_threads, 'trace_id': trace_ids, 'result': results})
+            return objectize({'data': all_threads, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
         except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_ids, 'result': [False]})
+            return objectize({'data': None, 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
     async def get_thread_info(self, channel_id: str, thread_id: str) -> reply_model.get_thread_info():
         """
@@ -1270,9 +1279,9 @@ class AsyncAPI:
                 for i in range(len(return_dict['apis'])):
                     api = api_converter_re(return_dict['apis'][i]['method'], return_dict['apis'][i]['path'])
                     return_dict['apis'][i]['api'] = api
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status, 'result': result})
         except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+            return objectize({'data': None, 'trace_id': trace_id, 'http_code': return_.status, 'result': False})
 
     async def create_permission_demand(self, guild_id: str, channel_id: str, api: str, desc: str or None) -> \
             reply_model.create_permission_demand():

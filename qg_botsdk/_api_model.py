@@ -119,6 +119,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -140,6 +141,7 @@ class ReplyModel:
                 message: str
 
             data: List[__guild]
+            http_code: List[int]
             trace_id: List[str]
             result: List[bool]
 
@@ -160,6 +162,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -180,6 +183,7 @@ class ReplyModel:
                 message: str
 
             data: List[__channels]
+            http_code: int
             trace_id: str
             result: bool
 
@@ -196,7 +200,7 @@ class ReplyModel:
         op_user_id: str or None
         sub_type: int
         private_type: int
-        private_user_ids: List
+        private_user_ids: List[str]
         speak_permission: int
         application_id: str
         permissions: str
@@ -208,6 +212,7 @@ class ReplyModel:
 
         class GetChannelsInfo:
             data: channels
+            http_code: int
             trace_id: str
             result: bool
 
@@ -218,6 +223,7 @@ class ReplyModel:
 
         class CreateChannels:
             data: channels
+            http_code: int
             trace_id: str
             result: bool
 
@@ -228,6 +234,7 @@ class ReplyModel:
 
         class PatchChannels:
             data: channels
+            http_code: int
             trace_id: str
             result: bool
 
@@ -238,6 +245,7 @@ class ReplyModel:
 
         class DeleteChannels:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -251,7 +259,7 @@ class ReplyModel:
             bot: bool
 
         nick: str
-        roles: List
+        roles: List[str]
         joined_at: str
         deaf: bool
         mute: bool
@@ -264,6 +272,7 @@ class ReplyModel:
 
         class GetGuildMembers:
             data: List[member]
+            http_code: List[int]
             trace_id: List[str]
             result: List[bool]
 
@@ -274,6 +283,7 @@ class ReplyModel:
 
         class GetMemberInfo:
             data: member
+            http_code: int
             trace_id: str
             result: bool
 
@@ -284,6 +294,7 @@ class ReplyModel:
 
         class DeleteMember:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -308,6 +319,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -323,6 +335,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -339,6 +352,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -349,6 +363,7 @@ class ReplyModel:
 
         class DeleteRole:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -360,6 +375,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -377,6 +393,7 @@ class ReplyModel:
 
         class GetChannelMemberPermission:
             data: permission
+            http_code: int
             trace_id: str
             result: bool
 
@@ -387,6 +404,7 @@ class ReplyModel:
 
         class PutChannelMRPermission:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -404,6 +422,7 @@ class ReplyModel:
 
         class GetChannelRolePermission:
             data: permission
+            http_code: int
             trace_id: str
             result: bool
 
@@ -447,6 +466,7 @@ class ReplyModel:
             class data:
                 message: message_
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -470,6 +490,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -480,6 +501,7 @@ class ReplyModel:
 
         class DeleteMsg:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -495,6 +517,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -509,6 +532,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -519,6 +543,7 @@ class ReplyModel:
 
         class MuteMember:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -531,6 +556,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -551,6 +577,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -561,6 +588,7 @@ class ReplyModel:
 
         class DeleteAnnounce:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -575,6 +603,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 
@@ -585,6 +614,7 @@ class ReplyModel:
 
         class DeletePinMsg:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -615,6 +645,7 @@ class ReplyModel:
 
         class GetSchedules:
             data: [schedule]
+            http_code: int
             trace_id: str
             result: bool
 
@@ -625,6 +656,7 @@ class ReplyModel:
 
         class ScheduleInfo:
             data: schedule
+            http_code: int
             trace_id: str
             result: bool
 
@@ -635,6 +667,7 @@ class ReplyModel:
 
         class DeleteSchedule:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -645,6 +678,7 @@ class ReplyModel:
 
         class Reactions:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -660,6 +694,7 @@ class ReplyModel:
 
         class GetReactionUsers:
             data: List[Users]
+            http_code: List[int]
             trace_id: List[str]
             result: List[bool]
 
@@ -670,6 +705,7 @@ class ReplyModel:
 
         class Audio:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -727,6 +763,7 @@ class ReplyModel:
 
         class GetThreads:
             data: List[thread]
+            http_code: List[int]
             trace_id: List[str]
             result: List[bool]
 
@@ -737,6 +774,7 @@ class ReplyModel:
 
         class GetThreadInfo:
             data: thread
+            http_code: int
             trace_id: str
             result: bool
 
@@ -750,6 +788,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
         return CreateThread
@@ -759,6 +798,7 @@ class ReplyModel:
 
         class DeleteThread:
             data: temp
+            http_code: int
             trace_id: str
             result: bool
 
@@ -778,6 +818,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
         return GetGuildPermissions
@@ -795,6 +836,7 @@ class ReplyModel:
                 code: int
                 message: str
 
+            http_code: int
             trace_id: str
             result: bool
 

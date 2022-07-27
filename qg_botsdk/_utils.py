@@ -83,25 +83,25 @@ def treat_msg(raw_msg: str):
 def http_temp(return_, code: int):
     trace_id = return_.headers['X-Tps-Trace-Id']
     if return_.status_code == code:
-        return objectize({'data': None, 'trace_id': trace_id, 'result': True})
+        return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': True})
     else:
         try:
             return_dict = return_.json()
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': code, 'result': False})
         except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+            return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': False})
 
 
 async def async_http_temp(return_, code: int):
     trace_id = return_.headers['X-Tps-Trace-Id']
     if return_.status == code:
-        return objectize({'data': None, 'trace_id': trace_id, 'result': True})
+        return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': True})
     else:
         try:
             return_dict = await return_.json()
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'result': False})
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': code, 'result': False})
         except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+            return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': False})
 
 
 def regular_temp(return_):
@@ -112,9 +112,10 @@ def regular_temp(return_):
             result = False
         else:
             result = True
-        return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+        return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status_code,
+                          'result': result})
     except JSONDecodeError:
-        return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return objectize({'data': None, 'trace_id': trace_id, 'http_code': return_.status_code, 'result': False})
 
 
 async def async_regular_temp(return_):
@@ -125,9 +126,9 @@ async def async_regular_temp(return_):
             result = False
         else:
             result = True
-        return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+        return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status, 'result': result})
     except JSONDecodeError:
-        return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return objectize({'data': None, 'trace_id': trace_id, 'http_code': return_.status, 'result': False})
 
 
 def empty_temp(return_):
@@ -139,9 +140,10 @@ def empty_temp(return_):
             return_dict = None
         else:
             result = False
-        return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+        return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status_code,
+                          'result': result})
     except JSONDecodeError:
-        return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return objectize({'data': None, 'trace_id': trace_id, 'http_code': return_.status_code, 'result': False})
 
 
 async def async_empty_temp(return_):
@@ -153,11 +155,11 @@ async def async_empty_temp(return_):
             return_dict = None
         else:
             result = False
-        return objectize({'data': return_dict, 'trace_id': trace_id, 'result': result})
+        return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status, 'result': result})
     except JSONDecodeError:
-        return objectize({'data': None, 'trace_id': trace_id, 'result': False})
+        return objectize({'data': None, 'trace_id': trace_id, 'http_code': return_.status, 'result': False})
 
 
 def sdk_error_temp(message):
     return objectize({'data': {'code': -1, 'message': f'这是来自SDK的错误信息：{message}'}, 'trace_id': None,
-                      'result': False})
+                      'http_code': None, 'result': False})
