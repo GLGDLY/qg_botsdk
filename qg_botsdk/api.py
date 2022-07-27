@@ -22,7 +22,8 @@ class _Session:
         self._logger = logger
 
     def _warning(self, url, resp):
-        self._logger.warning(f'HTTP API(url:{url})调用错误，详情：{resp.text}，trace_id：{resp.headers["X-Tps-Trace-Id"]}')
+        self._logger.warning(f'HTTP API(url:{url})调用错误[{resp.status_code}]，详情：{resp.text}，'
+                             f'trace_id：{resp.headers["X-Tps-Trace-Id"]}')
 
     def get(self, url, retry=False, **kwargs):
         resp = self._session.get(url, timeout=20, **kwargs)

@@ -93,7 +93,7 @@ class _Session:
             self._session = ClientSession(**self._kwargs)
 
     async def _warning(self, url, resp):
-        self._logger.warning(f'HTTP API(url:{url})调用错误，详情：{await resp.text()}，'
+        self._logger.warning(f'HTTP API(url:{url})调用错误[{resp.status}]，详情：{await resp.text()}，'
                              f'trace_id：{resp.headers["X-Tps-Trace-Id"]}')
 
     async def get(self, url, retry=False, **kwargs):
