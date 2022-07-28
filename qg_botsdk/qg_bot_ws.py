@@ -19,7 +19,7 @@ def __getattr__(identifier: str) -> object:
 
 
 class BotWs:
-    def __init__(self, session, ssl, logger, shard: int, shard_no: int, url: str, bot_id: str, bot_token: str,
+    def __init__(self, session, ssl, logger, total_shard: int, shard_no: int, url: str, bot_id: str, bot_token: str,
                  bot_url: str, on_msg_function: Callable[[Any], Any], on_dm_function: Callable[[Any], Any],
                  on_delete_function: Callable[[Any], Any], is_filter_self: bool,
                  on_guild_event_function: Callable[[Any], Any], on_channel_event_function: Callable[[Any], Any],
@@ -39,7 +39,7 @@ class BotWs:
         self.session = session
         self.__ssl = ssl
         self.logger = logger
-        self.shard = shard
+        self.total_shard = total_shard
         self.shard_no = shard_no
         self.url = url
         self.bot_id = bot_id
@@ -50,14 +50,7 @@ class BotWs:
         self.on_dm_function = on_dm_function
         self.on_delete_function = on_delete_function
         self.is_filter_self = is_filter_self
-        self.on_guild_event_function = on_guild_event_function
-        self.on_channel_event_function = on_channel_event_function
-        self.on_guild_member_function = on_guild_member_function
-        self.on_reaction_function = on_reaction_function
-        self.on_interaction_function = on_interaction_function
-        self.on_audit_function = on_audit_function
         self.on_forum_function = on_forum_function
-        self.on_audio_function = on_audio_function
         self.intents = intents
         self.msg_treat = msg_treat
         self.dm_treat = dm_treat
@@ -74,13 +67,13 @@ class BotWs:
         self.op9_flag = False
         self.is_async = is_async
         self.events = {
-            ("GUILD_CREATE", "GUILD_UPDATE", "GUILD_DELETE"): self.on_guild_event_function,
-            ("CHANNEL_CREATE", "CHANNEL_UPDATE", "CHANNEL_DELETE"): self.on_channel_event_function,
-            ("GUILD_MEMBER_ADD", "GUILD_MEMBER_UPDATE", "GUILD_MEMBER_REMOVE"): self.on_guild_member_function,
-            ("MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE"): self.on_reaction_function,
-            ("INTERACTION_CREATE",): self.on_interaction_function,
-            ("MESSAGE_AUDIT_PASS", "MESSAGE_AUDIT_REJECT"): self.on_audit_function,
-            ("AUDIO_START", "AUDIO_FINISH", "AUDIO_ON_MIC", "AUDIO_OFF_MIC"): self.on_audio_function
+            ("GUILD_CREATE", "GUILD_UPDATE", "GUILD_DELETE"): on_guild_event_function,
+            ("CHANNEL_CREATE", "CHANNEL_UPDATE", "CHANNEL_DELETE"): on_channel_event_function,
+            ("GUILD_MEMBER_ADD", "GUILD_MEMBER_UPDATE", "GUILD_MEMBER_REMOVE"): on_guild_member_function,
+            ("MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE"): on_reaction_function,
+            ("INTERACTION_CREATE",): on_interaction_function,
+            ("MESSAGE_AUDIT_PASS", "MESSAGE_AUDIT_REJECT"): on_audit_function,
+            ("AUDIO_START", "AUDIO_FINISH", "AUDIO_ON_MIC", "AUDIO_OFF_MIC"): on_audio_function
         }
 
     def send_connect(self):
@@ -89,7 +82,7 @@ class BotWs:
             "d": {
                 "token": f"Bot {self.bot_id}.{self.bot_token}",
                 "intents": self.intents,
-                "shard": [self.shard_no, self.shard],
+                "shard": [self.shard_no, self.total_shard],
                 "properties": {
                     "$os": "windows",
                     "$browser": "chrome",

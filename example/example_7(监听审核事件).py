@@ -22,7 +22,7 @@ def msg_audit(data: Model.MESSAGE_AUDIT):
 
 
 if __name__ == '__main__':
-    bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=True, max_shard=1)
+    bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=True)
     bot.bind_msg(deliver, treated_data=True)
     bot.bind_audit(msg_audit)
     bot.register_start_event(on_start)

@@ -4,9 +4,10 @@ from time import time
 from json import loads
 from json.decoder import JSONDecodeError
 from io import BufferedReader
-from typing import Optional, Union, BinaryIO, List
+from typing import Optional, Union, BinaryIO, List, Tuple
 from ._api_model import ReplyModel, api_converter, api_converter_re
-from ._utils import objectize, convert_color, regular_temp, http_temp, empty_temp, sdk_error_temp
+from ._utils import objectize, regular_temp, http_temp, empty_temp, sdk_error_temp
+from .utils import convert_color
 
 reply_model = ReplyModel()
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
@@ -367,7 +368,7 @@ class API:
         return regular_temp(return_)
 
     def create_role(self, guild_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
-                    color: Optional[Union[str, tuple[int, int, int]]] = None) -> reply_model.create_role():
+                    color: Optional[Union[str, Tuple[int, int, int]]] = None) -> reply_model.create_role():
         """
         用于在 guild_id 指定的频道下创建一个身份组
 
@@ -393,7 +394,7 @@ class API:
         return regular_temp(return_)
 
     def patch_role(self, guild_id: str, role_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
-                   color: Optional[Union[str, tuple[int, int, int]]] = None) -> reply_model.patch_role():
+                   color: Optional[Union[str, Tuple[int, int, int]]] = None) -> reply_model.patch_role():
         """
         用于修改频道 guild_id 下 role_id 指定的身份组
 

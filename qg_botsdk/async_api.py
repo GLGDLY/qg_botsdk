@@ -6,9 +6,10 @@ from aiohttp import ClientSession, TCPConnector, FormData, ClientTimeout, multip
 from json import loads
 from json.decoder import JSONDecodeError
 from io import BufferedReader
-from typing import Optional, Union, BinaryIO, List
+from typing import Optional, Union, BinaryIO, List, Tuple
 from ._api_model import ReplyModel, api_converter, api_converter_re
-from ._utils import objectize, convert_color, async_regular_temp, async_http_temp, async_empty_temp, sdk_error_temp
+from ._utils import objectize, async_regular_temp, async_http_temp, async_empty_temp, sdk_error_temp
+from .utils import convert_color
 
 try:
     from importlib.metadata import version
@@ -450,7 +451,7 @@ class AsyncAPI:
         return await async_regular_temp(return_)
 
     async def create_role(self, guild_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
-                          color: Optional[Union[str, tuple[int, int, int]]] = None) -> reply_model.create_role():
+                          color: Optional[Union[str, Tuple[int, int, int]]] = None) -> reply_model.create_role():
         """
         用于在 guild_id 指定的频道下创建一个身份组
 
@@ -476,7 +477,7 @@ class AsyncAPI:
         return await async_regular_temp(return_)
 
     async def patch_role(self, guild_id: str, role_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
-                         color: Optional[Union[str, tuple[int, int, int]]] = None) -> reply_model.patch_role():
+                         color: Optional[Union[str, Tuple[int, int, int]]] = None) -> reply_model.patch_role():
         """
         用于修改频道 guild_id 下 role_id 指定的身份组
 

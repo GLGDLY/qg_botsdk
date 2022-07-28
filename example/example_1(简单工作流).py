@@ -13,6 +13,6 @@ def deliver(data: Model.MESSAGE):
 
 
 if __name__ == '__main__':
-    bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=True, max_shard=1)
+    bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=True)
     bot.bind_msg(deliver, treated_data=True)
     bot.start()

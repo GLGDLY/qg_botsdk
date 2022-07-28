@@ -46,7 +46,7 @@ def forums_event(data: Model.FORUMS_EVENT):
 
 
 if __name__ == '__main__':
-    bot = BOT(bot_id='', bot_token='', bot_secret='', is_private=True, is_sandbox=True, max_shard=1)
+    bot = BOT(bot_id='', bot_token='', bot_secret='', is_private=True, is_sandbox=True)
     bot.bind_msg(deliver, treated_data=True)
     bot.bind_forum(forums_event)
     bot.start()
