@@ -82,26 +82,28 @@ def treat_msg(raw_msg: str):
 
 def http_temp(return_, code: int):
     trace_id = return_.headers['X-Tps-Trace-Id']
-    if return_.status_code == code:
-        return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': True})
+    real_code = return_.status_code
+    if real_code == code:
+        return objectize({'data': None, 'trace_id': trace_id, 'http_code': real_code, 'result': True})
     else:
         try:
             return_dict = return_.json()
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': code, 'result': False})
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': real_code, 'result': False})
         except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': False})
+            return objectize({'data': None, 'trace_id': trace_id, 'http_code': real_code, 'result': False})
 
 
 async def async_http_temp(return_, code: int):
     trace_id = return_.headers['X-Tps-Trace-Id']
-    if return_.status == code:
-        return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': True})
+    real_code = return_.status
+    if real_code == code:
+        return objectize({'data': None, 'trace_id': trace_id, 'http_code': real_code, 'result': True})
     else:
         try:
             return_dict = await return_.json()
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': code, 'result': False})
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': real_code, 'result': False})
         except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': False})
+            return objectize({'data': None, 'trace_id': trace_id, 'http_code': real_code, 'result': False})
 
 
 def regular_temp(return_):
