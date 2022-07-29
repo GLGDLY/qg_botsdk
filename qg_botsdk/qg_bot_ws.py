@@ -196,7 +196,6 @@ class BotWs:
                 if not self.flag:
                     self.flag = True
                     robot_info = self.session.get(self.bot_url + '/users/@me').json()
-                    print(robot_info)
                     self.robot = objectize(robot_info)
                     self.logger.info('机器人频道用户ID：' + self.robot.id)
                     if self.on_start_function is not None:
