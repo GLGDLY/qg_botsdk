@@ -108,14 +108,13 @@ class _Session:
 
 
 class API:
-    def __init__(self, bot_url, bot_id, bot_secret, session, logger, check_warning, get_bot_id, is_retry, is_log_error):
+    def __init__(self, bot_url, bot_id, bot_secret, session, logger, check_warning, is_retry, is_log_error):
         self.bot_url = bot_url
         self.bot_id = bot_id
         self.bot_secret = bot_secret
         self._session = _Session(session, is_retry, is_log_error, logger)
         self.logger = logger
         self.check_warning = check_warning
-        self._get_function = get_bot_id
         self.security_code = ''
         self.code_expire = 0
 
@@ -155,9 +154,6 @@ class API:
         if check['errCode'] == 0:
             return True
         return False
-
-    def get_bot_id(self) -> reply_model.get_bot_id():
-        return self._get_function()
 
     def get_bot_info(self) -> reply_model.get_bot_info():
         """

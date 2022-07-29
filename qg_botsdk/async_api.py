@@ -184,8 +184,7 @@ class _Session:
 
 
 class AsyncAPI:
-    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, get_bot_id, is_retry,
-                 is_log_error):
+    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, is_retry, is_log_error):
         self.bot_url = bot_url
         self.bot_id = bot_id
         self.bot_secret = bot_secret
@@ -195,7 +194,6 @@ class AsyncAPI:
         self.check_warning = check_warning
         self.__client_conn = TCPConnector(limit=500, ssl=ssl, force_close=True)
         self.__session = _Session(loop, is_retry, is_log_error, logger, headers=headers, connector=self.__client_conn)
-        self.__get_function = get_bot_id
         self.security_code = ''
         self.code_expire = 0
 
@@ -238,9 +236,6 @@ class AsyncAPI:
         if check['errCode'] == 0:
             return True
         return False
-
-    async def get_bot_id(self) -> reply_model.get_bot_id():
-        return self.__get_function()
 
     async def get_bot_info(self) -> reply_model.get_bot_info():
         """

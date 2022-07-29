@@ -2,6 +2,7 @@
 # encoding: utf-8
 from inspect import stack
 from typing import List
+from re import split as re_split
 
 apis = {('获取用户ID', 'get_bot_id'): [False, '此API不需要请求权限'],
         ('获取用户信息', 'get_bot_info'): ['GET', '/users/@me'],
@@ -69,7 +70,7 @@ apis = {('获取用户ID', 'get_bot_id'): [False, '此API不需要请求权限']
 
 
 def __getattr__(identifier: str) -> object:
-    if stack()[1].filename.split('\\')[-1] not in ('qg_bot.py', 'api.py', 'async_api.py'):
+    if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'api.py', 'async_api.py'):
         raise AssertionError("此为SDK内部使用文件，无法使用，使用机器人Model库请from model import Model")
 
     return globals()[identifier.__path__]
@@ -101,12 +102,13 @@ class ReplyModel:
         code: int
         message: str
 
-    def get_bot_id(self):
-        class GetBotId:
-            data: str or None
-            result: bool
+    def robot(self):
+        class Robot:
+            id: str
+            username: str
+            avatar: str
 
-        return GetBotId
+        return Robot
 
     def get_bot_info(self):
         class GetBotInfo:

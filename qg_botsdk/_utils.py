@@ -6,10 +6,11 @@ from inspect import stack
 from json import dumps
 from json.decoder import JSONDecodeError
 from functools import wraps
+from re import split as re_split
 
 
 def __getattr__(identifier: str) -> object:
-    if stack()[1].filename.split('\\')[-1] not in ('qg_bot.py', 'qg_bot_ws.py', 'model.py', 'api.py', 'async_api.py'):
+    if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'qg_bot_ws.py', 'api.py', 'async_api.py'):
         raise AssertionError("此为SDK内部使用文件，无法使用")
 
     return globals()[identifier.__path__]
@@ -62,7 +63,7 @@ def treat_msg(raw_msg: str):
         return ''
     if raw_msg[0] == '/':
         raw_msg = raw_msg[1:]
-    return raw_msg.strip().replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('\xa0', ' ')
+    return raw_msg.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('\xa0', ' ').strip()
 
 
 @_template_wrapper

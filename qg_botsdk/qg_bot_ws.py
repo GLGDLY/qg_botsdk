@@ -8,11 +8,12 @@ from typing import Any, Callable
 from asyncio import get_event_loop, all_tasks, sleep
 from time import sleep as t_sleep
 from threading import Thread
+from re import split as re_split
 from ._utils import objectize, treat_msg, exception_handler
 
 
 def __getattr__(identifier: str) -> object:
-    if stack()[1].filename.split('\\')[-1] != 'qg_bot.py':
+    if re_split(r'[/\\]', stack()[1].filename)[-1] != 'qg_bot.py':
         raise AssertionError("此为SDK内部使用文件，无法使用，注册机器人请使用from qg_bot.py import BOT")
 
     return globals()[identifier.__path__]
@@ -54,7 +55,7 @@ class BotWs:
         self.intents = intents
         self.msg_treat = msg_treat
         self.dm_treat = dm_treat
-        self.bot_qid = ''
+        self.robot = None
         self.heartbeat_time = 0
         self.loop = get_event_loop()
         self.s = 0
@@ -135,9 +136,9 @@ class BotWs:
         if t in ("AT_MESSAGE_CREATE", 'MESSAGE_CREATE'):
             if self.msg_treat:
                 raw_msg = '' if 'content' not in data["d"] else data["d"]["content"].strip()
-                treated_msg = treat_msg(raw_msg)
-                at = f'<@!{self.bot_qid}>'
-                data["d"]["treated_msg"] = treated_msg if treated_msg.find(at) else treated_msg.replace(at, '', 1)
+                at = f'<@!{self.robot.id}>'
+                treated_msg = raw_msg if raw_msg.find(at) else raw_msg.replace(at, '', 1)
+                data["d"]["treated_msg"] = treat_msg(treated_msg.strip())
             await self.distribute(self.on_msg_function, data)
         elif t in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE", "DIRECT_MESSAGE_DELETE"):
             if self.is_filter_self:
@@ -194,9 +195,10 @@ class BotWs:
                 self.logger.info('连接成功，机器人开始运行')
                 if not self.flag:
                     self.flag = True
-                    me_qid = self.session.get(self.bot_url + '/users/@me').json()
-                    self.bot_qid = me_qid['id']
-                    self.logger.info('机器人频道用户ID：' + self.bot_qid)
+                    robot_info = self.session.get(self.bot_url + '/users/@me').json()
+                    print(robot_info)
+                    self.robot = objectize(robot_info)
+                    self.logger.info('机器人频道用户ID：' + self.robot.id)
                     if self.on_start_function is not None:
                         if self.is_async:
                             self.loop.create_task(self.on_start_function())

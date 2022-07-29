@@ -12,13 +12,13 @@ from .logger import Logger
 from .model import Model
 from ._api_model import ReplyModel
 from .qg_bot_ws import BotWs
-from ._utils import objectize, exception_handler
+from ._utils import exception_handler
 from .api import API
 
 reply_model = ReplyModel()
 retry = Retry(total=4, connect=3, backoff_factor=0.5)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.3.1'
+version = '2.3.2'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 t_sleep(0.5)
@@ -44,6 +44,7 @@ class BOT:
         :param shard_no: 当前分片数，如不熟悉相关配置请不要轻易改动此项，默认0
         :param total_shard: 最大分片数，如不熟悉相关配置请不要轻易改动此项，默认1
         """
+        self.robot: reply_model.robot() = self.__robot(self.__get_robot_attr)
         self.logger = Logger(bot_id)
         self.bot_id = bot_id
         self.bot_token = bot_token
@@ -90,13 +91,23 @@ class BOT:
         self.no_permission_warning = no_permission_warning
         self.is_async = is_async
         if not is_async:
-            self.api = API(self.bot_url, bot_id, bot_secret, self.__session, self.logger, self.check_warning,
-                           self.__get_bot_id, is_retry, is_log_error)
+            self.api = API(self.bot_url, bot_id, bot_secret, self.__session, self.logger, self.check_warning, is_retry,
+                           is_log_error)
         else:
             from .async_api import AsyncAPI
             self.api: Union[API, AsyncAPI] = AsyncAPI(self.bot_url, bot_id, bot_secret, self.__ssl, self.bot_headers,
-                                                      self.logger, self.__loop, self.check_warning, self.__get_bot_id,
+                                                      self.logger, self.__loop, self.check_warning,
                                                       is_retry, is_log_error)
+
+    class __robot(object):
+        def __init__(self, bot):
+            self.__bot = bot
+
+        def __getattr__(self, item):
+            return getattr(self.__bot(), item, None)
+
+    def __get_robot_attr(self):
+        return self.__bot_class.robot
 
     async def __time_event_check(self):
         while self.running:
@@ -272,17 +283,6 @@ class BOT:
     def check_warning(self, name: str):
         if not self.is_private and self.no_permission_warning:
             self.logger.warning(f'请注意，一般公域机器人并不能使用{name}API，请检查自身是否拥有相关权限')
-
-    def __get_bot_id(self):
-        """
-        获取机器人在频道场景的用户ID
-
-        :return: 返回的.data中为机器人用户ID，如未注册则返回None
-        """
-        try:
-            return objectize({'data': self.__bot_class.bot_qid, 'result': True})
-        except IndexError:
-            return objectize({'data': None, 'result': False})
 
     def start(self):
         """
