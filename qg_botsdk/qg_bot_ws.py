@@ -35,7 +35,7 @@ class BotWs:
             更多教程和相关资讯可参阅：
             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b52
         """
-        if stack()[1].filename.split('\\')[-1] != 'qg_bot.py':
+        if re_split(r'[/\\]', stack()[1].filename)[-1] != 'qg_bot.py':
             raise AssertionError("此为SDK内部使用类，无法使用，注册机器人请使用from qg_botsdk.qg_bot import BOT")
         self.session = session
         self.__ssl = ssl

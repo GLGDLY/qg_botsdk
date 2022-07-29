@@ -94,7 +94,7 @@ def api_converter_re(method: str, path: str):
 
 class ReplyModel:
     def __init__(self, type_: object or dict = object):
-        if stack()[1].filename.split('\\')[-1] not in ('qg_bot.py', 'api.py', 'async_api.py'):
+        if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'api.py', 'async_api.py'):
             raise AssertionError('ReplyModel()为SDK内部使用类，无法使用')
         self.type_ = type_
 
