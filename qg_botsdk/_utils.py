@@ -21,17 +21,51 @@ def _template_wrapper(func):
     def wrap(*args):
         try:
             return func(*args)
-        except JSONDecodeError:
+        except (JSONDecodeError, AttributeError, KeyError):
             return_ = args[0]
-            code = return_.status_code if hasattr(return_, 'status_code') else return_.status
-            return objectize({'data': None, 'trace_id': return_.headers['X-Tps-Trace-Id'],
-                              'http_code': code, 'result': False})
+            code = return_.status_code if hasattr(return_, 'status_code') else getattr(return_, 'status', None)
+            trace_id = return_.headers.get('X-Tps-Trace-Id', None) if hasattr(return_, 'headers') else None
+            return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': False})
+
+    return wrap
+
+
+def security_wrapper(func):
+    @wraps(func)
+    def wrap(*args, **kwargs):
+        try:
+            print(func.__name__)
+            return func(*args, **kwargs)
+        except (JSONDecodeError, KeyError, AttributeError) as e:
+            name = func.__name__
+            logger = getattr(args[0], 'logger', None)
+            if name == '__security_check_code':
+                if logger:
+                    logger.error('无法调用内容安全检测接口（备注：请检查机器人密钥是否正确）')
+            else:
+                if logger:
+                    logger.error(f'调用内容安全检测接口失败，详情：{exception_handler(e)}')
+                return False
     return wrap
 
 
 def exception_handler(error):
     error_info = extract_tb(exc_info()[-1])[-1]
-    return "[error:{}] File \"{}\", line {}, in {}".format(error, error_info[0], error_info[1], error_info[2])
+    return "[error:{}] File \"{}\", line {}, in {}".format(error.__repr__(), *error_info[:3])
+
+
+def exception_processor(func):
+    @wraps(func)
+    def wrap(*args):
+        try:
+            return func(*args)
+        except Exception as e:
+            logger = getattr(args[0], 'logger', None)
+            if logger:
+                logger.error(e.__repr__())
+                logger.debug(exception_handler(e))
+
+    return wrap
 
 
 class object_class(type):
@@ -68,7 +102,7 @@ def treat_msg(raw_msg: str):
 
 @_template_wrapper
 def http_temp(return_, code: int):
-    trace_id = return_.headers['X-Tps-Trace-Id']
+    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     real_code = return_.status_code
     if real_code == code:
         return objectize({'data': None, 'trace_id': trace_id, 'http_code': real_code, 'result': True})
@@ -79,7 +113,7 @@ def http_temp(return_, code: int):
 
 @_template_wrapper
 async def async_http_temp(return_, code: int):
-    trace_id = return_.headers['X-Tps-Trace-Id']
+    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     real_code = return_.status
     if real_code == code:
         return objectize({'data': None, 'trace_id': trace_id, 'http_code': real_code, 'result': True})
@@ -90,7 +124,7 @@ async def async_http_temp(return_, code: int):
 
 @_template_wrapper
 def regular_temp(return_):
-    trace_id = return_.headers['X-Tps-Trace-Id']
+    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     return_dict = return_.json()
     if isinstance(return_dict, dict) and 'code' in return_dict.keys():
         result = False
@@ -101,7 +135,7 @@ def regular_temp(return_):
 
 @_template_wrapper
 async def async_regular_temp(return_):
-    trace_id = return_.headers['X-Tps-Trace-Id']
+    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     return_dict = await return_.json()
     if isinstance(return_dict, dict) and 'code' in return_dict.keys():
         result = False
@@ -112,7 +146,7 @@ async def async_regular_temp(return_):
 
 @_template_wrapper
 def empty_temp(return_):
-    trace_id = return_.headers['X-Tps-Trace-Id']
+    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     return_dict = return_.json()
     if not return_dict:
         result = True
@@ -124,7 +158,7 @@ def empty_temp(return_):
 
 @_template_wrapper
 async def async_empty_temp(return_):
-    trace_id = return_.headers['X-Tps-Trace-Id']
+    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     return_dict = await return_.json()
     if not return_dict:
         result = True

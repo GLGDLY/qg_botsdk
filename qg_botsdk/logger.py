@@ -12,7 +12,7 @@ from re import split as re_split
 color_init(strip=False)
 
 
-def _check_date(func):
+def _log_wrapper(func):
     @wraps(func)
     def wrap(self, msg):
         str_time = strftime('%m-%d', localtime())
@@ -110,18 +110,18 @@ class Logger:
         self._logh.setFormatter(Formatter(self._format, self._date_format))
         self._logger.addHandler(self._logh)
 
-    @_check_date
+    @_log_wrapper
     def debug(self, msg):
         self._logger.debug(msg)
 
-    @_check_date
+    @_log_wrapper
     def info(self, msg):
         self._logger.info(msg)
 
-    @_check_date
+    @_log_wrapper
     def warning(self, msg):
         self._logger.warning(msg)
 
-    @_check_date
+    @_log_wrapper
     def error(self, msg):
         self._logger.error(msg)

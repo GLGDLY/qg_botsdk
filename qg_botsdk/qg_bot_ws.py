@@ -7,9 +7,9 @@ from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 from typing import Any, Callable
 from asyncio import get_event_loop, all_tasks, sleep
 from time import sleep as t_sleep
-from threading import Thread
 from re import split as re_split
-from ._utils import objectize, treat_msg, exception_handler
+from ._utils import objectize, treat_msg, exception_handler, exception_processor
+from concurrent.futures import ThreadPoolExecutor
 
 
 def __getattr__(identifier: str) -> object:
@@ -52,13 +52,16 @@ class BotWs:
         self.on_delete_function = on_delete_function
         self.is_filter_self = is_filter_self
         self.on_forum_function = on_forum_function
+        if not intents:
+            self.logger.error('[错误] 未订阅任何事件（未订阅任何事件将导致op=9的报错，请最少订阅一个事件）')
+            exit()
         self.intents = intents
         self.msg_treat = msg_treat
         self.dm_treat = dm_treat
         self.robot = None
         self.heartbeat_time = 0
         self.loop = get_event_loop()
-        self.s = 0
+        self.s = None
         self.reconnect_times = 0
         self.re_connect = False
         self.running = True
@@ -67,15 +70,16 @@ class BotWs:
         self.heartbeat = None
         self.op9_flag = False
         self.is_async = is_async
-        self.events = {
-            ("GUILD_CREATE", "GUILD_UPDATE", "GUILD_DELETE"): on_guild_event_function,
-            ("CHANNEL_CREATE", "CHANNEL_UPDATE", "CHANNEL_DELETE"): on_channel_event_function,
-            ("GUILD_MEMBER_ADD", "GUILD_MEMBER_UPDATE", "GUILD_MEMBER_REMOVE"): on_guild_member_function,
-            ("MESSAGE_REACTION_ADD", "MESSAGE_REACTION_REMOVE"): on_reaction_function,
-            ("INTERACTION_CREATE",): on_interaction_function,
-            ("MESSAGE_AUDIT_PASS", "MESSAGE_AUDIT_REJECT"): on_audit_function,
-            ("AUDIO_START", "AUDIO_FINISH", "AUDIO_ON_MIC", "AUDIO_OFF_MIC"): on_audio_function
-        }
+        self.events = {"GUILD_CREATE": on_guild_event_function, "GUILD_UPDATE": on_guild_event_function,
+                       "GUILD_DELETE": on_guild_event_function, "CHANNEL_CREATE": on_channel_event_function,
+                       "CHANNEL_UPDATE": on_channel_event_function, "CHANNEL_DELETE": on_channel_event_function,
+                       "GUILD_MEMBER_ADD": on_guild_member_function, "GUILD_MEMBER_UPDATE": on_guild_member_function,
+                       "GUILD_MEMBER_REMOVE": on_guild_member_function, "MESSAGE_REACTION_ADD": on_reaction_function,
+                       "MESSAGE_REACTION_REMOVE": on_reaction_function, "INTERACTION_CREATE": on_interaction_function,
+                       "MESSAGE_AUDIT_PASS": on_audit_function, "MESSAGE_AUDIT_REJECT": on_audit_function,
+                       "AUDIO_START": on_audio_function, "AUDIO_FINISH": on_audio_function,
+                       "AUDIO_ON_MIC": on_audio_function, "AUDIO_OFF_MIC": on_audio_function}
+        self.threads = ThreadPoolExecutor(10) if not self.is_async else None
 
     def send_connect(self):
         connect_paras = {
@@ -113,7 +117,7 @@ class BotWs:
         while True:
             await sleep(self.heartbeat_time)
             if not self.ws.closed:
-                heart_json['d'] = self.s if self.s else None
+                heart_json['d'] = self.s
                 await self.ws.send_str(dumps(heart_json))
 
     def start_heartbeat(self):
@@ -122,15 +126,34 @@ class BotWs:
             self.heartbeat = self.loop.create_task(self.heart())
             self.heartbeat.set_name('heartbeat_task')
 
+    def get_robot_info(self, retry=False):
+        robot_info = self.session.get(f'{self.bot_url}/users/@me').json()
+        if 'id' not in robot_info:
+            if not retry:
+                return self.get_robot_info(retry)
+            else:
+                self.logger.error('获取机器人信息失败，机器人启动失败，程序将退出运行')
+                exit()
+        return objectize(robot_info)
+
+    @exception_processor
+    async def async_start_task(self, func, *args):
+        await func(*args)
+
+    @exception_processor
+    def start_task(self, func, *args):
+        func(*args)
+
     async def distribute(self, function, data):
         data["d"]["t"] = data["t"]
         data["d"]["event_id"] = data["id"]
         if function is not None:
             if not self.is_async:
-                Thread(target=function, args=[objectize(data["d"])], name=f'EventThread-{self.s}').start()
+                self.threads.submit(self.start_task(function, objectize(data["d"])))
             else:
-                await function(objectize(data["d"]))
+                self.loop.create_task(self.async_start_task(function, objectize(data["d"])))
 
+    @exception_processor
     async def data_process(self, data):
         t = data["t"]
         if t in ("AT_MESSAGE_CREATE", 'MESSAGE_CREATE'):
@@ -161,9 +184,11 @@ class BotWs:
                     pass
             await self.distribute(self.on_forum_function, data)
         else:
-            for keys, values in self.events.items():
-                if t in keys:
-                    await self.distribute(values, data)
+            func = self.events.get(t, None)
+            if func:
+                await self.distribute(func, data)
+            else:
+                self.logger.warning(f'unknown event type: [{t}]')
 
     async def main(self, msg):
         data = loads(msg)
@@ -179,8 +204,9 @@ class BotWs:
                 else:
                     self.send_reconnect()
                 return
-            self.logger.error('[错误] 参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）')
-            exit()
+            else:
+                self.logger.error('[错误] 参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）')
+                exit()
         elif data["op"] == 10:
             self.heartbeat_time = float(int(data["d"]["heartbeat_interval"]) * 0.001)
             if not self.re_connect:
@@ -195,9 +221,8 @@ class BotWs:
                 self.logger.info('连接成功，机器人开始运行')
                 if not self.flag:
                     self.flag = True
-                    robot_info = self.session.get(self.bot_url + '/users/@me').json()
-                    self.robot = objectize(robot_info)
-                    self.logger.info('机器人频道用户ID：' + self.robot.id)
+                    self.robot = self.get_robot_info()
+                    self.logger.info(f'机器人频道用户ID：{self.robot.id}')
                     if self.on_start_function is not None:
                         if self.is_async:
                             self.loop.create_task(self.on_start_function())
@@ -208,14 +233,9 @@ class BotWs:
                 self.start_heartbeat()
                 self.logger.info('重连成功，机器人继续运行')
             else:
-                try:
-                    await self.data_process(data)
-                except Exception as error:
-                    self.logger.error(error)
-                    self.logger.debug(exception_handler(error))
-                    return
+                await self.data_process(data)
         else:
-            self.logger.debug('[其他WS消息] ' + str(data))
+            self.logger.warning(f'unknown ws event: {data}')
 
     async def connect(self):
         self.reconnect_times += 1
@@ -239,12 +259,12 @@ class BotWs:
                                     self.heartbeat.cancel()
                                 self.logger.warning('BOT_WS链接已断开，正在尝试重连……')
                                 return
-        except Exception as error:
+        except Exception as e:
             self.logger.warning('BOT_WS链接已断开，正在尝试重连……')
             if self.heartbeat is not None and not self.heartbeat.cancelled():
                 self.heartbeat.cancel()
-            self.logger.error(error)
-            self.logger.debug(exception_handler(error))
+            self.logger.error(e)
+            self.logger.debug(exception_handler(e))
             return
 
     def ws_starter(self):

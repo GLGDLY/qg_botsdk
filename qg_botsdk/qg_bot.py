@@ -5,20 +5,19 @@ from asyncio import get_event_loop, sleep
 from time import sleep as t_sleep
 from ssl import SSLContext
 from requests import Session
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter, Retry
 from typing import Any, Callable, Union
 from .logger import Logger
 from .model import Model
 from ._api_model import ReplyModel
 from .qg_bot_ws import BotWs
-from ._utils import exception_handler
+from ._utils import exception_processor
 from .api import API
 
 reply_model = ReplyModel()
-retry = Retry(total=4, connect=3, backoff_factor=0.5)
+retry = Retry(total=4, connect=2, read=2)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.3.2'
+version = '2.3.3'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 t_sleep(0.5)
@@ -44,7 +43,6 @@ class BOT:
         :param shard_no: 当前分片数，如不熟悉相关配置请不要轻易改动此项，默认0
         :param total_shard: 最大分片数，如不熟悉相关配置请不要轻易改动此项，默认1
         """
-        self.robot: reply_model.robot() = self.__robot(self.__get_robot_attr)
         self.logger = Logger(bot_id)
         self.bot_id = bot_id
         self.bot_token = bot_token
@@ -91,34 +89,28 @@ class BOT:
         self.no_permission_warning = no_permission_warning
         self.is_async = is_async
         if not is_async:
-            self.api = API(self.bot_url, bot_id, bot_secret, self.__session, self.logger, self.check_warning, is_retry,
-                           is_log_error)
+            self.api: API = API(self.bot_url, bot_id, bot_secret, self.__session, self.logger, self.check_warning,
+                                is_retry, is_log_error)
         else:
             from .async_api import AsyncAPI
-            self.api: Union[API, AsyncAPI] = AsyncAPI(self.bot_url, bot_id, bot_secret, self.__ssl, self.bot_headers,
+            self.api: Union[AsyncAPI, API] = AsyncAPI(self.bot_url, bot_id, bot_secret, self.__ssl, self.bot_headers,
                                                       self.logger, self.__loop, self.check_warning,
                                                       is_retry, is_log_error)
 
-    class __robot(object):
-        def __init__(self, bot):
-            self.__bot = bot
-
-        def __getattr__(self, item):
-            return getattr(self.__bot(), item, None)
-
-    def __get_robot_attr(self):
+    @property
+    def robot(self) -> reply_model.robot():
         return self.__bot_class.robot
+
+    @exception_processor
+    def __time_event_run(self):
+        if self.is_async:
+            self.__loop.create_task(self.__repeat_function())
+        else:
+            self.__repeat_function()
 
     async def __time_event_check(self):
         while self.running:
-            try:
-                if self.is_async:
-                    await self.__repeat_function()
-                else:
-                    self.__repeat_function()
-            except Exception as error:
-                self.logger.error(error)
-                self.logger.debug(exception_handler(error))
+            self.__time_event_run()
             await sleep(self.check_interval)
 
     def bind_msg(self, on_msg_function: Callable[[Model.MESSAGE], Any], treated_data: bool = True,

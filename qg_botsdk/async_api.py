@@ -7,8 +7,10 @@ from json import loads
 from json.decoder import JSONDecodeError
 from io import BufferedReader
 from typing import Optional, Union, BinaryIO, List, Tuple
+from functools import wraps
 from ._api_model import ReplyModel, api_converter, api_converter_re
-from ._utils import objectize, async_regular_temp, async_http_temp, async_empty_temp, sdk_error_temp
+from ._utils import (objectize, async_regular_temp, async_http_temp, async_empty_temp, sdk_error_temp,
+                     exception_handler, security_wrapper)
 from .utils import convert_color
 
 try:
@@ -34,6 +36,19 @@ reply_model = ReplyModel()
 security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
 retry_err_code = (101, 11281, 11252, 11263, 11242, 11252, 306003, 306005, 306006, 501002, 501003, 501004, 501006,
                   501007, 501011, 501012, 620007)
+
+
+def _request_wrapper(func):
+    @wraps(func)
+    def wrap(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger = getattr(args[0], '_logger', None)
+            if logger:
+                logger.error(f'HTTP API(url:{args[1]})调用错误，详情：{exception_handler(e)}')
+
+    return wrap
 
 
 class _FormData(FormData):
@@ -95,8 +110,9 @@ class _Session:
 
     async def _warning(self, url, resp):
         self._logger.warning(f'HTTP API(url:{url})调用错误[{resp.status}]，详情：{await resp.text()}，'
-                             f'trace_id：{resp.headers["X-Tps-Trace-Id"]}')
+                             f'trace_id：{resp.headers.get("X-Tps-Trace-Id", None)}')
 
+    @_request_wrapper
     async def get(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.get(url, timeout=self._timeout, **kwargs)
@@ -114,6 +130,7 @@ class _Session:
             return await self.get(url, True, **kwargs)
         return resp
 
+    @_request_wrapper
     async def post(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.post(url, timeout=self._timeout, **kwargs)
@@ -131,6 +148,7 @@ class _Session:
             return await self.post(url, True, **kwargs)
         return resp
 
+    @_request_wrapper
     async def patch(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.patch(url, timeout=self._timeout, **kwargs)
@@ -148,6 +166,7 @@ class _Session:
             return await self.patch(url, True, **kwargs)
         return resp
 
+    @_request_wrapper
     async def delete(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.delete(url, timeout=self._timeout, **kwargs)
@@ -165,6 +184,7 @@ class _Session:
             return await self.delete(url, True, **kwargs)
         return resp
 
+    @_request_wrapper
     async def put(self, url, retry=False, **kwargs):
         await self.check_session()
         resp = await self._session.put(url, timeout=self._timeout, **kwargs)
@@ -197,6 +217,7 @@ class AsyncAPI:
         self.security_code = ''
         self.code_expire = 0
 
+    @security_wrapper
     async def __security_check_code(self):
         if self.bot_secret is None:
             self.logger.error('无法调用内容安全检测接口（备注：没有填入机器人密钥）')
@@ -204,14 +225,11 @@ class AsyncAPI:
         return_ = await self.__session.get(f'https://api.q.qq.com/api/getToken?grant_type=client_credential&'
                                            f'appid={self.bot_id}&secret={self.bot_secret}')
         code = await return_.json()
-        try:
-            self.security_code = code['access_token']
-            self.code_expire = time() + 7000
-            return self.security_code
-        except KeyError:
-            self.logger.error('无法调用内容安全检测接口（备注：请检查机器人密钥是否正确）')
-            return None
+        self.security_code = code['access_token']
+        self.code_expire = time() + 7000
+        return self.security_code
 
+    @security_wrapper
     async def security_check(self, content: str) -> bool:
         """
         腾讯小程序侧内容安全检测接口，使用此接口必须填入bot_secret密钥
@@ -276,7 +294,7 @@ class AsyncAPI:
                     results.append(True)
                     for items in return_dict:
                         data.append(items)
-        except JSONDecodeError:
+        except (JSONDecodeError, AttributeError, KeyError):
             return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': False})
         return objectize({'data': data, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
 
@@ -399,7 +417,7 @@ class AsyncAPI:
                     for items in return_dict:
                         if items not in data:
                             data.append(items)
-        except JSONDecodeError:
+        except (JSONDecodeError, AttributeError, KeyError):
             return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
         if data:
             return objectize({'data': data, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
@@ -909,8 +927,8 @@ class AsyncAPI:
         """
         json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds, 'user_ids': user_id}
         return_ = await self.__session.patch(f'{self.bot_url}/guilds/{guild_id}/mute', json=json_)
-        trace_id = return_.headers['X-Tps-Trace-Id']
-        status_code = return_.status
+        trace_id = return_.headers.get('X-Tps-Trace-Id', None) if hasattr(return_, 'headers') else None
+        status_code = getattr(return_, 'status', None)
         try:
             return_dict = await return_.json()
             if status_code == 200:
@@ -1106,8 +1124,8 @@ class AsyncAPI:
         """
         return_ = await self.__session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
                                            f'{type_}/{id_}?cookie=&limit=50')
-        trace_ids = [return_.headers['X-Tps-Trace-Id']]
-        codes = [return_.status]
+        trace_ids = [return_.headers.get('X-Tps-Trace-Id', None) if hasattr(return_, 'headers') else None]
+        codes = [getattr(return_, 'status', None)]
         all_users = []
         try:
             return_dict = await return_.json()
@@ -1135,7 +1153,7 @@ class AsyncAPI:
                         for items in return_dict['users']:
                             all_users.append(items)
             return objectize({'data': all_users, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
-        except JSONDecodeError:
+        except (JSONDecodeError, AttributeError, KeyError):
             return objectize({'data': None, 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
     async def control_audio(self, channel_id: str, status: int, audio_url: Optional[str] = None,
@@ -1182,8 +1200,8 @@ class AsyncAPI:
         """
         self.check_warning('获取帖子列表')
         return_ = await self.__session.get(f'{self.bot_url}/channels/{channel_id}/threads')
-        trace_ids = [return_.headers['X-Tps-Trace-Id']]
-        codes = [return_.status]
+        trace_ids = [return_.headers.get('X-Tps-Trace-Id', None) if hasattr(return_, 'headers') else None]
+        codes = [getattr(return_, 'status', None)]
         all_threads = []
         try:
             return_dict = await return_.json()
@@ -1214,7 +1232,7 @@ class AsyncAPI:
                                 items['thread_info']['content'] = loads(items['thread_info']['content'])
                             all_threads.append(items)
             return objectize({'data': all_threads, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
-        except JSONDecodeError:
+        except (JSONDecodeError, AttributeError, KeyError):
             return objectize({'data': None, 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
     async def get_thread_info(self, channel_id: str, thread_id: str) -> reply_model.get_thread_info():
@@ -1265,7 +1283,8 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self.__session.get(f'{self.bot_url}/guilds/{guild_id}/api_permission')
-        trace_id = return_.headers['X-Tps-Trace-Id']
+        trace_id = return_.headers.get('X-Tps-Trace-Id', None) if hasattr(return_, 'headers') else None
+        status_code = getattr(return_, 'status', None)
         try:
             return_dict = await return_.json()
             if isinstance(return_dict, dict) and 'code' in return_dict.keys():
@@ -1275,9 +1294,9 @@ class AsyncAPI:
                 for i in range(len(return_dict['apis'])):
                     api = api_converter_re(return_dict['apis'][i]['method'], return_dict['apis'][i]['path'])
                     return_dict['apis'][i]['api'] = api
-            return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status, 'result': result})
+            return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': status_code, 'result': result})
         except JSONDecodeError:
-            return objectize({'data': None, 'trace_id': trace_id, 'http_code': return_.status, 'result': False})
+            return objectize({'data': None, 'trace_id': trace_id, 'http_code': status_code, 'result': False})
 
     async def create_permission_demand(self, guild_id: str, channel_id: str, api: str, desc: str or None) -> \
             reply_model.create_permission_demand():
