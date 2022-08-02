@@ -1,5 +1,5 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 from typing import Dict, Any, Union, Tuple
 try:
     from yaml import safe_load

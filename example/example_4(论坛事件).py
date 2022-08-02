@@ -1,8 +1,7 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 # 监听论坛事件并获取帖子内容，如有安全风险则自动删除的一个实例
-from qg_botsdk.model import Model
-from qg_botsdk.qg_bot import BOT
+from qg_botsdk import BOT, Model
 
 
 def deliver(data: Model.MESSAGE):
@@ -25,7 +24,7 @@ def forums_event(data: Model.FORUMS_EVENT):
     原type 4：表情，目前为空子字段，无任何内容反馈
     原type 5：#子频道，目前为空子字段，无任何内容反馈
     """
-    print(data.__doc__)   # 可借此获取json格式的实际数据结构
+    print(data)   # 可借此获取json格式的实际数据结构
     if data.t == 'FORUM_THREAD_CREATE':
         title = data.thread_info.title.paragraphs[0].elems[0].text.text
         content = ''

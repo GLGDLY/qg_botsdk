@@ -1,4 +1,5 @@
-# encoding: utf-8
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 """
 qg_botsdk Library
@@ -14,5 +15,19 @@ qg_botsdk Library
 :license: MIT, see LICENSE for more details.
 """
 
+from .qg_bot import BOT, version
+from .model import Model
+from .logger import Logger
+
+__title__ = "requests"
+__version__ = version
+__description__ = "easy-to-use SDK for Tencent QQ guild robot"
+__url__ = "https://github.com/GLGDLY/qg_botsdk"
+__author__ = "GDLY"
+__author_email__ = "tzlgdly@gmail.com"
+__license__ = "MIT"
+__copyright__ = "Copyright (c) 2022 GLGDLY"
+
+
 name = "qg_botsdk"
-__all__ = ["qg_bot", "model"]
+__all__ = ("BOT", "Model", "Logger")

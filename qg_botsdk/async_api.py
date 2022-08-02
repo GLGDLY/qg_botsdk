@@ -1,3 +1,5 @@
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
 from os import PathLike
 from os.path import exists
 from time import time
@@ -38,19 +40,7 @@ retry_err_code = (101, 11281, 11252, 11263, 11242, 11252, 306003, 306005, 306006
                   501007, 501011, 501012, 620007)
 
 
-def _request_wrapper(func):
-    @wraps(func)
-    def wrap(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            logger = getattr(args[0], '_logger', None)
-            if logger:
-                logger.error(f'HTTP API(url:{args[1]})调用错误，详情：{exception_handler(e)}')
-
-    return wrap
-
-
+# derived from aiohttp FormData object, changing the return of _is_processed to allow retry using the same data object
 class _FormData(FormData):
     def _gen_form_data(self) -> multipart.MultipartWriter:
         """Encode a list of fields using the multipart/form-data MIME format"""
@@ -97,14 +87,14 @@ class _Session:
         self._kwargs = kwargs
         self._session: Optional[ClientSession] = None
         self._timeout = ClientTimeout(total=20)
-        loop.run_until_complete(self.check_session())
+        loop.run_until_complete(self._check_session())
 
     def __del__(self):
         if self._session and not self._session.closed:
             _loop = get_event_loop()
             _loop.run_until_complete(self._session.close())
 
-    async def check_session(self):
+    async def _check_session(self):
         if not self._session or self._session.closed:
             self._session = ClientSession(**self._kwargs)
 
@@ -112,28 +102,20 @@ class _Session:
         self._logger.warning(f'HTTP API(url:{url})调用错误[{resp.status}]，详情：{await resp.text()}，'
                              f'trace_id：{resp.headers.get("X-Tps-Trace-Id", None)}')
 
-    @_request_wrapper
-    async def get(self, url, retry=False, **kwargs):
-        await self.check_session()
-        resp = await self._session.get(url, timeout=self._timeout, **kwargs)
-        if resp.ok:
-            return resp
-        if self._is_log_error and (not self._is_retry or retry):
-            await self._warning(url, resp)
-        if self._is_retry and not retry:
-            if resp.headers['content-type'] == 'application/json':
-                json_ = await resp.json()
-                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
-                    if self._is_log_error:
-                        await self._warning(url, resp)
-                    return resp
-            return await self.get(url, True, **kwargs)
-        return resp
+    def __getattr__(self, item):
+        if item in ('get', 'post', 'delete', 'patch', 'put'):
+            def wrap(*args, **kwargs):
+                try:
+                    return self.request(item, *args, **kwargs)
+                except Exception as e:
+                    logger = getattr(args[0], '_logger', None)
+                    if logger:
+                        logger.error(f'HTTP API(url:{args[1]})调用错误，详情：{exception_handler(e)}')
+            return wrap
 
-    @_request_wrapper
-    async def post(self, url, retry=False, **kwargs):
-        await self.check_session()
-        resp = await self._session.post(url, timeout=self._timeout, **kwargs)
+    async def request(self, method, url, retry=False, **kwargs):
+        await self._check_session()
+        resp = await self._session.request(method, url, timeout=self._timeout, **kwargs)
         if resp.ok:
             return resp
         if self._is_log_error and (not self._is_retry or retry):
@@ -142,64 +124,8 @@ class _Session:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
-                    if self._is_log_error:
-                        await self._warning(url, resp)
                     return resp
-            return await self.post(url, True, **kwargs)
-        return resp
-
-    @_request_wrapper
-    async def patch(self, url, retry=False, **kwargs):
-        await self.check_session()
-        resp = await self._session.patch(url, timeout=self._timeout, **kwargs)
-        if resp.ok:
-            return resp
-        if self._is_log_error and (not self._is_retry or retry):
-            await self._warning(url, resp)
-        if self._is_retry and not retry:
-            if resp.headers['content-type'] == 'application/json':
-                json_ = await resp.json()
-                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
-                    if self._is_log_error:
-                        await self._warning(url, resp)
-                    return resp
-            return await self.patch(url, True, **kwargs)
-        return resp
-
-    @_request_wrapper
-    async def delete(self, url, retry=False, **kwargs):
-        await self.check_session()
-        resp = await self._session.delete(url, timeout=self._timeout, **kwargs)
-        if resp.ok:
-            return resp
-        if self._is_log_error and (not self._is_retry or retry):
-            await self._warning(url, resp)
-        if self._is_retry and not retry:
-            if resp.headers['content-type'] == 'application/json':
-                json_ = await resp.json()
-                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
-                    if self._is_log_error:
-                        await self._warning(url, resp)
-                    return resp
-            return await self.delete(url, True, **kwargs)
-        return resp
-
-    @_request_wrapper
-    async def put(self, url, retry=False, **kwargs):
-        await self.check_session()
-        resp = await self._session.put(url, timeout=self._timeout, **kwargs)
-        if resp.ok:
-            return resp
-        if self._is_log_error and (not self._is_retry or retry):
-            await self._warning(url, resp)
-        if self._is_retry and not retry:
-            if resp.headers['content-type'] == 'application/json':
-                json_ = await resp.json()
-                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
-                    if self._is_log_error:
-                        await self._warning(url, resp)
-                    return resp
-            return await self.put(url, True, **kwargs)
+            return await self.request(method, url, True, **kwargs)
         return resp
 
 
@@ -1191,7 +1117,7 @@ class AsyncAPI:
         return_ = await self.__session.delete(f'{self.bot_url}/channels/{channel_id}/mic')
         return await async_empty_temp(return_)
 
-    async def get_threads(self, channel_id) -> reply_model.get_threads():
+    async def get_threads(self, channel_id: str) -> reply_model.get_threads():
         """
         获取子频道下的帖子列表
 
@@ -1298,7 +1224,7 @@ class AsyncAPI:
         except JSONDecodeError:
             return objectize({'data': None, 'trace_id': trace_id, 'http_code': status_code, 'result': False})
 
-    async def create_permission_demand(self, guild_id: str, channel_id: str, api: str, desc: str or None) -> \
+    async def create_permission_demand(self, guild_id: str, channel_id: str, api: str, desc: Optional[str]) -> \
             reply_model.create_permission_demand():
         """
         发送频道API接口权限授权链接到频道

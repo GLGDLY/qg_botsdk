@@ -1,5 +1,5 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 from typing import List
 
 
@@ -260,12 +260,12 @@ class Model:
             现有推送的type字段：
 
             - type 1 - 普通文本，子字段text
-            - type 2 - 图片，子字段image
-            - type 3 - 视频，子字段video
             - type 4 - url信息，子字段url
 
             现无推送，根据文档列出的type：
 
+            - 原新type 2 - 图片，子字段image（曾短暂出现，目前为空子字段，无任何内容反馈）
+            - 原新type 3 - 视频，子字段video（曾短暂出现，目前为空子字段，无任何内容反馈）
             - 原type 2 - at信息，目前为空子字段，无任何内容反馈
             - 原type 4 - 表情，目前为空子字段，无任何内容反馈
             - 原type 5 - #子频道，目前为空子字段，无任何内容反馈
@@ -295,24 +295,24 @@ class Model:
                         class text:  # type = 1
                             text: str
 
-                        class image:  # type = 2
-                            class plat_image:
-                                url: str
-                                width: int
-                                height: int
-                                image_id: str
-
-                        class video:  # type = 3
-                            class plat_video:
-                                class cover:
-                                    url: str
-                                    width: int
-                                    height: int
-
-                                url: str
-                                width: int
-                                height: int
-                                video_id: str
+#                         class image:  # type = 2
+#                             class plat_image:
+#                                 url: str
+#                                 width: int
+#                                 height: int
+#                                 image_id: str
+#
+#                         class video:  # type = 3
+#                             class plat_video:
+#                                 class cover:
+#                                     url: str
+#                                     width: int
+#                                     height: int
+#
+#                                 url: str
+#                                 width: int
+#                                 height: int
+#                                 video_id: str
 
                         class url:  # type = 4
                             url: str

@@ -1,5 +1,5 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 from sys import exc_info
 from traceback import extract_tb
 from inspect import stack
@@ -16,7 +16,7 @@ def __getattr__(identifier: str) -> object:
     return globals()[identifier.__path__]
 
 
-def _template_wrapper(func):
+def template_wrapper(func):
     @wraps(func)
     def wrap(*args):
         try:
@@ -56,9 +56,9 @@ def exception_handler(error):
 
 def exception_processor(func):
     @wraps(func)
-    def wrap(*args):
+    def wrap(*args, **kwargs):
         try:
-            return func(*args)
+            return func(*args, **kwargs)
         except Exception as e:
             logger = getattr(args[0], 'logger', None)
             if logger:
@@ -100,7 +100,7 @@ def treat_msg(raw_msg: str):
     return raw_msg.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>').replace('\xa0', ' ').strip()
 
 
-@_template_wrapper
+@template_wrapper
 def http_temp(return_, code: int):
     trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     real_code = return_.status_code
@@ -111,7 +111,7 @@ def http_temp(return_, code: int):
         return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': real_code, 'result': False})
 
 
-@_template_wrapper
+@template_wrapper
 async def async_http_temp(return_, code: int):
     trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     real_code = return_.status
@@ -122,29 +122,29 @@ async def async_http_temp(return_, code: int):
         return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': real_code, 'result': False})
 
 
-@_template_wrapper
+@template_wrapper
 def regular_temp(return_):
     trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     return_dict = return_.json()
-    if isinstance(return_dict, dict) and 'code' in return_dict.keys():
+    if isinstance(return_dict, dict) and 'code' in return_dict:
         result = False
     else:
         result = True
     return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status_code, 'result': result})
 
 
-@_template_wrapper
+@template_wrapper
 async def async_regular_temp(return_):
     trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     return_dict = await return_.json()
-    if isinstance(return_dict, dict) and 'code' in return_dict.keys():
+    if isinstance(return_dict, dict) and 'code' in return_dict:
         result = False
     else:
         result = True
     return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status, 'result': result})
 
 
-@_template_wrapper
+@template_wrapper
 def empty_temp(return_):
     trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     return_dict = return_.json()
@@ -156,7 +156,7 @@ def empty_temp(return_):
     return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status_code, 'result': result})
 
 
-@_template_wrapper
+@template_wrapper
 async def async_empty_temp(return_):
     trace_id = return_.headers.get("X-Tps-Trace-Id", None)
     return_dict = await return_.json()

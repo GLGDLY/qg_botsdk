@@ -1,9 +1,8 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 # 使用腾讯内容检测接口的一个简单实例
 
-from qg_botsdk.qg_bot import BOT
-from qg_botsdk.model import Model
+from qg_botsdk import BOT, Model
 
 
 def deliver(data: Model.MESSAGE):

@@ -1,8 +1,7 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 # 发送本地图片、使用emoji的一个实例（本地图片要求SDK版本>=2.1.3，当前仅普通消息可直接上传图片，embed和ark暂无相关能力）
-from qg_botsdk.model import Model
-from qg_botsdk.qg_bot import BOT
+from qg_botsdk import BOT, Model
 
 
 async def on_start():

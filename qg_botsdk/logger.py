@@ -1,5 +1,5 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 from logging import getLogger, Formatter, StreamHandler, FileHandler
 from os import makedirs, PathLike, getcwd, sep
 from os.path import exists, join, isdir

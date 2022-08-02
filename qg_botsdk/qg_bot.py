@@ -1,5 +1,5 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 from os import getpid
 from asyncio import get_event_loop, sleep
 from time import sleep as t_sleep
@@ -17,7 +17,7 @@ from .api import API
 reply_model = ReplyModel()
 retry = Retry(total=4, connect=2, read=2)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.3.3'
+version = '2.3.4'
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
 t_sleep(0.5)
@@ -48,10 +48,7 @@ class BOT:
         self.bot_token = bot_token
         self.bot_secret = bot_secret
         self.is_private = is_private
-        if is_sandbox:
-            self.bot_url = r'https://sandbox.api.sgroup.qq.com'
-        else:
-            self.bot_url = r'https://api.sgroup.qq.com'
+        self.bot_url = r'https://sandbox.api.sgroup.qq.com' if is_sandbox else r'https://api.sgroup.qq.com'
         if not self.bot_id or not self.bot_token:
             raise type('IdTokenMissing', (Exception,), {})(
                 '你还没有输入 bot_id 和 bot_token，无法连接使用机器人\n如尚未有相关票据，'
@@ -89,12 +86,12 @@ class BOT:
         self.no_permission_warning = no_permission_warning
         self.is_async = is_async
         if not is_async:
-            self.api: API = API(self.bot_url, bot_id, bot_secret, self.__session, self.logger, self.check_warning,
+            self.api: API = API(self.bot_url, bot_id, bot_secret, self.__session, self.logger, self._check_warning,
                                 is_retry, is_log_error)
         else:
             from .async_api import AsyncAPI
             self.api: Union[AsyncAPI, API] = AsyncAPI(self.bot_url, bot_id, bot_secret, self.__ssl, self.bot_headers,
-                                                      self.logger, self.__loop, self.check_warning,
+                                                      self.logger, self.__loop, self._check_warning,
                                                       is_retry, is_log_error)
 
     @property
@@ -252,7 +249,7 @@ class BOT:
         if self.no_permission_warning:
             self.logger.warning('请注意，一般机器人并不能注册音频事件（需先进行申请），请检查自身是否拥有相关权限（如已申请可忽略此消息）')
 
-    def register_repeat_event(self, time_function: Callable[[], Any], check_interval: float or int = 10):
+    def register_repeat_event(self, time_function: Callable[[], Any], check_interval: Union[float, int] = 10):
         """
         用作注册重复事件的函数，注册并开始机器人后，会根据间隔时间不断调用注册的函数
 
@@ -272,7 +269,7 @@ class BOT:
         self.__on_start_function = on_start_function
         self.logger.info('初始事件注册成功')
 
-    def check_warning(self, name: str):
+    def _check_warning(self, name: str):
         if not self.is_private and self.no_permission_warning:
             self.logger.warning(f'请注意，一般公域机器人并不能使用{name}API，请检查自身是否拥有相关权限')
 
@@ -280,7 +277,7 @@ class BOT:
         """
         开始运行机器人的函数，在唤起此函数后的代码将不能运行，如需运行后续代码，请以多进程方式唤起此函数，以下是一个简单的唤起流程：
 
-        >>> from qg_botsdk.qg_bot import BOT
+        >>> from qg_botsdk import BOT
         >>> bot = BOT(bot_id='xxx', bot_token='xxx')
         >>> bot.start()
 
@@ -292,7 +289,7 @@ class BOT:
             if not self.running and not self.__bot_class:
                 self.running = True
                 gateway = self.__session.get(self.bot_url + '/gateway/bot').json()
-                if 'url' not in gateway.keys():
+                if 'url' not in gateway:
                     raise type('IdTokenError', (Exception,), {})(
                         '你输入的 bot_id 和/或 bot_token 错误，无法连接使用机器人\n如尚未有相关票据，'
                         '请参阅 https://thoughts.teambition.com/share/627533408adeb10041b935b1#title=快速入门 了解相关详情')
@@ -308,7 +305,7 @@ class BOT:
                                          self.__on_interaction_function, self.__on_audit_function,
                                          self.__on_forum_function, self.__on_audio_function, self.intents,
                                          self.msg_treat, self.dm_treat, self.__on_start_function, self.is_async)
-                self.__bot_class.ws_starter()
+                self.__bot_class.starter()
             else:
                 self.logger.error('当前机器人已在运行中！')
         except KeyboardInterrupt:

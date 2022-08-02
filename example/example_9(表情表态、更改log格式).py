@@ -1,8 +1,7 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 # 使用创建表情表态API、更改log格式的一个简单实例
-from qg_botsdk.qg_bot import BOT
-from qg_botsdk.model import Model
+from qg_botsdk import BOT, Model
 from random import choice
 
 some_emojis = ['4', '5', '8', '9', '10', '12', '14', '16', '21', '23', '24', '25', '26', '27', '28', '29', '30']

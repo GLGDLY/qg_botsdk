@@ -1,5 +1,5 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 from inspect import stack
 from json import loads, dumps
 from json.decoder import JSONDecodeError
@@ -81,7 +81,7 @@ class BotWs:
                        "AUDIO_ON_MIC": on_audio_function, "AUDIO_OFF_MIC": on_audio_function}
         self.threads = ThreadPoolExecutor(10) if not self.is_async else None
 
-    def send_connect(self):
+    async def send_connect(self):
         connect_paras = {
             "op": 2,
             "d": {
@@ -95,9 +95,9 @@ class BotWs:
                 }
             }
         }
-        self.loop.create_task(self.ws_send(dumps(connect_paras)))
+        await self.ws_send(dumps(connect_paras))
 
-    def send_reconnect(self):
+    async def send_reconnect(self):
         reconnect_paras = {
             "op": 6,
             "d": {
@@ -106,7 +106,7 @@ class BotWs:
                 "seq": self.s
             }
         }
-        self.loop.create_task(self.ws_send(dumps(reconnect_paras)))
+        await self.ws_send(dumps(reconnect_paras))
 
     async def ws_send(self, msg):
         if not self.ws.closed:
@@ -177,43 +177,45 @@ class BotWs:
             await self.distribute(self.on_dm_function, data)
         elif t in ("FORUM_THREAD_CREATE", "FORUM_THREAD_UPDATE", "FORUM_THREAD_DELETE", "FORUM_POST_CREATE",
                    "FORUM_POST_DELETE", "FORUM_REPLY_CREATE", "FORUM_REPLY_DELETE", "FORUM_PUBLISH_AUDIT_RESULT"):
-            for items in ["content", "title"]:
+            for items in ("content", "title"):
                 try:
                     data["d"]["thread_info"][items] = loads(data["d"]["thread_info"][items])
                 except JSONDecodeError:
                     pass
             await self.distribute(self.on_forum_function, data)
         else:
-            func = self.events.get(t, None)
-            if func:
-                await self.distribute(func, data)
+            if t in self.events:
+                func = self.events[t]
+                if func:
+                    await self.distribute(func, data)
             else:
                 self.logger.warning(f'unknown event type: [{t}]')
 
     async def main(self, msg):
         data = loads(msg)
-        if "s" in data.keys():
+        op = data.get('op', None)
+        if "s" in data:
             self.s = data["s"]
-        if data["op"] == 11:
+        if op == 11:
             self.logger.debug('心跳发送成功')
-        elif data["op"] == 9:
+        elif op == 9:
             if not self.op9_flag:
                 self.op9_flag = True
                 if not self.re_connect:
-                    self.send_connect()
+                    await self.send_connect()
                 else:
-                    self.send_reconnect()
+                    await self.send_reconnect()
                 return
             else:
                 self.logger.error('[错误] 参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）')
                 exit()
-        elif data["op"] == 10:
+        elif op == 10:
             self.heartbeat_time = float(int(data["d"]["heartbeat_interval"]) * 0.001)
             if not self.re_connect:
-                self.send_connect()
+                await self.send_connect()
             else:
-                self.send_reconnect()
-        elif data["op"] == 0:
+                await self.send_reconnect()
+        elif op == 0:
             if data["t"] == "READY":
                 self.session_id = data["d"]["session_id"]
                 self.reconnect_times = 0
@@ -234,8 +236,6 @@ class BotWs:
                 self.logger.info('重连成功，机器人继续运行')
             else:
                 await self.data_process(data)
-        else:
-            self.logger.warning(f'unknown ws event: {data}')
 
     async def connect(self):
         self.reconnect_times += 1
@@ -252,7 +252,7 @@ class BotWs:
                                 self.logger.info('WS进程已结束')
                                 return
                             await self.main(message.data)
-                        elif message.type in [WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.ERROR]:
+                        elif message.type in (WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.ERROR):
                             if self.running:
                                 self.re_connect = True
                                 if self.heartbeat is not None and not self.heartbeat.cancelled():
@@ -267,13 +267,12 @@ class BotWs:
             self.logger.debug(exception_handler(e))
             return
 
-    def ws_starter(self):
+    def starter(self):
         self.loop.run_until_complete(self.connect())
         while self.running:
             self.re_connect = False if self.reconnect_times >= 20 else True
             try:
                 self.loop.run_until_complete(self.connect())
-                t_sleep(5)
             except WSServerHandshakeError:
                 self.logger.warning('网络连线不稳定或已断开，请检查网络链接')
-                t_sleep(5)
+            t_sleep(5)

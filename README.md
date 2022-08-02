@@ -32,8 +32,8 @@
 
 ### 下载方式
 
--   直接下载最新release，放到项目中即可：<https://github.com/GLGDLY/qg_botsdk/releases>
--   pip安装：
+-   直接下载[最新release](https://github.com/GLGDLY/qg_botsdk/releases)，放到项目中即可
+-   pip安装（推荐）：
 
 ```shell bash
 pip install qg-botsdk   # 注意是qg-botsdk（中线），不是qg_botsdk（底线）

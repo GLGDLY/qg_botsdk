@@ -1,8 +1,7 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 # 使用主动消息、监听消息审核事件的一个简单实例
-from qg_botsdk.qg_bot import BOT
-from qg_botsdk.model import Model
+from qg_botsdk import BOT, Model
 
 
 def on_start():

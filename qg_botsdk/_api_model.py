@@ -1,7 +1,7 @@
 # !/usr/bin/env python3
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 from inspect import stack
-from typing import List
+from typing import List, Optional
 from re import split as re_split
 
 apis = {('获取用户ID', 'get_bot_id'): [False, '此API不需要请求权限'],
@@ -89,14 +89,12 @@ def api_converter_re(method: str, path: str):
     for keys, values in apis.items():
         if [method, path] == values:
             return keys[1]
-    return None
 
 
 class ReplyModel:
-    def __init__(self, type_: object or dict = object):
+    def __init__(self):
         if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'api.py', 'async_api.py'):
             raise AssertionError('ReplyModel()为SDK内部使用类，无法使用')
-        self.type_ = type_
 
     class _EmptyReturnTemplate:
         code: int
@@ -199,7 +197,7 @@ class ReplyModel:
         position: int
         parent_id: str
         owner_id: str
-        op_user_id: str or None
+        op_user_id: Optional[str]
         sub_type: int
         private_type: int
         private_user_ids: List[str]
