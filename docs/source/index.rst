@@ -30,9 +30,17 @@ qg_botsdk
 
 - 这里是 qg_botsdk 的 readthedocs 托管文档
 
-   * 注意另有 `thoughts托管文档 <https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51>`_ 可供查阅帮助文档内容
+- 注意另有 `thoughts 托管文档 <https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51>`_ 可供查阅帮助文档内容
 
-- 最新Release v |version| `安装 <https://github.com/GLGDLY/qg_botsdk/releases>`_
+下载方式
+^^^^^^^^
+
+-   直接下载 `最新release <https://github.com/GLGDLY/qg_botsdk/releases>`_ ，放到项目中即可
+-   pip安装（推荐）：
+
+.. code-block:: bash
+
+    pip install qg-botsdk
 
 -------------------
 
