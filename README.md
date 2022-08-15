@@ -26,7 +26,7 @@
 
 ##### -   保留官方http API中Json数据的结构字段，带你学习官方结构，日后可自行开发适合自己的SDK
 
-##### -   迅速的更新速度，跟上最新潮流（v2.1.3已更新当日上新的本地上传图片能力，使用例子可参阅> [example_10(发送本地图片).py](./example/example_10(发送本地图片).py)
+##### -   迅速的更新速度，跟上最新潮流（v2.1.3已更新当日上新的本地上传图片能力，使用例子可参阅 [example_10(发送本地图片).py](./example/example_10(发送本地图片).py)
 
 * * *
 
@@ -49,8 +49,7 @@ pip install qg-botsdk   # 注意是qg-botsdk（中线），不是qg_botsdk（底
 > -   开始运行机器人：bot.start()
 
 ```python
-from qg_botsdk.qg_bot import BOT   # 导入SDK核心类
-from qg_botsdk.model import Model   # 导入所有数据模型
+from qg_botsdk import BOT, Model   # 导入SDK核心类（BOT）、所有数据模型（Model）
 
 
 def deliver(data: Model.MESSAGE):   # 创建接收消息事件的函数
@@ -154,7 +153,7 @@ if __name__ == '__main__':
 -   register_repeat_event：绑定一个背景重复运行的函数
 -   security_check：用于使用腾讯内容检测接口进行内容检测
 
-### 相关链接：
+### 相关链接
 
 -   文档：<https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51>
 -   官方注册机器人：<https://q.qq.com/#/>
