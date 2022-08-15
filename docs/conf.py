@@ -38,4 +38,3 @@ html_logo = '_static/robot.png'
 html_favicon = '_static/favicon.ico'
 html_show_copyright = True
 html_show_sphinx = False
-html_search_language = ['zh', 'en']
