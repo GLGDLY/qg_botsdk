@@ -6,28 +6,28 @@ from time import sleep as t_sleep
 from ssl import SSLContext
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
-from typing import Any, Callable, Union
+from typing import Any, Callable, Union, Optional
+from . import _api_model
+from .version import __version__
 from .logger import Logger
 from .model import Model
-from ._api_model import ReplyModel
 from .qg_bot_ws import BotWs
 from ._utils import exception_processor
 from .api import API
 
-reply_model = ReplyModel()
 retry = Retry(total=4, connect=2, read=2)
 adapter = HTTPAdapter(max_retries=retry)
-version = '2.3.4'
 pid = getpid()
-print(f'本次程序进程ID：{pid} | SDK版本：{version} | 即将开始运行机器人……')
+print(f'本次程序进程ID：{pid} | SDK版本：{__version__} | 即将开始运行机器人……')
 t_sleep(0.5)
 
 
 class BOT:
 
-    def __init__(self, bot_id: str, bot_token: str, bot_secret: str = None, is_private: bool = False,
+    def __init__(self, bot_id: str, bot_token: str, bot_secret: Optional[str] = None, is_private: bool = False,
                  is_sandbox: bool = False, no_permission_warning: bool = True, is_async: bool = False,
-                 is_retry: bool = True, is_log_error: bool = True, shard_no: int = 0, total_shard: int = 1):
+                 is_retry: bool = True, is_log_error: bool = True, shard_no: int = 0, total_shard: int = 1,
+                 max_workers: Optional[int] = None):
         """
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
 
@@ -42,6 +42,7 @@ class BOT:
         :param is_log_error: 使用api时，如返回的结果为不成功，可自动log输出报错信息，默认开启
         :param shard_no: 当前分片数，如不熟悉相关配置请不要轻易改动此项，默认0
         :param total_shard: 最大分片数，如不熟悉相关配置请不要轻易改动此项，默认1
+        :param max_workers: 在同步模式下，允许同时运行的最大线程数
         """
         self.logger = Logger(bot_id)
         self.bot_id = bot_id
@@ -52,7 +53,7 @@ class BOT:
         if not self.bot_id or not self.bot_token:
             raise type('IdTokenMissing', (Exception,), {})(
                 '你还没有输入 bot_id 和 bot_token，无法连接使用机器人\n如尚未有相关票据，'
-                '请参阅 https://thoughts.teambition.com/share/627533408adeb10041b935b1#title=快速入门 了解相关详情')
+                '请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情')
         self.intents = 0
         self.shard_no = shard_no
         self.total_shard = total_shard
@@ -84,6 +85,7 @@ class BOT:
         self.msg_treat = True
         self.dm_treat = False
         self.no_permission_warning = no_permission_warning
+        self.max_workers = max_workers
         self.is_async = is_async
         if not is_async:
             self.api: API = API(self.bot_url, bot_id, bot_secret, self.__session, self.logger, self._check_warning,
@@ -94,8 +96,11 @@ class BOT:
                                                       self.logger, self.__loop, self._check_warning,
                                                       is_retry, is_log_error)
 
+    def __repr__(self):
+        return f"<qg_botsdk.BOT object [id: {self.bot_id}, token: {self.bot_token}]>"
+
     @property
-    def robot(self) -> reply_model.robot():
+    def robot(self) -> _api_model.robot():
         return self.__bot_class.robot
 
     @exception_processor
@@ -283,7 +288,7 @@ class BOT:
 
         .. seealso::
             更多教程和相关资讯可参阅：
-            https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b52
+            https://qg-botsdk.readthedocs.io/zh_CN/latest/index.html
         """
         try:
             if not self.running and not self.__bot_class:
@@ -292,7 +297,7 @@ class BOT:
                 if 'url' not in gateway:
                     raise type('IdTokenError', (Exception,), {})(
                         '你输入的 bot_id 和/或 bot_token 错误，无法连接使用机器人\n如尚未有相关票据，'
-                        '请参阅 https://thoughts.teambition.com/share/627533408adeb10041b935b1#title=快速入门 了解相关详情')
+                        '请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情')
                 url = gateway["url"]
                 self.logger.debug('[机器人ws地址] ' + url)
                 if self.__repeat_function is not None:
@@ -304,7 +309,8 @@ class BOT:
                                          self.__on_guild_member_function, self.__on_reaction_function,
                                          self.__on_interaction_function, self.__on_audit_function,
                                          self.__on_forum_function, self.__on_audio_function, self.intents,
-                                         self.msg_treat, self.dm_treat, self.__on_start_function, self.is_async)
+                                         self.msg_treat, self.dm_treat, self.__on_start_function, self.is_async,
+                                         self.max_workers if self.max_workers else 10)
                 self.__bot_class.starter()
             else:
                 self.logger.error('当前机器人已在运行中！')
@@ -317,7 +323,7 @@ class BOT:
 
         .. seealso::
             更多教程和相关资讯可参阅：
-            https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b52
+            https://qg-botsdk.readthedocs.io/zh_CN/latest/index.html
         """
         if self.running:
             self.running = False

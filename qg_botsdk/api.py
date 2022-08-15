@@ -7,14 +7,13 @@ from json import loads
 from json.decoder import JSONDecodeError
 from io import BufferedReader
 from typing import Optional, Union, BinaryIO, List, Tuple
-from functools import wraps
 from requests.exceptions import ConnectionError as RequestsConnectionError, ReadTimeout
-from ._api_model import ReplyModel, api_converter, api_converter_re
+from . import _api_model
+from .version import __version__
 from ._utils import objectize, regular_temp, http_temp, empty_temp, sdk_error_temp, exception_handler, security_wrapper
 from .utils import convert_color
 
-reply_model = ReplyModel()
-security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
+security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8', 'User-Agent': f'qg-botsdk v{__version__}'}
 retry_err_code = (101, 11281, 11252, 11263, 11242, 11252, 306003, 306005, 306006, 501002, 501003, 501004, 501006,
                   501007, 501011, 501012, 620007)
 
@@ -39,12 +38,12 @@ class _Session:
                     except (RequestsConnectionError, ReadTimeout):
                         return self.request(item, *args, True, **kwargs)
                 except Exception as e:
-                    logger = getattr(args[0], '_logger', None)
-                    if logger:
-                        logger.error(f'HTTP API(url:{args[1]})调用错误，详情：{exception_handler(e)}')
+                    self._logger.error(f'HTTP API(url:{args[0]})调用错误，详情：{exception_handler(e)}')
+
             return wrap
 
     def request(self, method, url, retry=False, **kwargs):
+        kwargs['headers'] = kwargs.get('headers', {'User-Agent': f'qg-botsdk v{__version__}'})
         resp = self._session.request(method, url, timeout=20, **kwargs)
         if resp.status_code < 400:
             return resp
@@ -105,7 +104,7 @@ class API:
             return True
         return False
 
-    def get_bot_info(self) -> reply_model.get_bot_info():
+    def get_bot_info(self) -> _api_model.get_bot_info():
         """
         获取机器人详情
 
@@ -114,7 +113,7 @@ class API:
         return_ = self._session.get(f'{self.bot_url}/users/@me')
         return regular_temp(return_)
 
-    def get_bot_guilds(self) -> reply_model.get_bot_guilds():
+    def get_bot_guilds(self) -> _api_model.get_bot_guilds():
         """
         获取机器人所在的所有频道列表
 
@@ -148,7 +147,7 @@ class API:
             return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
         return objectize({'data': data, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
 
-    def get_guild_info(self, guild_id: str) -> reply_model.get_guild_info():
+    def get_guild_info(self, guild_id: str) -> _api_model.get_guild_info():
         """
         获取频道详情信息
 
@@ -158,7 +157,7 @@ class API:
         return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}')
         return regular_temp(return_)
 
-    def get_guild_channels(self, guild_id: str) -> reply_model.get_guild_channels():
+    def get_guild_channels(self, guild_id: str) -> _api_model.get_guild_channels():
         """
         获取频道的所有子频道列表数据
 
@@ -168,7 +167,7 @@ class API:
         return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}/channels')
         return regular_temp(return_)
 
-    def get_channels_info(self, channel_id: str) -> reply_model.get_channels_info():
+    def get_channels_info(self, channel_id: str) -> _api_model.get_channels_info():
         """
         获取子频道数据
 
@@ -180,7 +179,7 @@ class API:
 
     def create_channels(self, guild_id: str, name: str, type_: int, position: int, parent_id: str, sub_type: int,
                         private_type: int, private_user_ids: List[str], speak_permission: int,
-                        application_id: Optional[str] = None) -> reply_model.create_channels():
+                        application_id: Optional[str] = None) -> _api_model.create_channels():
         """
         用于在 guild_id 指定的频道下创建一个子频道，一般仅私域机器人可用
 
@@ -205,7 +204,7 @@ class API:
 
     def patch_channels(self, channel_id: str, name: Optional[str] = None, position: Optional[int] = None,
                        parent_id: Optional[str] = None, private_type: Optional[int] = None,
-                       speak_permission: Optional[int] = None) -> reply_model.patch_channels():
+                       speak_permission: Optional[int] = None) -> _api_model.patch_channels():
         """
         用于修改 channel_id 指定的子频道的信息，需要修改哪个字段，就传递哪个字段即可
 
@@ -223,7 +222,7 @@ class API:
         return_ = self._session.patch(f'{self.bot_url}/channels/{channel_id}', json=json_)
         return regular_temp(return_)
 
-    def delete_channels(self, channel_id) -> reply_model.delete_channels():
+    def delete_channels(self, channel_id) -> _api_model.delete_channels():
         """
         用于删除 channel_id 指定的子频道
 
@@ -234,7 +233,7 @@ class API:
         return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}')
         return http_temp(return_, 200)
 
-    def get_guild_members(self, guild_id: str) -> reply_model.get_guild_members():
+    def get_guild_members(self, guild_id: str) -> _api_model.get_guild_members():
         """
         用于获取 guild_id 指定的频道中所有成员的详情列表
 
@@ -274,7 +273,7 @@ class API:
         else:
             return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
-    def get_member_info(self, guild_id: str, user_id: str) -> reply_model.get_member_info():
+    def get_member_info(self, guild_id: str, user_id: str) -> _api_model.get_member_info():
         """
         用于获取 guild_id 指定的频道中 user_id 对应成员的详细信息
 
@@ -286,7 +285,7 @@ class API:
         return regular_temp(return_)
 
     def delete_member(self, guild_id: str, user_id: str, add_blacklist: bool = False,
-                      delete_history_msg_days: int = 0) -> reply_model.delete_member():
+                      delete_history_msg_days: int = 0) -> _api_model.delete_member():
         """
         用于删除 guild_id 指定的频道下的成员 user_id
 
@@ -303,7 +302,7 @@ class API:
         return_ = self._session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}', json=json_)
         return http_temp(return_, 204)
 
-    def get_guild_roles(self, guild_id: str) -> reply_model.get_guild_roles():
+    def get_guild_roles(self, guild_id: str) -> _api_model.get_guild_roles():
         """
         用于获取 guild_id指定的频道下的身份组列表
 
@@ -314,7 +313,7 @@ class API:
         return regular_temp(return_)
 
     def create_role(self, guild_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
-                    color: Optional[Union[str, Tuple[int, int, int]]] = None) -> reply_model.create_role():
+                    color: Optional[Union[str, Tuple[int, int, int]]] = None) -> _api_model.create_role():
         """
         用于在 guild_id 指定的频道下创建一个身份组
 
@@ -340,7 +339,7 @@ class API:
         return regular_temp(return_)
 
     def patch_role(self, guild_id: str, role_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
-                   color: Optional[Union[str, Tuple[int, int, int]]] = None) -> reply_model.patch_role():
+                   color: Optional[Union[str, Tuple[int, int, int]]] = None) -> _api_model.patch_role():
         """
         用于修改频道 guild_id 下 role_id 指定的身份组
 
@@ -366,7 +365,7 @@ class API:
         return_ = self._session.patch(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}', json=json_)
         return regular_temp(return_)
 
-    def delete_role(self, guild_id: str, role_id: str) -> reply_model.delete_role():
+    def delete_role(self, guild_id: str, role_id: str) -> _api_model.delete_role():
         """
         用于删除频道 guild_id下 role_id 对应的身份组
 
@@ -378,7 +377,7 @@ class API:
         return http_temp(return_, 204)
 
     def create_role_member(self, user_id: str, guild_id: str, role_id: str,
-                           channel_id: Optional[str] = None) -> reply_model.role_members():
+                           channel_id: Optional[str] = None) -> _api_model.role_members():
         """
         为频道指定成员添加指定身份组
 
@@ -399,7 +398,7 @@ class API:
         return http_temp(return_, 204)
 
     def delete_role_member(self, user_id: str, guild_id: str, role_id: str,
-                           channel_id: Optional[str] = None) -> reply_model.role_members():
+                           channel_id: Optional[str] = None) -> _api_model.role_members():
         """
         删除频道指定成员的指定身份组
 
@@ -420,7 +419,7 @@ class API:
         return http_temp(return_, 204)
 
     def get_channel_member_permission(self, channel_id: str, user_id: str) -> \
-            reply_model.get_channel_member_permission():
+            _api_model.get_channel_member_permission():
         """
         用于获取 子频道 channel_id 下用户 user_id 的权限
 
@@ -432,7 +431,7 @@ class API:
         return regular_temp(return_)
 
     def put_channel_member_permission(self, channel_id: str, user_id: str, add: Optional[str] = None,
-                                      remove: Optional[str] = None) -> reply_model.put_channel_mr_permission():
+                                      remove: Optional[str] = None) -> _api_model.put_channel_mr_permission():
         """
         用于修改子频道 channel_id 下用户 user_id 的权限
 
@@ -450,7 +449,7 @@ class API:
         return http_temp(return_, 204)
 
     def get_channel_role_permission(self, channel_id: str, role_id: str) -> \
-            reply_model.get_channel_role_permission():
+            _api_model.get_channel_role_permission():
         """
         用于获取 子频道 channel_id 下身份组 role_id 的权限
 
@@ -462,7 +461,7 @@ class API:
         return regular_temp(return_)
 
     def put_channel_role_permission(self, channel_id: str, role_id: str, add: Optional[str] = None,
-                                    remove: Optional[str] = None) -> reply_model.put_channel_mr_permission():
+                                    remove: Optional[str] = None) -> _api_model.put_channel_mr_permission():
         """
         用于修改子频道 channel_id 下身份组 role_id 的权限
 
@@ -479,7 +478,7 @@ class API:
                                     json=json_)
         return http_temp(return_, 204)
 
-    def get_message_info(self, channel_id: str, message_id: str) -> reply_model.get_message_info():
+    def get_message_info(self, channel_id: str, message_id: str) -> _api_model.get_message_info():
         """
         用于获取子频道 channel_id 下的消息 message_id 的详情
 
@@ -494,7 +493,7 @@ class API:
                  file_image: Optional[Union[bytes, BinaryIO, str, PathLike[str]]] = None,
                  message_id: Optional[str] = None, event_id: Optional[str] = None,
                  message_reference_id: Optional[str] = None,
-                 ignore_message_reference_error: Optional[bool] = None) -> reply_model.send_msg():
+                 ignore_message_reference_error: Optional[bool] = None) -> _api_model.send_msg():
         """
         发送普通消息的API
 
@@ -533,7 +532,7 @@ class API:
 
     def send_embed(self, channel_id: str, title: Optional[str] = None, content: Optional[List[str]] = None,
                    image: Optional[str] = None, prompt: Optional[str] = None, message_id: Optional[str] = None,
-                   event_id: Optional[str] = None) -> reply_model.send_msg():
+                   event_id: Optional[str] = None) -> _api_model.send_msg():
         """
         发送embed模板消息的API
 
@@ -556,7 +555,7 @@ class API:
 
     def send_ark_23(self, channel_id: str, content: List[str], link: List[str], desc: Optional[str] = None,
                     prompt: Optional[str] = None, message_id: Optional[str] = None,
-                    event_id: Optional[str] = None) -> reply_model.send_msg():
+                    event_id: Optional[str] = None) -> _api_model.send_msg():
         """
         发送ark（id=23）模板消息的API，请注意机器人是否有权限使用此API
 
@@ -583,7 +582,7 @@ class API:
     def send_ark_24(self, channel_id: str, title: Optional[str] = None, content: Optional[str] = None,
                     subtitile: Optional[str] = None, link: Optional[str] = None, image: Optional[str] = None,
                     desc: Optional[str] = None, prompt: Optional[str] = None, message_id: Optional[str] = None,
-                    event_id: Optional[str] = None) -> reply_model.send_msg():
+                    event_id: Optional[str] = None) -> _api_model.send_msg():
         """
         发送ark（id=24）模板消息的API，请注意机器人是否有权限使用此API
 
@@ -612,7 +611,7 @@ class API:
 
     def send_ark_37(self, channel_id: str, title: Optional[str] = None, content: Optional[str] = None,
                     link: Optional[str] = None, image: Optional[str] = None, prompt: Optional[str] = None,
-                    message_id: Optional[str] = None, event_id: Optional[str] = None) -> reply_model.send_msg():
+                    message_id: Optional[str] = None, event_id: Optional[str] = None) -> _api_model.send_msg():
         """
         发送ark（id=37）模板消息的API，请注意机器人是否有权限使用此API
 
@@ -635,7 +634,35 @@ class API:
         return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
         return regular_temp(return_)
 
-    def delete_msg(self, channel_id: str, message_id: str, hidetip: bool = False) -> reply_model.delete_msg():
+    def send_markdown(self, channel_id: str, template_id: str, content: Optional[str] = None,
+                      key: Optional[str] = None, values: Optional[List[str]] = None,
+                      message_id: Optional[str] = None, event_id: Optional[str] = None) -> _api_model.send_msg():
+        """
+        发送ark（id=37）模板消息的API，请注意机器人是否有权限使用此API
+
+        :param channel_id: 子频道id
+        :param template_id: markdown 模板 id
+        :param content: 原生 markdown 内容（选填，与key, values不可同时存在）
+        :param key: markdown 模版 key（选填，与content不可同时存在）
+        :param values: markdown 模版 key 对应的 values（选填，与content不可同时存在）
+        :param message_id: 消息id（选填）
+        :param event_id: 事件id（选填）
+        :return: 返回的.data中为解析后的json数据
+        """
+        if content:
+            if key or values:
+                self.logger.warning('注意content与key, values不可同时存在，注意系统已根据优先级仅保留content')
+            json_ = {"markdown": {"template_id": template_id, "content": content},
+                     'msg_id': message_id, 'event_id': event_id}
+        else:
+            if not key and values:
+                return sdk_error_temp('')
+            json_ = {"markdown": {"template_id": template_id, "key": key, "values": values},
+                     'msg_id': message_id, 'event_id': event_id}
+        return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
+        return regular_temp(return_)
+
+    def delete_msg(self, channel_id: str, message_id: str, hidetip: bool = False) -> _api_model.delete_msg():
         """
         撤回消息的API，注意一般情况下仅私域可以使用
 
@@ -649,7 +676,7 @@ class API:
                                        f'?hidetip={str(hidetip).lower()}')
         return http_temp(return_, 200)
 
-    def get_guild_setting(self, guild_id: str) -> reply_model.get_guild_setting():
+    def get_guild_setting(self, guild_id: str) -> _api_model.get_guild_setting():
         """
         用于获取机器人在频道 guild_id 内的消息频率设置
 
@@ -659,7 +686,7 @@ class API:
         return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}/message/setting')
         return regular_temp(return_)
 
-    def create_dm_guild(self, target_id: str, guild_id: str) -> reply_model.create_dm_guild():
+    def create_dm_guild(self, target_id: str, guild_id: str) -> _api_model.create_dm_guild():
         """
         当机器人主动跟用户私信时，创建并获取一个虚拟频道id的API
 
@@ -675,7 +702,7 @@ class API:
                 file_image: Optional[Union[bytes, BinaryIO, str, PathLike[str]]] = None,
                 message_id: Optional[str] = None, event_id: Optional[str] = None,
                 message_reference_id: Optional[str] = None,
-                ignore_message_reference_error: Optional[bool] = None) -> reply_model.send_msg():
+                ignore_message_reference_error: Optional[bool] = None) -> _api_model.send_msg():
         """
         私信用户的API
 
@@ -712,7 +739,7 @@ class API:
             return_ = self._session.post(f'{self.bot_url}/dms/{guild_id}/messages', json=json_)
         return regular_temp(return_)
 
-    def delete_dm_msg(self, guild_id: str, message_id: str, hidetip: bool = False) -> reply_model.delete_msg():
+    def delete_dm_msg(self, guild_id: str, message_id: str, hidetip: bool = False) -> _api_model.delete_msg():
         """
         用于撤回私信频道 guild_id 中 message_id 指定的私信消息。只能用于撤回机器人自己发送的私信
 
@@ -727,7 +754,7 @@ class API:
         return http_temp(return_, 200)
 
     def mute_all_member(self, guild_id: str, mute_end_timestamp: Optional[str], mute_seconds: Optional[str]) -> \
-            reply_model.mute_member():
+            _api_model.mute_member():
         """
         用于将频道的全体成员（非管理员）禁言
 
@@ -741,7 +768,7 @@ class API:
         return http_temp(return_, 204)
 
     def mute_member(self, guild_id: str, user_id: str, mute_end_timestamp: Optional[str],
-                    mute_seconds: Optional[str]) -> reply_model.mute_member():
+                    mute_seconds: Optional[str]) -> _api_model.mute_member():
         """
         用于禁言频道 guild_id 下的成员 user_id
 
@@ -757,7 +784,7 @@ class API:
         return http_temp(return_, 204)
 
     def mute_members(self, guild_id: str, user_id: List[str], mute_end_timestamp: Optional[str],
-                     mute_seconds: Optional[str]) -> reply_model.mute_members():
+                     mute_seconds: Optional[str]) -> _api_model.mute_members():
         """
         用于将频道的指定批量成员（非管理员）禁言
 
@@ -783,7 +810,7 @@ class API:
 
     def create_announce(self, guild_id, channel_id: Optional[str] = None, message_id: Optional[str] = None,
                         announces_type: Optional[int] = None, recommend_channels_id: Optional[List[str]] = None,
-                        recommend_channels_introduce: Optional[List[str]] = None) -> reply_model.create_announce():
+                        recommend_channels_introduce: Optional[List[str]] = None) -> _api_model.create_announce():
         """
         用于创建频道全局公告，公告类型分为 消息类型的频道公告 和 推荐子频道类型的频道公告
 
@@ -807,7 +834,7 @@ class API:
         return_ = self._session.post(f'{self.bot_url}/guilds/{guild_id}/announces', json=json_)
         return regular_temp(return_)
 
-    def delete_announce(self, guild_id: str, message_id: str = 'all') -> reply_model.delete_announce():
+    def delete_announce(self, guild_id: str, message_id: str = 'all') -> _api_model.delete_announce():
         """
         用于删除频道 guild_id 下指定 message_id 的全局公告
 
@@ -818,7 +845,7 @@ class API:
         return_ = self._session.delete(f'{self.bot_url}/guilds/{guild_id}/announces/{message_id}')
         return http_temp(return_, 204)
 
-    def create_pinmsg(self, channel_id: str, message_id: str) -> reply_model.pinmsg():
+    def create_pinmsg(self, channel_id: str, message_id: str) -> _api_model.pinmsg():
         """
         用于添加子频道 channel_id 内的精华消息
 
@@ -829,7 +856,7 @@ class API:
         return_ = self._session.put(f'{self.bot_url}/channels/{channel_id}/pins/{message_id}')
         return regular_temp(return_)
 
-    def delete_pinmsg(self, channel_id: str, message_id: str) -> reply_model.delete_pinmsg():
+    def delete_pinmsg(self, channel_id: str, message_id: str) -> _api_model.delete_pinmsg():
         """
         用于删除子频道 channel_id 下指定 message_id 的精华消息
 
@@ -840,7 +867,7 @@ class API:
         return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}/pins/{message_id}')
         return http_temp(return_, 204)
 
-    def get_pinmsg(self, channel_id: str) -> reply_model.pinmsg():
+    def get_pinmsg(self, channel_id: str) -> _api_model.pinmsg():
         """
         用于获取子频道 channel_id 内的精华消息
 
@@ -850,7 +877,7 @@ class API:
         return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/pins')
         return regular_temp(return_)
 
-    def get_schedules(self, channel_id: str, since: Optional[int] = None) -> reply_model.get_schedules():
+    def get_schedules(self, channel_id: str, since: Optional[int] = None) -> _api_model.get_schedules():
         """
         用于获取channel_id指定的子频道中当天的日程列表
 
@@ -862,7 +889,7 @@ class API:
         return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/schedules', json=json_)
         return regular_temp(return_)
 
-    def get_schedule_info(self, channel_id: str, schedule_id: str) -> reply_model.schedule_info():
+    def get_schedule_info(self, channel_id: str, schedule_id: str) -> _api_model.schedule_info():
         """
         获取日程子频道 channel_id 下 schedule_id 指定的的日程的详情
 
@@ -874,7 +901,7 @@ class API:
         return regular_temp(return_)
 
     def create_schedule(self, channel_id: str, schedule_name: str, start_timestamp: str, end_timestamp: str,
-                        jump_channel_id: str, remind_type: str) -> reply_model.schedule_info():
+                        jump_channel_id: str, remind_type: str) -> _api_model.schedule_info():
         """
         用于在 channel_id 指定的日程子频道下创建一个日程
 
@@ -893,7 +920,7 @@ class API:
         return regular_temp(return_)
 
     def patch_schedule(self, channel_id: str, schedule_id: str, schedule_name: str, start_timestamp: str,
-                       end_timestamp: str, jump_channel_id: str, remind_type: str) -> reply_model.schedule_info():
+                       end_timestamp: str, jump_channel_id: str, remind_type: str) -> _api_model.schedule_info():
         """
         用于修改日程子频道 channel_id 下 schedule_id 指定的日程的详情
 
@@ -912,7 +939,7 @@ class API:
         return_ = self._session.patch(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}', json=json_)
         return regular_temp(return_)
 
-    def delete_schedule(self, channel_id: str, schedule_id: str) -> reply_model.delete_schedule():
+    def delete_schedule(self, channel_id: str, schedule_id: str) -> _api_model.delete_schedule():
         """
         用于删除日程子频道 channel_id 下 schedule_id 指定的日程
 
@@ -923,7 +950,7 @@ class API:
         return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}')
         return http_temp(return_, 204)
 
-    def create_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> reply_model.reactions():
+    def create_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> _api_model.reactions():
         """
         对message_id指定的消息进行表情表态
 
@@ -937,7 +964,7 @@ class API:
                                     f'{type_}/{id_}')
         return http_temp(return_, 204)
 
-    def delete_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> reply_model.reactions():
+    def delete_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> _api_model.reactions():
         """
         删除自己对message_id指定消息的表情表态
 
@@ -952,7 +979,7 @@ class API:
         return http_temp(return_, 204)
 
     def get_reaction_users(self, channel_id: str, message_id: str, type_: str, id_: str) -> \
-            reply_model.get_reaction_users():
+            _api_model.get_reaction_users():
         """
         拉取对消息 message_id 指定表情表态的用户列表
 
@@ -997,7 +1024,7 @@ class API:
             return objectize({'data': None, 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
     def control_audio(self, channel_id: str, status: int, audio_url: Optional[str] = None,
-                      text: Optional[str] = None) -> reply_model.audio():
+                      text: Optional[str] = None) -> _api_model.audio():
         """
         用于控制子频道 channel_id 下的音频
 
@@ -1011,7 +1038,7 @@ class API:
         return_ = self._session.post(f'{self.bot_url}/channels/{channel_id}/audio', json=json_)
         return empty_temp(return_)
 
-    def bot_on_mic(self, channel_id: str) -> reply_model.audio():
+    def bot_on_mic(self, channel_id: str) -> _api_model.audio():
         """
         机器人在 channel_id 对应的语音子频道上麦
 
@@ -1021,7 +1048,7 @@ class API:
         return_ = self._session.put(f'{self.bot_url}/channels/{channel_id}/mic')
         return empty_temp(return_)
 
-    def bot_off_mic(self, channel_id: str) -> reply_model.audio():
+    def bot_off_mic(self, channel_id: str) -> _api_model.audio():
         """
         机器人在 channel_id 对应的语音子频道下麦
 
@@ -1031,7 +1058,7 @@ class API:
         return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}/mic')
         return empty_temp(return_)
 
-    def get_threads(self, channel_id: str) -> reply_model.get_threads():
+    def get_threads(self, channel_id: str) -> _api_model.get_threads():
         """
         获取子频道下的帖子列表
 
@@ -1075,7 +1102,7 @@ class API:
         except (JSONDecodeError, AttributeError, KeyError):
             return objectize({'data': None, 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
-    def get_thread_info(self, channel_id: str, thread_id: str) -> reply_model.get_thread_info():
+    def get_thread_info(self, channel_id: str, thread_id: str) -> _api_model.get_thread_info():
         """
         获取子频道下的帖子详情
 
@@ -1087,7 +1114,7 @@ class API:
         return_ = self._session.get(f'{self.bot_url}/channels/{channel_id}/threads/{thread_id}')
         return regular_temp(return_)
 
-    def create_thread(self, channel_id: str, title: str, content: str, format_: int) -> reply_model.create_thread():
+    def create_thread(self, channel_id: str, title: str, content: str, format_: int) -> _api_model.create_thread():
         """
         创建帖子，创建成功后，返回创建成功的任务ID
 
@@ -1102,7 +1129,7 @@ class API:
         return_ = self._session.put(f'{self.bot_url}/channels/{channel_id}/threads', json=json_)
         return regular_temp(return_)
 
-    def delete_thread(self, channel_id: str, thread_id: str) -> reply_model.delete_thread():
+    def delete_thread(self, channel_id: str, thread_id: str) -> _api_model.delete_thread():
         """
         删除指定子频道下的某个帖子
 
@@ -1114,7 +1141,7 @@ class API:
         return_ = self._session.delete(f'{self.bot_url}/channels/{channel_id}/threads/{thread_id}')
         return http_temp(return_, 204)
 
-    def get_guild_permissions(self, guild_id: str) -> reply_model.get_guild_permissions():
+    def get_guild_permissions(self, guild_id: str) -> _api_model.get_guild_permissions():
         """
         获取机器人在频道 guild_id 内可以使用的权限列表
 
@@ -1131,7 +1158,7 @@ class API:
             else:
                 result = True
                 for i in range(len(return_dict['apis'])):
-                    api = api_converter_re(return_dict['apis'][i]['method'], return_dict['apis'][i]['path'])
+                    api = _api_model.api_converter_re(return_dict['apis'][i]['method'], return_dict['apis'][i]['path'])
                     return_dict['apis'][i]['api'] = api
             return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': status_code,
                               'result': result})
@@ -1139,7 +1166,7 @@ class API:
             return objectize({'data': None, 'trace_id': trace_id, 'http_code': status_code, 'result': False})
 
     def create_permission_demand(self, guild_id: str, channel_id: str, api: str, desc: Optional[str]) -> \
-            reply_model.create_permission_demand():
+            _api_model.create_permission_demand():
         """
         发送频道API接口权限授权链接到频道
 
@@ -1149,7 +1176,7 @@ class API:
         :param desc: 机器人申请对应的API接口权限后可以使用功能的描述
         :return: 返回成功或不成功
         """
-        path, method = api_converter(api)
+        path, method = _api_model.api_converter(api)
         if not path:
             return sdk_error_temp('目标API不存在，请检查API名称是否正确')
         json_ = {"channel_id": channel_id, "api_identify": {"path": path, "method": method.upper()}, "desc": desc}

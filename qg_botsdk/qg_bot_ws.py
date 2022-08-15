@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 def __getattr__(identifier: str) -> object:
-    if re_split(r'[/\\]', stack()[1].filename)[-1] != 'qg_bot.py':
+    if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', '<frozen importlib._bootstrap>'):
         raise AssertionError("此为SDK内部使用文件，无法使用，注册机器人请使用from qg_bot.py import BOT")
 
     return globals()[identifier.__path__]
@@ -27,15 +27,16 @@ class BotWs:
                  on_guild_member_function: Callable[[Any], Any], on_reaction_function: Callable[[Any], Any],
                  on_interaction_function: Callable[[Any], Any], on_audit_function: Callable[[Any], Any],
                  on_forum_function: Callable[[Any], Any], on_audio_function: Callable[[Any], Any],
-                 intents: int, msg_treat: bool, dm_treat: bool, on_start_function: Callable[[], Any], is_async: bool):
+                 intents: int, msg_treat: bool, dm_treat: bool, on_start_function: Callable[[], Any], is_async: bool,
+                 max_workers: int):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
 
         .. seealso::
             更多教程和相关资讯可参阅：
-            https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b52
+            https://qg-botsdk.readthedocs.io/zh_CN/latest/快速入门.html
         """
-        if re_split(r'[/\\]', stack()[1].filename)[-1] != 'qg_bot.py':
+        if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', '<frozen importlib._bootstrap>'):
             raise AssertionError("此为SDK内部使用类，无法使用，注册机器人请使用from qg_botsdk.qg_bot import BOT")
         self.session = session
         self.__ssl = ssl
@@ -79,7 +80,7 @@ class BotWs:
                        "MESSAGE_AUDIT_PASS": on_audit_function, "MESSAGE_AUDIT_REJECT": on_audit_function,
                        "AUDIO_START": on_audio_function, "AUDIO_FINISH": on_audio_function,
                        "AUDIO_ON_MIC": on_audio_function, "AUDIO_OFF_MIC": on_audio_function}
-        self.threads = ThreadPoolExecutor(10) if not self.is_async else None
+        self.threads = ThreadPoolExecutor(max_workers) if not self.is_async else None
 
     async def send_connect(self):
         connect_paras = {
@@ -87,12 +88,7 @@ class BotWs:
             "d": {
                 "token": f"Bot {self.bot_id}.{self.bot_token}",
                 "intents": self.intents,
-                "shard": [self.shard_no, self.total_shard],
-                "properties": {
-                    "$os": "windows",
-                    "$browser": "chrome",
-                    "$device": "pc"
-                }
+                "shard": [self.shard_no, self.total_shard]
             }
         }
         await self.ws_send(dumps(connect_paras))

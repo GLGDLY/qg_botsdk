@@ -10,11 +10,11 @@
 
 ✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
 
-[文档](https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51)
+[文档](https://qg-botsdk.readthedocs.io/zh_CN/latest/)
 ·
 [下载](https://github.com/GLGDLY/qg_botsdk/releases)
 ·
-[快速入门](https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b52)
+[快速入门](https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start)
 
 </div>
 
@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
 ### 已实现API
 
-> API已基本完善，具体详情可查阅：<https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b54>
+> API已基本完善，具体详情可查阅：<https://qg-botsdk.readthedocs.io/zh_CN/latest/API.html>
 
 > 关于API的更多详细信息可阅读官方文档介绍：<https://bot.q.qq.com/wiki/develop/api/>
 
@@ -155,7 +155,9 @@ if __name__ == '__main__':
 
 ### 相关链接
 
--   文档：<https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51>
--   官方注册机器人：<https://q.qq.com/#/>
--   官方API文档：<https://bot.q.qq.com/wiki/develop/api/>
--   SDK QQ交流群：<https://jq.qq.com/?_wv=1027&k=3NnWvGpz>
+- 文档：
+  - [readthedocs](https://qg-botsdk.readthedocs.io/zh_CN/latest/)
+  - [thoughts](https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51)
+- 官方注册机器人：<https://q.qq.com/#/>
+- 官方API文档：<https://bot.q.qq.com/wiki/develop/api/>
+- SDK QQ交流群：<https://jq.qq.com/?_wv=1027&k=3NnWvGpz>

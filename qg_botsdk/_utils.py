@@ -10,7 +10,8 @@ from re import split as re_split
 
 
 def __getattr__(identifier: str) -> object:
-    if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'qg_bot_ws.py', 'api.py', 'async_api.py'):
+    if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'qg_bot_ws.py', 'api.py', 'async_api.py',
+                                                           '<frozen importlib._bootstrap>'):
         raise AssertionError("此为SDK内部使用文件，无法使用")
 
     return globals()[identifier.__path__]
@@ -34,7 +35,6 @@ def security_wrapper(func):
     @wraps(func)
     def wrap(*args, **kwargs):
         try:
-            print(func.__name__)
             return func(*args, **kwargs)
         except (JSONDecodeError, KeyError, AttributeError) as e:
             name = func.__name__

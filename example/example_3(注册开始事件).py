@@ -33,7 +33,9 @@ def on_start():
             else:
                 bot.logger.info(f'频道 {items.name}({items.id}) 身份组：' +
                                 '、'.join([f'{gr_data.name}（id:{gr_data.id}）' for gr_data in gr.data.roles]))
-            print(bot.api.get_guild_channels(items.id))
+            ggc = bot.api.get_guild_channels(items.id)
+            bot.logger.info(f'频道 {items.name}({items.id}) 子频道：' +
+                            '、'.join([f'{gr_data.name}（id:{gr_data.id}）' for gr_data in ggc.data]))
 
 
 def deliver(data: Model.MESSAGE):

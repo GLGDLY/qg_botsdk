@@ -12,11 +12,11 @@
 
     ✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
 
-    <p><a href="https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51" rel="nofollow">文档</a>
+    <p><a href="https://qg-botsdk.readthedocs.io/zh_CN/latest/" rel="nofollow">文档</a>
     ·
     <a href="https://github.com/GLGDLY/qg_botsdk/releases">下载</a>
     ·
-    <a href="https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b52" rel="nofollow">快速入门</a></p>
+    <a href="https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start" rel="nofollow">快速入门</a></p>
 
     </div>
 
@@ -72,7 +72,7 @@
 
 ::
 
-    ``from qg_botsdk.model import Model``
+    >>> from qg_botsdk.model import Model
     此库为所有事件的数据格式结构，可套用到代码以检查结构是否正确
 
 -   bind_msg
@@ -91,8 +91,8 @@
 
 ::
 
-    API已基本完善，具体详情可查阅：https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b54
-    关于API的更多详细信息可阅读官方文档介绍：https://bot.q.qq.com/wiki/develop/api/
+    - API已基本完善，具体详情可查阅：https://qg-botsdk.readthedocs.io/zh_CN/latest/API.html
+    - 关于API的更多详细信息可阅读官方文档介绍：https://bot.q.qq.com/wiki/develop/api/
 
 -   get_bot_id
 -   get_bot_info
@@ -164,7 +164,9 @@
 相关链接
 ========
 
--   文档：https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51
+-   文档：
+     * `readthedocs <https://qg-botsdk.readthedocs.io/zh_CN/latest/>`_
+     * `thoughts <https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51>`_
 -   官方注册机器人：https://q.qq.com/#/
 -   官方API文档：https://bot.q.qq.com/wiki/develop/api/
 -   SDK QQ交流群：https://jq.qq.com/?_wv=1027&k=3NnWvGpz

@@ -20,7 +20,7 @@ class Model:
 
         .. seealso::
             其子字段数据可参阅：
-            https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#62777ff1e5cc8b00129a9f2d
+            https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#guilds
         """
         description: str
         icon: str
@@ -44,7 +44,7 @@ class Model:
 
         .. seealso::
             其子字段数据可参阅：
-            https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#62ac93d90f38ae0012fb0079
+            https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#channels-sdkv2-2-4
         """
         application_id: str
         guild_id: str
@@ -72,7 +72,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#627795cdc4773b0012899ec4
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#guild-members
         """
         class user:
             avatar: str
@@ -100,7 +100,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#627797dfc4773b0012899ec7
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#message
         """
         class __MsgMentions:
             avatar: str
@@ -135,8 +135,8 @@ class Model:
         guild_id: str
         content: str
         id: str
-        mentions = [__MsgMentions]
-        attachments = [__MsgAttachments]
+        mentions = List[__MsgMentions]
+        attachments = List[__MsgAttachments]
         seq: int
         seq_in_channel: str
         timestamp: str
@@ -161,7 +161,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#62779e66c4773b0012899efb
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#message-delete
         """
         class message:
             class author:
@@ -187,7 +187,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#62779fecc4773b0012899f05
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#direct-message
         """
         class __MsgAttachments:
             content_type: str
@@ -214,7 +214,7 @@ class Model:
         content: str
         direct_message: bool
         id: str
-        attachments = [__MsgAttachments]
+        attachments = List[__MsgAttachments]
         seq: int
         seq_in_channel: str
         src_guild_id: str
@@ -235,7 +235,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#6277a091c4773b0012899f10
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#message-audit
         """
         audit_id: str
         audit_time: str
@@ -272,7 +272,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#6277a163c4773b0012899f14
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#forums-event
         """
 
         class thread_info:
@@ -348,7 +348,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#6277ba728e0a81001252e202
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#audio-action
         """
         channel_id: str
         guild_id: str
@@ -366,7 +366,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b55#6277bb178e0a81001252e20a
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#reaction
         """
         class emoji:
             id: str
