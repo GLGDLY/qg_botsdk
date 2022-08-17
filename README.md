@@ -20,6 +20,8 @@
 
 #### 亮点
 
+##### -   灵活的构建方式，即使官方删除或新增字段，SDK也不会规范于原来的数据格式，而会把真实数据反馈给你
+
 ##### -   轻量，简洁，统一的代码结构，10行即可构建一个简单的程序
 
 ##### -   容易入门，无需学会asyncio也可使用，同时保留较高并发能力
@@ -157,8 +159,13 @@ if __name__ == '__main__':
 ### 相关链接
 
 -   文档：
+
     -   [readthedocs](https://qg-botsdk.readthedocs.io/zh_CN/latest/)
+
     -   [thoughts](https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51)
+
 -   官方注册机器人：<https://q.qq.com/#/>
+
 -   官方API文档：<https://bot.q.qq.com/wiki/develop/api/>
+
 -   SDK QQ交流群：<https://jq.qq.com/?_wv=1027&k=3NnWvGpz>
