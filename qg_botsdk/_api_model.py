@@ -82,7 +82,7 @@ def api_converter(api: str):
         api = api[:-2]
     for keys, values in apis.items():
         if api in keys:
-            return values[0], values[1]
+            return values[1], values[0]
     return False, '该API并不存在'
 
 
@@ -180,6 +180,10 @@ def get_guild_channels():
             parent_id: str
             owner_id: str
             sub_type: int
+            private_type: int
+            speak_permission: int
+            application_id: str
+            permissions: str
             code: int
             message: str
 

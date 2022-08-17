@@ -8,7 +8,7 @@ from aiohttp import ClientSession, TCPConnector, FormData, ClientTimeout, multip
 from json import loads
 from json.decoder import JSONDecodeError
 from io import BufferedReader
-from typing import Optional, Union, BinaryIO, List, Tuple
+from typing import Optional, Union, BinaryIO, List, Tuple, Dict
 from . import _api_model
 from .version import __version__
 from ._utils import (objectize, async_regular_temp, async_http_temp, async_empty_temp, sdk_error_temp,
@@ -713,31 +713,46 @@ class AsyncAPI:
         return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
         return await async_regular_temp(return_)
 
-    async def send_markdown(self, channel_id: str, template_id: str, content: Optional[str] = None,
-                            key: Optional[str] = None, values: Optional[List[str]] = None,
+    async def send_markdown(self, channel_id: str, template_id: Optional[str] = None,
+                            key_values: Optional[Dict[str, Union[str, List[str]]]] = None,
+                            content: Optional[str] = None, keyboard_id: Optional[str] = None,
+                            keyboard_content: Optional[dict] = None,
                             message_id: Optional[str] = None, event_id: Optional[str] = None) -> _api_model.send_msg():
         """
-        发送ark（id=37）模板消息的API，请注意机器人是否有权限使用此API
+        发送markdown消息的API，请注意机器人是否有权限使用此API
 
         :param channel_id: 子频道id
-        :param template_id: markdown 模板 id
-        :param content: 原生 markdown 内容（选填，与key, values不可同时存在）
-        :param key: markdown 模版 key（选填，与content不可同时存在）
-        :param values: markdown 模版 key 对应的 values（选填，与content不可同时存在）
+        :param template_id: markdown 模板 id（选填，与content不可同时存在）
+        :param key_values: markdown 模版 key values列表，格式为：{key1: value1, key2: value2}（选填，与content不可同时存在）
+        :param content: 原生 markdown 内容（选填，与template_id, key, values不可同时存在）
+        :param keyboard_id: keyboard 模板 id（选填，与keyboard_content不可同时存在）
+        :param keyboard_content: 原生 keyboard 内容（选填，与keyboard_id不可同时存在）
         :param message_id: 消息id（选填）
         :param event_id: 事件id（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        if content:
-            if key or values:
-                self.logger.warning('注意content与key, values不可同时存在，注意系统已根据优先级仅保留content')
-            json_ = {"markdown": {"template_id": template_id, "content": content},
-                     'msg_id': message_id, 'event_id': event_id}
+        if keyboard_content:
+            if keyboard_id:
+                self.logger.warning('注意keyboard_id与keyboard_content不可同时存在，注意系统已根据优先级仅保留keyboard_content')
+            keyboard = {'content': keyboard_content}
+        elif keyboard_id:
+            keyboard = {'id': keyboard_id}
         else:
-            if not key and values:
-                return sdk_error_temp('')
-            json_ = {"markdown": {"template_id": template_id, "key": key, "values": values},
-                     'msg_id': message_id, 'event_id': event_id}
+            keyboard = None
+        if content:
+            if template_id:
+                self.logger.warning('注意content与template_id不可同时存在，注意系统已根据优先级仅保留content')
+            json_ = {"markdown": {"content": content}, 'msg_id': message_id, 'event_id': event_id, 'keyboard': keyboard}
+        else:
+            if not template_id or not key_values:
+                return sdk_error_temp('注意content与template_id必须存在任意一个，否则消息无法下发！')
+            params = []
+            for k, v in key_values.items():
+                if isinstance(v, str):
+                    v = [v]
+                params.append({'key': k, 'values': v})
+            json_ = {"markdown": {"custom_template_id": template_id, "params": params},
+                     'msg_id': message_id, 'event_id': event_id, 'keyboard': keyboard}
         return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
         return await async_regular_temp(return_)
 

@@ -4,7 +4,7 @@
 
 > \*\*\*注意v2.2.0后，所有api的路径都变为qg_botsdk.qg_bot.BOT().api.get_bot_info()
 
-## 引言
+## 引言-API
 
 让我们先重温一下简单的工作流：
 
@@ -91,7 +91,7 @@ bot.start()
 -   用于获取当前用户（机器人）在频道场景的ID
 
 ```python
-bot.get_bot_id()
+bot.api.get_bot_id()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_bot_id()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_bot_id()
 ```
@@ -109,7 +109,7 @@ bot.get_bot_id()
 -   用于获取当前用户（机器人）详情
 
 ```python
-bot.get_bot_info()
+bot.api.get_bot_info()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_bot_info()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_bot_info()
 ```
@@ -130,7 +130,7 @@ bot.get_bot_info()
 -   已解决分页获取问题，将直接获取全部数据
 
 ```python
-bot.get_bot_guilds()
+bot.api.get_bot_guilds()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_bot_guilds()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_bot_guilds()
 ```
@@ -151,7 +151,7 @@ bot.get_bot_guilds()
 -   用于获取 `guild_id` 指定的频道的详情
 
 ```python
-bot.get_guild_info()
+bot.api.get_guild_info()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_guild_info()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_guild_info()
 ```
@@ -175,7 +175,7 @@ bot.get_guild_info()
 -   用于获取 `guild_id`指定的频道下的子频道列表
 
 ```python
-bot.get_guild_channels()
+bot.api.get_guild_channels()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_guild_channels()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_guild_channels()
 ```
@@ -197,7 +197,7 @@ bot.get_guild_channels()
 -   用于获取 `channel_id` 指定的子频道的详情（SDK已自动处理分页问题）
 
 ```python
-bot.get_channels_info()
+bot.api.get_channels_info()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_channels_info()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_channels_info()
 ```
@@ -227,7 +227,7 @@ bot.get_channels_info()
 ![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
 
 ```python
-bot.create_channels()
+bot.api.create_channels()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().create_channels()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_channels()
 ```
@@ -264,7 +264,7 @@ bot.create_channels()
 ![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
 
 ```python
-bot.patch_channels()
+bot.api.patch_channels()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().patch_channels()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.patch_channels()
 ```
@@ -299,7 +299,7 @@ bot.patch_channels()
 ![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
 
 ```python
-bot.delete_channels()
+bot.api.delete_channels()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_channels()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_channels()
 ```
@@ -327,7 +327,7 @@ bot.delete_channels()
 -   已解决分页获取问题，将直接获取全部数据
 
 ```python
-bot.get_guild_members()
+bot.api.get_guild_members()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_guild_members()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_guild_members()
 ```
@@ -349,7 +349,7 @@ bot.get_guild_members()
 -   用于获取 `guild_id` 指定的频道中 `user_id` 对应成员的详细信息
 
 ```python
-bot.get_member_info()
+bot.api.get_member_info()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_member_info()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_member_info()
 ```
@@ -380,7 +380,7 @@ bot.get_member_info()
 ![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
 
 ```python
-bot.delete_member()
+bot.api.delete_member()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_member()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_member()
 ```
@@ -413,7 +413,7 @@ bot.delete_member()
 -   用于获取 `guild_id`指定的频道下的身份组列表
 
 ```python
-bot.get_guild_roles()
+bot.api.get_guild_roles()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_guild_roles()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_guild_roles()
 ```
@@ -439,7 +439,7 @@ bot.get_guild_roles()
 -   参数为非必填，但至少需要传其中之一，默认为空或 `0`
 
 ```python
-bot.create_role()
+bot.api.create_role()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().create_role()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_role()
 ```
@@ -449,7 +449,7 @@ bot.create_role()
 | 字段名      | 类型          | 默认值    | 说明                                    |
 | guild_id | string      | 无，必选参数 | 频道ID                                  |
 | name     | string None | None   | 身份组名（选填)                              |
-| color    | string None | None   | 身份组颜色，支持输入RGB的三位tuple或HEX的sting颜色（选填) |
+| color    | string None | None   | 身份组颜色，支持输入RGB的三位tuple或HEX的string颜色（选填) |
 | hoist    | string None | None   | 是否在成员列表中单独展示（选填）                      |
 
 | 返回       |        |                  |
@@ -468,7 +468,7 @@ bot.create_role()
 -   接口会修改传入的字段，不传入的默认不会修改，至少要传入一个参数
 
 ```python
-bot.patch_role()
+bot.api.patch_role()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().patch_role()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.patch_role()
 ```
@@ -479,7 +479,7 @@ bot.patch_role()
 | guild_id | string      | 无，必选参数 | 频道ID                                  |
 | role_id  | string      | 无，必选参数 | 需要修改的身份组ID                            |
 | name     | string None | None   | 身份组名（选填)                              |
-| color    | string None | None   | 身份组颜色，支持输入RGB的三位tuple或HEX的sting颜色（选填) |
+| color    | string None | None   | 身份组颜色，支持输入RGB的三位tuple或HEX的string颜色（选填) |
 | hoist    | string None | None   | 是否在成员列表中单独展示（选填）                      |
 
 | 返回       |        |                  |
@@ -496,7 +496,7 @@ bot.patch_role()
 -   需要使用的 `token` 对应的用户具备删除身份组权限。如果是机器人，要求被添加为管理员
 
 ```python
-bot.delete_role()
+bot.api.delete_role()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_role()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_role()
 ```
@@ -525,7 +525,7 @@ bot.delete_role()
 -   如果要增加的身份组 `ID` 是`5-子频道管理员`，需要增加 `channel_id` 参数来指定具体是哪个子频道
 
 ```python
-bot.create_role_member()
+bot.api.create_role_member()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().create_role_member()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_role_member()
 ```
@@ -556,7 +556,7 @@ bot.create_role_member()
 -   如果要删除的身份组 `ID` 是`5-子频道管理员`，需要增加 `channel_id` 参数来指定具体是哪个子频道
 
 ```python
-bot.delete_role_member()
+bot.api.delete_role_member()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_role_member()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_role_member()
 ```
@@ -599,7 +599,7 @@ bot.delete_role_member()
 -   要求操作人具有管理子频道的权限（需要将机器人设置为管理员）
 
 ```python
-bot.get_channel_member_permission()
+bot.api.get_channel_member_permission()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_channel_member_permission()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_channel_member_permission()
 ```
@@ -628,7 +628,7 @@ bot.get_channel_member_permission()
 -   本接口不支持修改`可管理子频道`权限
 
 ```python
-bot.put_channel_member_permission()
+bot.api.put_channel_member_permission()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().put_channel_member_permission()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.put_channel_member_permission()
 ```
@@ -657,7 +657,7 @@ bot.put_channel_member_permission()
 -   要求操作人具有管理子频道的权限（需要将机器人设置为管理员）
 
 ```python
-bot.get_channel_role_permission()
+bot.api.get_channel_role_permission()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_channel_role_permission()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_channel_role_permission()
 ```
@@ -686,7 +686,7 @@ bot.get_channel_role_permission()
 -   本接口不支持修改`可管理子频道`权限
 
 ```python
-bot.put_channel_role_permission()
+bot.api.put_channel_role_permission()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().put_channel_role_permission()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.put_channel_role_permission()
 ```
@@ -721,7 +721,7 @@ bot.put_channel_role_permission()
 -   用于获取子频道 `channel_id` 下的消息 `message_id` 的详情
 
 ```python
-bot.get_message_info()
+bot.api.get_message_info()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_message_info()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_message_info()
 ```
@@ -758,7 +758,7 @@ bot.get_message_info()
 -   有关主动消息审核，可以通过sdk中绑定审核事件{any}`bind_audit() <绑定审核事件>`，从审核事件 MESSAGE_AUDIT 返回数据获取结果
 
 ```python
-bot.send_msg()
+bot.api.send_msg()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().send_msg()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.send_msg()
 ```
@@ -767,8 +767,8 @@ bot.send_msg()
 | ------------------------------ | --------------------------------- | ------ | ------------------------------------------------------------------------------------------------ |
 | 字段名                            | 类型                                | 默认值    | 说明                                                                                               |
 | channel_id                     | string                            | 无，必选参数 | 子频道ID                                                                                            |
-| content                        | sting None                        | None   | 消息内容文本（选填）                                                                                       |
-| image                          | sting None                        | None   | 图片url，不可发送本地图片（选填）                                                                               |
+| content                        | string None                       | None   | 消息内容文本（选填）                                                                                       |
+| image                          | string None                       | None   | 图片url，不可发送本地图片（选填）                                                                               |
 | file_image                     | bytesBinaryIOstrPathLike[str]None | None   | 本地图片，可选以下三种方式传参：阅读档案后传入bytes类型图片数据、打开档案后直接传入档案、直接传入图片路径（具体例子可参阅github example_10，要求SDK版本>=2.1.3） |
 | message_id                     | string None                       | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）                                                         |
 | event_id                       | string None                       | None   | 事件id（选填，如此项数据项与message_id均为None，则为此消息主动消息）                                                       |
@@ -795,7 +795,7 @@ bot.send_msg()
 ![](https://tcs.teambition.net/storage/312hd7b6936119f0bfa6419e7b7a994cdb7a?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmhkN2I2OTM2MTE5ZjBiZmE2NDE5ZTdiN2E5OTRjZGI3YSJ9.gJIy1dcf6hiwzJWYhiAiG57CJmkyszITy6ndol9MRg4&download=image.png)
 
 ```python
-bot.send_embed()
+bot.api.send_embed()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().send_embed()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.send_embed()
 ```
@@ -804,10 +804,10 @@ bot.send_embed()
 | ---------- | ----------- | ------ | ------------------------------------------ |
 | 字段名        | 类型          | 默认值    | 说明                                         |
 | channel_id | string      | 无，必选参数 | 子频道ID                                      |
-| title      | sting None  | None   | 消息标题（选填）                                   |
+| title      | string None | None   | 消息标题（选填）                                   |
 | content    | list None   | None   | 内容文本列表，每一项之间将存在分行（选填）                      |
-| image      | sting None  | None   | 略缩图url，不可发送本地图片（选填）                        |
-| prompt     | sting None  | None   | 消息弹窗通知的文本内容（选填）                            |
+| image      | string None | None   | 略缩图url，不可发送本地图片（选填）                        |
+| prompt     | string None | None   | 消息弹窗通知的文本内容（选填）                            |
 | message_id | string None | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）   |
 | event_id   | string None | None   | 事件id（选填，如此项数据项与message_id均为None，则为此消息主动消息） |
 
@@ -829,7 +829,7 @@ bot.send_embed()
 ![](https://tcs.teambition.net/storage/312hed45ac6f7dc0b22b6262a8af7951eadc?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmhlZDQ1YWM2ZjdkYzBiMjJiNjI2MmE4YWY3OTUxZWFkYyJ9.RAA0BC_04eZFWJnG2TQ2X_5VQCXetMz0GlG2QcDVCEE&download=image.png)
 
 ```python
-bot.send_ark_23()
+bot.api.send_ark_23()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().send_ark_23()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.send_ark_23()
 ```
@@ -840,8 +840,8 @@ bot.send_ark_23()
 | channel_id | string      | 无，必选参数 | 子频道ID                                                      |
 | content    | list None   | 无，必选参数 | 内容文本列表，每一项之间将存在分行                                          |
 | link       | list None   | 无，必选参数 | 链接url列表，长度应与内容列一致。将根据位置顺序填充文本超链接，如文本不希望填充链接可使用空文本或None填充位置 |
-| desc       | sting None  | None   | 描述文本内容（选填）                                                 |
-| prompt     | sting None  | None   | 消息弹窗通知的文本内容（选填）                                            |
+| desc       | string None | None   | 描述文本内容（选填）                                                 |
+| prompt     | string None | None   | 消息弹窗通知的文本内容（选填）                                            |
 | message_id | string None | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）                   |
 | event_id   | string None | None   | 事件id（选填，如此项数据项与message_id均为None，则为此消息主动消息）                 |
 
@@ -863,7 +863,7 @@ bot.send_ark_23()
 ![](https://tcs.teambition.net/storage/312h50d4f06fb28cbee4e059888d6afa5393?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg1MGQ0ZjA2ZmIyOGNiZWU0ZTA1OTg4OGQ2YWZhNTM5MyJ9.cP419s5xOvY_1AJntcKipXfT682wHY-cxpI2E5vOxqw&download=image.png)
 
 ```python
-bot.send_ark_24()
+bot.api.send_ark_24()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().send_ark_24()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.send_ark_24()
 ```
@@ -872,13 +872,13 @@ bot.send_ark_24()
 | ---------- | ----------- | ------ | ------------------------------------------ |
 | 字段名        | 类型          | 默认值    | 说明                                         |
 | channel_id | string      | 无，必选参数 | 子频道ID                                      |
-| title      | sting None  | None   | 消息标题（选填）                                   |
+| title      | string None | None   | 消息标题（选填）                                   |
 | content    | string None | None   | 消息内容文本（选填）                                 |
-| subtitile  | sting None  | None   | 消息标题（选填）                                   |
+| subtitile  | string None | None   | 消息标题（选填）                                   |
 | link       | string None | None   | 跳转的链接url（选填）                               |
-| image      | sting None  | None   | 略缩图url，不可发送本地图片（选填）                        |
-| desc       | sting None  | None   | 描述文本内容（选填）                                 |
-| prompt     | sting None  | None   | 消息弹窗通知的文本内容（选填）                            |
+| image      | string None | None   | 略缩图url，不可发送本地图片（选填）                        |
+| desc       | string None | None   | 描述文本内容（选填）                                 |
+| prompt     | string None | None   | 消息弹窗通知的文本内容（选填）                            |
 | message_id | string None | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）   |
 | event_id   | string None | None   | 事件id（选填，如此项数据项与message_id均为None，则为此消息主动消息） |
 
@@ -900,7 +900,7 @@ bot.send_ark_24()
 ![](https://tcs.teambition.net/storage/312h65f813e35b5f1fd1923a2841e2a11d02?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg2NWY4MTNlMzViNWYxZmQxOTIzYTI4NDFlMmExMWQwMiJ9.C50jVdxXymK7B0bvRjpKM5P1izZFaDqZr0szEIWw7Ew&download=image.png)
 
 ```python
-bot.send_ark_37()
+bot.api.send_ark_37()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().send_ark_37()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.send_ark_37()
 ```
@@ -909,15 +909,54 @@ bot.send_ark_37()
 | ---------- | ----------- | ------ | ------------------------------------------ |
 | 字段名        | 类型          | 默认值    | 说明                                         |
 | channel_id | string      | 无，必选参数 | 子频道ID                                      |
-| title      | sting None  | None   | 消息标题（选填）                                   |
+| title      | string None | None   | 消息标题（选填）                                   |
 | content    | string None | None   | 消息内容文本（选填）                                 |
 | link       | string None | None   | 跳转的链接url（选填）                               |
-| image      | sting None  | None   | 略缩图url，不可发送本地图片（选填）                        |
-| prompt     | sting None  | None   | 消息弹窗通知的文本内容（选填）                            |
+| image      | string None | None   | 略缩图url，不可发送本地图片（选填）                        |
+| prompt     | string None | None   | 消息弹窗通知的文本内容（选填）                            |
 | message_id | string None | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）   |
 | event_id   | string None | None   | 事件id（选填，如此项数据项与message_id均为None，则为此消息主动消息） |
 
 > `title` `content`至少需要有一个字段，否则无法下发消息
+
+| 返回       |        |                  |
+| -------- | ------ | ---------------- |
+| 字段       | 类型     | 说明               |
+| data     | object | 解析后的json数据       |
+| trace_id | string | 腾讯官方提供的错误追踪 ID   |
+| result   | bool   | 成功为True；否则为False |
+
+### 发送 markdown 消息 （需求SDK版本>=2.3.6）
+
+-   发送markdown消息的API，请注意机器人是否有权限使用此API
+
+-   发送限制与普通消息相同
+
+-   markdown格式说明请参阅[此处](https://bot.q.qq.com/wiki/develop/api/openapi/message/format/markdown/markdown.html)
+
+-   具体例子请参考[此处](https://github.com/GLGDLY/qg_botsdk/blob/master/example/example_12(markdown).py)
+
+![](https://tcs.teambition.net/storage/312k9d66edb29c624a84f3f4298acb19f67d?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTI2MjY3MywiaWF0IjoxNjYwNjU3ODczLCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMms5ZDY2ZWRiMjljNjI0YTg0ZjNmNDI5OGFjYjE5ZjY3ZCJ9.IxsxcnTwfyaEWku-pXW5IPWBGMxavmvYiA8pu05t70w)
+
+```python
+bot.api.send_markdown()
+# v2.2.0前路径：qg_botsdk.qg_bot.BOT().send_markdown()
+# v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.send_markdown()
+```
+
+| 参数         |             |        |                                            |
+| ---------- | ----------- | ------ | ------------------------------------------ |
+| 字段名        | 类型          | 默认值    | 说明                                         |
+| channel_id | string      | 无，必选参数 | 子频道ID                                       |
+| template_id| string None | None   | markdown 模板 id（选填，与content不可同时存在）               |
+| key_values | list[{str: str/list[str]}] None | None   | markdown 模版 key values列表，格式为：[{key1: value1}, {key2: value2}]（选填，与content不可同时存在）|
+| content    | string None | None   | 原生 markdown 内容（选填，与template_id, key, values不可同时存在） |
+| keyboard_id| string None | None   | keyboard 模板 id（选填，与keyboard_content不可同时存在）       |
+| keyboard_content| dict None | None   | 原生 keyboard 内容（选填，与keyboard_id不可同时存在）      |
+| message_id | string None | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）   |
+| event_id   | string None | None   | 事件id（选填，如此项数据项与message_id均为None，则为此消息主动消息） |
+
+> `template_id` `content`至少需要有一个字段，否则无法下发消息
 
 | 返回       |        |                  |
 | -------- | ------ | ---------------- |
@@ -935,7 +974,7 @@ bot.send_ark_37()
 ![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
 
 ```python
-bot.delete_msg()
+bot.api.delete_msg()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_msg()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_msg()
 ```
@@ -969,7 +1008,7 @@ bot.delete_msg()
 -   用于获取机器人在频道 `guild_id` 内的消息频率设置
 
 ```python
-bot.get_guild_setting()
+bot.api.get_guild_setting()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_guild_setting()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_guild_setting()
 ```
@@ -1001,7 +1040,7 @@ bot.get_guild_setting()
 -   创建成功后，返回创建成功的频道id  `guild_id`，子频道id `channel_id `和创建时间，**注意发送私信仅需要使用guild_id这一项虚拟频道id的数据**
 
 ```python
-bot.create_dm_guild()
+bot.api.create_dm_guild()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().create_dm_guild()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_dm_guild()
 ```
@@ -1032,7 +1071,7 @@ bot.create_dm_guild()
 -   私信场景下，被动消息没有条数限制
 
 ```python
-bot.send_dm()
+bot.api.send_dm()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().send_dm()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.send_dm()
 ```
@@ -1041,8 +1080,8 @@ bot.send_dm()
 | ------------------------------ | --------------------------------- | ------ | ------------------------------------------------------------------------------------------------ |
 | 字段名                            | 类型                                | 默认值    | 说明                                                                                               |
 | guild_id                       | string                            | 无，必选参数 | 虚拟频道id（非子频道id channel_id）                                                                        |
-| content                        | sting None                        | None   | 消息内容文本（选填）                                                                                       |
-| image                          | sting None                        | None   | 图片url，不可发送本地图片（选填）                                                                               |
+| content                        | string None                       | None   | 消息内容文本（选填）                                                                                       |
+| image                          | string None                       | None   | 图片url，不可发送本地图片（选填）                                                                               |
 | file_image                     | bytesBinaryIOstrPathLike[str]None | None   | 本地图片，可选以下三种方式传参：阅读档案后传入bytes类型图片数据、打开档案后直接传入档案、直接传入图片路径（具体例子可参阅github example_10，要求SDK版本>=2.1.5） |
 | message_id                     | string None                       | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）                                                         |
 | event_id                       | string None                       | None   | 事件id（选填，如此项数据项与message_id均为None，则为此消息主动消息）                                                       |
@@ -1065,7 +1104,7 @@ bot.send_dm()
 ![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
 
 ```python
-bot.delete_dm_msg()
+bot.api.delete_dm_msg()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_dm_msg()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_dm_msg()
 ```
@@ -1097,7 +1136,7 @@ bot.delete_dm_msg()
 -   该接口同样可用于解除禁言，将`mute_end_timestamp`或`mute_seconds`传值为字符串`'0'`即可
 
 ```python
-bot.mute_all_member()
+bot.api.mute_all_member()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().mute_all_member()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.mute_all_member()
 ```
@@ -1127,7 +1166,7 @@ bot.mute_all_member()
 -   该接口同样可用于解除禁言，将`mute_end_timestamp`或`mute_seconds`传值为字符串`'0'`即可
 
 ```python
-bot.mute_member()
+bot.api.mute_member()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().mute_member()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.mute_member()
 ```
@@ -1158,7 +1197,7 @@ bot.mute_member()
 -   该接口同样可用于解除禁言，将`mute_end_timestamp`或`mute_seconds`传值为字符串`'0'`即可
 
 ```python
-bot.mute_members()
+bot.api.mute_members()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().mute_members()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.mute_members()
 ```
@@ -1199,7 +1238,7 @@ bot.mute_members()
 -   删除推荐子频道类型的频道公告请将`message_id`设置为`all`
 
 ```python
-bot.create_announce()
+bot.api.create_announce()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().create_announce()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_announce()
 ```
@@ -1226,7 +1265,7 @@ bot.create_announce()
 -   用于删除频道 `guild_id` 下指定 `message_id` 的全局公告
 
 ```python
-bot.delete_announce()
+bot.api.delete_announce()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_announce()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_announce()
 ```
@@ -1259,7 +1298,7 @@ bot.delete_announce()
 -   接口返回对象中 `message_ids` 为当前请求后子频道内所有精华消息 `message_id` 数组
 
 ```python
-bot.create_pinmsg()
+bot.api.create_pinmsg()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().create_pinmsg()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_pinmsg()
 ```
@@ -1284,7 +1323,7 @@ bot.create_pinmsg()
 -   删除子频道内全部精华消息，请将 `message_id` 设置为 `all`
 
 ```python
-bot.delete_pinmsg()
+bot.api.delete_pinmsg()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_pinmsg()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_pinmsg()
 ```
@@ -1309,7 +1348,7 @@ bot.delete_pinmsg()
 -   用于获取子频道 `channel_id` 内的精华消息
 
 ```python
-bot.get_pinmsg()
+bot.api.get_pinmsg()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_pinmsg()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_pinmsg()
 ```
@@ -1335,7 +1374,7 @@ bot.get_pinmsg()
 -   若带了参数 `since`，则返回结束时间在 `since` 之后的日程列表；若未带参数 `since`，则默认返回当天的日程列表
 
 ```python
-bot.get_schedules()
+bot.api.get_schedules()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_schedules()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_schedules()
 ```
@@ -1358,7 +1397,7 @@ bot.get_schedules()
 -   获取日程子频道 `channel_id` 下 `schedule_id` 指定的的日程的详情
 
 ```python
-bot.get_schedule_info()
+bot.api.get_schedule_info()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_schedule_info()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_schedule_info()
 ```
@@ -1391,7 +1430,7 @@ bot.get_schedule_info()
     -   单个频道每天`100`次
 
 ```python
-bot.create_schedule()
+bot.api.create_schedule()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().create_schedule()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_schedule()
 ```
@@ -1420,7 +1459,7 @@ bot.create_schedule()
 -   要求操作人具有`管理频道`的权限（将机器人设置为管理员）
 
 ```python
-bot.patch_schedule()
+bot.api.patch_schedule()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().patch_schedule()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.patch_schedule()
 ```
@@ -1450,7 +1489,7 @@ bot.patch_schedule()
 -   要求操作人具有`管理频道`的权限，如果是机器人，则需要将机器人设置为管理员
 
 ```python
-bot.delete_schedule()
+bot.api.delete_schedule()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_schedule()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_schedule()
 ```
@@ -1508,7 +1547,7 @@ if __name__ == '__main__':
 -   对`message_id`指定的消息进行表情表态
 
 ```python
-bot.create_reaction()
+bot.api.create_reaction()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().create_reaction()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_reaction()
 ```
@@ -1537,7 +1576,7 @@ bot.create_reaction()
 -   删除自己对`message_id`指定消息的表情表态
 
 ```python
-bot.delete_reaction()
+bot.api.delete_reaction()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_reaction()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_reaction()
 ```
@@ -1568,7 +1607,7 @@ bot.delete_reaction()
 -   已解决分页获取问题，将直接获取全部数据
 
 ```python
-bot.get_reaction_users()
+bot.api.get_reaction_users()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_reaction_users()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_reaction_users()
 ```
@@ -1597,7 +1636,7 @@ bot.get_reaction_users()
 -   音频接口：仅限**音频类机器人**才能使用，后续会根据机器人类型自动开通接口权限，现如需调用，需联系平台申请权限
 
 ```python
-bot.control_audio()
+bot.api.control_audio()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().control_audio()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.control_audio()
 ```
@@ -1626,7 +1665,7 @@ bot.control_audio()
 -   音频接口：仅限**音频类机器人**才能使用，后续会根据机器人类型自动开通接口权限，现如需调用，需联系平台申请权限
 
 ```python
-bot.bot_on_mic()
+bot.api.bot_on_mic()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().bot_on_mic()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.bot_on_mic()
 ```
@@ -1652,7 +1691,7 @@ bot.bot_on_mic()
 -   音频接口：仅限**音频类机器人**才能使用，后续会根据机器人类型自动开通接口权限，现如需调用，需联系平台申请权限
 
 ```python
-bot.bot_off_mic()
+bot.api.bot_off_mic()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().bot_off_mic()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.bot_off_mic()
 ```
@@ -1682,7 +1721,7 @@ bot.bot_off_mic()
 ![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
 
 ```python
-bot.get_threads()
+bot.api.get_threads()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_threads()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_threads()
 ```
@@ -1733,7 +1772,7 @@ thread_info
 ![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
 
 ```python
-bot.get_thread_info()
+bot.api.get_thread_info()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_thread_info()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_thread_info()
 ```
@@ -1785,7 +1824,7 @@ thread_info
 ![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
 
 ```python
-bot.create_thread()
+bot.api.create_thread()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().create_thread()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_thread()
 ```
@@ -1822,7 +1861,7 @@ bot.create_thread()
 ![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
 
 ```python
-bot.delete_thread()
+bot.api.delete_thread()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().delete_thread()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.delete_thread()
 ```
@@ -1849,7 +1888,7 @@ bot.delete_thread()
 -   获取机器人在频道 `guild_id` 内可以使用的权限列表
 
 ```python
-bot.get_guild_permissions()
+bot.api.get_guild_permissions()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_guild_permissions()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_guild_permissions()
 ```
@@ -1871,7 +1910,7 @@ bot.get_guild_permissions()
 | 字段名         | 类型     | 说明                                                 |
 | ----------- | ------ | -------------------------------------------------- |
 | api         | string | 该 API 在 SDK 中的名字，如get_guild_info（需求sdk版本v2.2.1或以上） |
-| path        | sting  | API 接口名，例如/guilds/{guild_id}/members/{user_id}     |
+| path        | string | API 接口名，例如/guilds/{guild_id}/members/{user_id}     |
 | method      | string | 请求方法，例如GET                                         |
 | desc        | string | API 接口名称，例如 获取频道信                                  |
 | auth_status | int    | 授权状态，auth_stats 为 1 时已授权                           |
@@ -1885,7 +1924,7 @@ bot.get_guild_permissions()
 ![](https://tcs.teambition.net/storage/312hd4cf9565bc78dd3731a7fb1dc761ebfb?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmhkNGNmOTU2NWJjNzhkZDM3MzFhN2ZiMWRjNzYxZWJmYiJ9.8dWGyywSTLtjTB1qEf9sbOOqdF9vLEKpceNiZSQUsZo&download=image.png)
 
 ```python
-bot.create_permission_demand()
+bot.api.create_permission_demand()
 # v2.2.0前路径：qg_botsdk.qg_bot.BOT().create_permission_demand()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_permission_demand()
 ```

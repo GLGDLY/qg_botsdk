@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="qg-botsdk",
-    version="2.3.5",
+    version="2.3.6",
     author="GDLY",
     author_email="tzlgdly@gmail.com",
     description="easy-to-use SDK for Tencent QQ guild robot",
@@ -16,9 +16,9 @@ setuptools.setup(
     url="https://github.com/GLGDLY/qg_botsdk",
     packages=setuptools.find_packages(),
     install_requires=[
-        'aiohttp~=3.8.1',
-        'requests~=2.27.1',
-        'colorama~=0.4.4',
+        'aiohttp>=3.8.1',
+        'requests>=2.27.1',
+        'colorama>=0.4.4',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

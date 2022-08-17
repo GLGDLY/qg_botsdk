@@ -30,7 +30,7 @@
 
 -   保留官方http API中Json数据的结构字段，带你学习官方结构，日后可自行开发适合自己的SDK
 
--   迅速的更新速度，跟上最新潮流（v2.1.3已更新当日上新的本地上传图片能力，使用例子可参阅 `example_10(发送本地图片).py <./example/example_10(发送本地图片).py>`_
+-   迅速的更新速度，跟上最新潮流（v2.3.6已更新发送markdown消息能力，使用例子可参阅 `example_12(markdown).py <./example/example_12(markdown).py>`_
 
 下载方式
 =======
@@ -122,6 +122,7 @@
 -   send_ark_23
 -   send_ark_24
 -   send_ark_37
+-   send_markdown
 -   delete_msg
 -   get_guild_setting
 -   create_dm_guild
