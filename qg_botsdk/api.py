@@ -53,6 +53,7 @@ class _Session:
             if resp.headers['content-type'] == 'application/json':
                 json_ = resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    self._warning(url, resp)
                     return resp
             return self.request(method, url, True, **kwargs)
         return resp
@@ -1036,7 +1037,7 @@ class API:
                             all_users.append(items)
             return objectize({'data': all_users, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
         except (JSONDecodeError, AttributeError, KeyError):
-            return objectize({'data': None, 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
     def control_audio(self, channel_id: str, status: int, audio_url: Optional[str] = None,
                       text: Optional[str] = None) -> _api_model.audio():
@@ -1115,7 +1116,7 @@ class API:
                             all_threads.append(items)
             return objectize({'data': all_threads, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
         except (JSONDecodeError, AttributeError, KeyError):
-            return objectize({'data': None, 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
     def get_thread_info(self, channel_id: str, thread_id: str) -> _api_model.get_thread_info():
         """

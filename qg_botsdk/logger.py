@@ -5,11 +5,14 @@ from os import makedirs, PathLike, getcwd, sep
 from os.path import exists, join, isdir
 from time import strftime, localtime
 from functools import wraps
-from colorama import init as color_init
 from typing import Union, List
 from re import split as re_split
-
-color_init(strip=False)
+try:
+    from colorama import init as color_init
+    color_init(strip=False)
+except (ImportError, ModuleNotFoundError):
+    from os import system
+    system('')
 
 
 def _log_wrapper(func):
@@ -104,6 +107,19 @@ class Logger:
         formats = {20: info_format, 30: warning_format, 40: error_format}
         self._cmdh.setFormatter(self._Stream_Formatter(formats, date_format))
         self._logh.setFormatter(Formatter(self._format, self._date_format))
+
+    @staticmethod
+    def disable_logger(loggers: Union[str, List[str]]):
+        """
+        用于disable禁用logger
+
+        :param loggers: 需要禁用的logger名称或名称列
+        """
+        if isinstance(loggers, list):
+            for items in loggers:
+                getLogger(items).disabled = True
+        else:
+            getLogger(loggers).disabled = True
 
     def _new_logh(self, str_time):
         self._logh = FileHandler(join(self.file_path, f'{str_time}.log'), encoding='utf-8')

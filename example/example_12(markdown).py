@@ -6,9 +6,13 @@ from qg_botsdk import BOT, Model
 
 def deliver(data: Model.MESSAGE):
     if 'md' in data.treated_msg:
-        print(bot.api.send_markdown(data.channel_id, template_id='102012416_1660652194',
-                                    key_values={'target_id': data.author.id, 'result': ['成功']}, message_id=data.id))
         # markdown消息中的key_values格式同时支持[{'key': 'value'}]或者[{'key': ['value']}]（value可以是list[str]或str）
+        bot.api.send_markdown(data.channel_id, template_id='102012416_1660652194',
+                              key_values={'target_id': data.author.id, 'result': ['成功']}, message_id=data.id)
+        # 另加入按钮组件的用法如下：
+        bot.api.send_markdown(data.channel_id, template_id='102012416_1660652194',
+                              key_values={'target_id': data.author.id, 'result': ['成功']},
+                              keyboard_id='102012416_1660653100', message_id=data.id)
 
 
 if __name__ == '__main__':

@@ -72,7 +72,7 @@ class BOT:
         self.__on_start_function = None
         self.is_filter_self = True
         self.check_interval = 10
-        self.running = False
+        self.__running = False
         self.bot_headers = {'Authorization': f"Bot {self.bot_id}.{self.bot_token}"}
         self.__ssl = SSLContext()
         self.__session = Session()
@@ -81,7 +81,7 @@ class BOT:
         self.__session.mount('http://', adapter)
         self.__session.mount('https://', adapter)
         self.__bot_class = None
-        self.__loop = get_event_loop()
+        self._loop = get_event_loop()
         self.msg_treat = True
         self.dm_treat = False
         self.no_permission_warning = no_permission_warning
@@ -93,7 +93,7 @@ class BOT:
         else:
             from .async_api import AsyncAPI
             self.api: Union[AsyncAPI, API] = AsyncAPI(self.bot_url, bot_id, bot_secret, self.__ssl, self.bot_headers,
-                                                      self.logger, self.__loop, self._check_warning,
+                                                      self.logger, self._loop, self._check_warning,
                                                       is_retry, is_log_error)
 
     def __repr__(self):
@@ -103,15 +103,19 @@ class BOT:
     def robot(self) -> _api_model.robot():
         return self.__bot_class.robot
 
+    @property
+    def running(self):
+        return self.__running
+
     @exception_processor
     def __time_event_run(self):
         if self.is_async:
-            self.__loop.create_task(self.__repeat_function())
+            self._loop.create_task(self.__repeat_function())
         else:
             self.__repeat_function()
 
     async def __time_event_check(self):
-        while self.running:
+        while self.__running:
             self.__time_event_run()
             await sleep(self.check_interval)
 
@@ -173,7 +177,7 @@ class BOT:
         :param on_guild_event_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         """
         self.__on_guild_event_function = on_guild_event_function
-        self.intents = self.intents | 1 << 0
+        self.intents = self.intents | 1
         self.logger.info('频道事件订阅成功')
 
     def bind_channel_event(self, on_channel_event_function: Callable[[Model.CHANNELS], Any]):
@@ -183,7 +187,7 @@ class BOT:
         :param on_channel_event_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         """
         self.__on_channel_event_function = on_channel_event_function
-        self.intents = self.intents | 1 << 0
+        self.intents = self.intents | 1
         self.logger.info('子频道事件订阅成功')
 
     def bind_guild_member(self, on_guild_member_function: Callable[[Model.GUILD_MEMBERS], Any]):
@@ -291,17 +295,17 @@ class BOT:
             https://qg-botsdk.readthedocs.io/zh_CN/latest/index.html
         """
         try:
-            if not self.running and not self.__bot_class:
-                self.running = True
+            if not self.__running and not self.__bot_class:
+                self.__running = True
                 gateway = self.__session.get(self.bot_url + '/gateway/bot').json()
-                if 'url' not in gateway:
+                url = gateway.get('url')
+                if not url:
                     raise type('IdTokenError', (Exception,), {})(
                         '你输入的 bot_id 和/或 bot_token 错误，无法连接使用机器人\n如尚未有相关票据，'
                         '请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情')
-                url = gateway["url"]
                 self.logger.debug('[机器人ws地址] ' + url)
                 if self.__repeat_function is not None:
-                    self.__loop.create_task(self.__time_event_check())
+                    self._loop.create_task(self.__time_event_check())
                 self.__bot_class = BotWs(self.__session, self.__ssl, self.logger, self.total_shard, self.shard_no, url,
                                          self.bot_id, self.bot_token, self.bot_url, self.__on_msg_function,
                                          self.__on_dm_function, self.__on_delete_function, self.is_filter_self,
@@ -310,7 +314,7 @@ class BOT:
                                          self.__on_interaction_function, self.__on_audit_function,
                                          self.__on_forum_function, self.__on_audio_function, self.intents,
                                          self.msg_treat, self.dm_treat, self.__on_start_function, self.is_async,
-                                         self.max_workers if self.max_workers else 10)
+                                         self.max_workers if self.max_workers else 10, self.api)
                 self.__bot_class.starter()
             else:
                 self.logger.error('当前机器人已在运行中！')
@@ -325,12 +329,12 @@ class BOT:
             更多教程和相关资讯可参阅：
             https://qg-botsdk.readthedocs.io/zh_CN/latest/index.html
         """
-        if self.running:
-            self.running = False
+        if self.__running:
+            self.__running = False
             self.logger.info('WS链接已开始结束进程，请等待另一端完成握手并等待 TCP 连接终止')
             self.__bot_class.running = False
-            timeout = self.__loop.time() + 60
-            while self.__loop.time() > timeout:
+            timeout = self._loop.time() + 60
+            while self._loop.time() > timeout:
                 t_sleep(1)
                 if not self.__bot_class or self.__bot_class.ws.closed:
                     self.logger.info('WS链接已结束')

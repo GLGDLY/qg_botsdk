@@ -8,7 +8,8 @@ except (ImportError, ModuleNotFoundError):
 
 
 def read_yaml(yaml_path) -> Dict[str, Any]:
-    assert safe_load, '如需使用read_yaml函数，必须先pip install pyyaml'
+    if not safe_load:
+        raise AssertionError('如需使用read_yaml函数，必须先pip install pyyaml')
     with open(yaml_path, "r", encoding="utf-8") as f:
         return safe_load(f)
 

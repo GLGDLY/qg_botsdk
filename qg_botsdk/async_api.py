@@ -122,6 +122,7 @@ class _Session:
             if resp.headers['content-type'] == 'application/json':
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
+                    await self._warning(url, resp)
                     return resp
             return await self.request(method, url, True, **kwargs)
         return resp
@@ -1121,7 +1122,7 @@ class AsyncAPI:
                             all_users.append(items)
             return objectize({'data': all_users, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
         except (JSONDecodeError, AttributeError, KeyError):
-            return objectize({'data': None, 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
     async def control_audio(self, channel_id: str, status: int, audio_url: Optional[str] = None,
                             text: Optional[str] = None) -> _api_model.audio():
@@ -1200,7 +1201,7 @@ class AsyncAPI:
                             all_threads.append(items)
             return objectize({'data': all_threads, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
         except (JSONDecodeError, AttributeError, KeyError):
-            return objectize({'data': None, 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
     async def get_thread_info(self, channel_id: str, thread_id: str) -> _api_model.get_thread_info():
         """
@@ -1280,6 +1281,5 @@ class AsyncAPI:
         if not path:
             return sdk_error_temp('目标API不存在，请检查API名称是否正确')
         json_ = {"channel_id": channel_id, "api_identify": {"path": path, "method": method.upper()}, "desc": desc}
-        return_ = await self._session.post(f'{self.bot_url}/guilds/{guild_id}/api_permission/demand',
-                                           json=json_)
+        return_ = await self._session.post(f'{self.bot_url}/guilds/{guild_id}/api_permission/demand', json=json_)
         return await async_empty_temp(return_)

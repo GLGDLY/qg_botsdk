@@ -7,6 +7,7 @@
 [![Releases](https://img.shields.io/github/v/release/GLGDLY/qg_botsdk?style=plastic)](https://github.com/GLGDLY/qg_botsdk/releases)
 [![Pypi](https://img.shields.io/pypi/dw/qg-botsdk?style=plastic&color=blue)](https://pypi.org/project/qg-botsdk/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5)](https://www.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=github.com&utm_medium=referral&utm_content=GLGDLY/qg_botsdk&utm_campaign=Badge_Grade)
+[![docs](https://readthedocs.org/projects/qg-botsdk/badge/?version=latest)](https://qg-botsdk.readthedocs.io/zh_CN/latest/)
 
 ✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
 
@@ -161,7 +162,6 @@ if __name__ == '__main__':
 -   文档：
 
     -   [readthedocs](https://qg-botsdk.readthedocs.io/zh_CN/latest/)
-
     -   [thoughts](https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51)
 
 -   官方注册机器人：<https://q.qq.com/#/>

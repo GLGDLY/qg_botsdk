@@ -7,14 +7,22 @@ from json import dumps
 from json.decoder import JSONDecodeError
 from functools import wraps
 from re import split as re_split
+from typing import Optional, Union, BinaryIO
+from os import PathLike
 
 
 def __getattr__(identifier: str) -> object:
     if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'qg_bot_ws.py', 'api.py', 'async_api.py',
-                                                           '<frozen importlib._bootstrap>'):
+                                                           'model.py', '<frozen importlib._bootstrap>'):
         raise AssertionError("此为SDK内部使用文件，无法使用")
 
     return globals()[identifier.__path__]
+
+
+msg_t = ('MESSAGE_CREATE', 'AT_MESSAGE_CREATE', 'DIRECT_MESSAGE_CREATE')
+event_t = ('GUILD_MEMBER_ADD', 'GUILD_MEMBER_UPDATE', 'GUILD_MEMBER_REMOVE', 'MESSAGE_REACTION_ADD',
+           'MESSAGE_REACTION_REMOVE', 'FORUM_THREAD_CREATE', 'FORUM_THREAD_UPDATE', 'FORUM_THREAD_DELETE',
+           'FORUM_POST_CREATE', 'FORUM_POST_DELETE', 'FORUM_REPLY_CREATE', 'FORUM_REPLY_DELETE')
 
 
 def template_wrapper(func):
@@ -25,7 +33,7 @@ def template_wrapper(func):
         except (JSONDecodeError, AttributeError, KeyError):
             return_ = args[0]
             code = return_.status_code if hasattr(return_, 'status_code') else getattr(return_, 'status', None)
-            trace_id = return_.headers.get('X-Tps-Trace-Id', None) if hasattr(return_, 'headers') else None
+            trace_id = getattr(return_, 'headers', None).get('X-Tps-Trace-Id')
             return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': False})
 
     return wrap
@@ -46,6 +54,7 @@ def security_wrapper(func):
                 if logger:
                     logger.error(f'调用内容安全检测接口失败，详情：{exception_handler(e)}')
                 return False
+
     return wrap
 
 
@@ -73,8 +82,85 @@ class object_class(type):
         return self.__doc__
 
 
-def objectize(data: dict):
-    doc = dumps(data)
+class event_class(object_class):
+    def reply(self, content: Optional[str] = None, image: Optional[str] = None,
+              file_image: Optional[Union[bytes, BinaryIO, str, PathLike[str]]] = None,
+              message_reference_id: Optional[str] = None,
+              ignore_message_reference_error: Optional[bool] = None):
+        """
+        目前支持reply()发送被动消息的事件类型有:
+
+        GUILD_MEMBER_ADD GUILD_MEMBER_UPDATE GUILD_MEMBER_REMOVE MESSAGE_REACTION_ADD MESSAGE_REACTION_REMOVE
+        FORUM_THREAD_CREATE FORUM_THREAD_UPDATE FORUM_THREAD_DELETE FORUM_POST_CREATE FORUM_POST_DELETE
+        FORUM_REPLY_CREATE FORUM_REPLY_DELETE
+
+        剩余事件的reply()将会转为发送主动消息
+
+        :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
+        :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
+        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
+        :param message_reference_id: 引用消息的id（选填）
+        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
+        :return: 返回的.data中为解析后的json数据
+        """
+        kwargs = locals()
+        kwargs.pop('self', None)
+        t = getattr(self, 't')
+        if t in msg_t:
+            kwargs['message_id'] = getattr(self, 'id', None)
+        elif t in event_t:
+            kwargs['message_id'] = getattr(self, 'event_id', None)
+        if 'DIRECT_MESSAGE' in t:
+            kwargs['guild_id'] = getattr(self, 'guild_id')
+            return getattr(self, 'api').send_dm(**kwargs)
+        else:
+            kwargs['channel_id'] = getattr(self, 'channel_id') if hasattr(self, 'channel_id') \
+                else getattr(self, 'id', None)
+            return getattr(self, 'api').send_msg(**kwargs)
+
+
+class async_event_class(object_class):
+    async def reply(self, content: Optional[str] = None, image: Optional[str] = None,
+                    file_image: Optional[Union[bytes, BinaryIO, str, PathLike[str]]] = None,
+                    message_reference_id: Optional[str] = None,
+                    ignore_message_reference_error: Optional[bool] = None):
+        """
+        目前支持reply()发送被动消息的事件类型有:
+
+        GUILD_MEMBER_ADD GUILD_MEMBER_UPDATE GUILD_MEMBER_REMOVE MESSAGE_REACTION_ADD MESSAGE_REACTION_REMOVE
+        FORUM_THREAD_CREATE FORUM_THREAD_UPDATE FORUM_THREAD_DELETE FORUM_POST_CREATE FORUM_POST_DELETE
+        FORUM_REPLY_CREATE FORUM_REPLY_DELETE
+
+        剩余事件的reply()将会转为发送主动消息
+
+        :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
+        :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
+        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
+        :param message_reference_id: 引用消息的id（选填）
+        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
+        :return: 返回的.data中为解析后的json数据
+        """
+        kwargs = locals()
+        kwargs.pop('self', None)
+        t = getattr(self, 't')
+        if t in msg_t:
+            kwargs['message_id'] = getattr(self, 'id', None)
+        elif t in event_t:
+            kwargs['message_id'] = getattr(self, 'event_id', None)
+        if 'DIRECT_MESSAGE' in t:
+            kwargs['guild_id'] = getattr(self, 'guild_id')
+            return getattr(self, 'api').send_dm(**kwargs)
+        else:
+            kwargs['channel_id'] = getattr(self, 'channel_id') if hasattr(self, 'channel_id') \
+                else getattr(self, 'id', None)
+            return getattr(self, 'api').send_msg(**kwargs)
+
+
+def objectize(data, api=None, is_async=False):  # if api is no None, the event is a resp class
+    try:
+        doc = dumps(data)
+    except TypeError:
+        doc = str(data)
     if isinstance(data, dict):
         for keys, values in data.items():
             if keys.isnumeric():
@@ -86,10 +172,15 @@ def objectize(data: dict):
                     if isinstance(items, dict):
                         data[keys][i] = objectize(items)
         data['__doc__'] = doc
-        object_data = object_class('object', (object,), data)
+        if api:
+            data['api'] = api
+            object_data = async_event_class('object', (object,), data) if is_async \
+                else event_class('object', (object,), data)
+        else:
+            object_data = object_class('object', (object,), data)
         return object_data
     else:
-        return None
+        return data
 
 
 def treat_msg(raw_msg: str):
@@ -102,7 +193,7 @@ def treat_msg(raw_msg: str):
 
 @template_wrapper
 def http_temp(return_, code: int):
-    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
+    trace_id = return_.headers.get("X-Tps-Trace-Id")
     real_code = return_.status_code
     if real_code == code:
         return objectize({'data': None, 'trace_id': trace_id, 'http_code': real_code, 'result': True})
@@ -113,7 +204,7 @@ def http_temp(return_, code: int):
 
 @template_wrapper
 async def async_http_temp(return_, code: int):
-    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
+    trace_id = return_.headers.get("X-Tps-Trace-Id")
     real_code = return_.status
     if real_code == code:
         return objectize({'data': None, 'trace_id': trace_id, 'http_code': real_code, 'result': True})
@@ -124,7 +215,7 @@ async def async_http_temp(return_, code: int):
 
 @template_wrapper
 def regular_temp(return_):
-    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
+    trace_id = return_.headers.get("X-Tps-Trace-Id")
     return_dict = return_.json()
     if isinstance(return_dict, dict) and 'code' in return_dict:
         result = False
@@ -135,7 +226,7 @@ def regular_temp(return_):
 
 @template_wrapper
 async def async_regular_temp(return_):
-    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
+    trace_id = return_.headers.get("X-Tps-Trace-Id")
     return_dict = await return_.json()
     if isinstance(return_dict, dict) and 'code' in return_dict:
         result = False
@@ -146,7 +237,7 @@ async def async_regular_temp(return_):
 
 @template_wrapper
 def empty_temp(return_):
-    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
+    trace_id = return_.headers.get("X-Tps-Trace-Id")
     return_dict = return_.json()
     if not return_dict:
         result = True
@@ -158,7 +249,7 @@ def empty_temp(return_):
 
 @template_wrapper
 async def async_empty_temp(return_):
-    trace_id = return_.headers.get("X-Tps-Trace-Id", None)
+    trace_id = return_.headers.get("X-Tps-Trace-Id")
     return_dict = await return_.json()
     if not return_dict:
         result = True

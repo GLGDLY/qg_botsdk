@@ -28,7 +28,7 @@ class BotWs:
                  on_interaction_function: Callable[[Any], Any], on_audit_function: Callable[[Any], Any],
                  on_forum_function: Callable[[Any], Any], on_audio_function: Callable[[Any], Any],
                  intents: int, msg_treat: bool, dm_treat: bool, on_start_function: Callable[[], Any], is_async: bool,
-                 max_workers: int):
+                 max_workers: int, api):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
 
@@ -39,7 +39,7 @@ class BotWs:
         if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', '<frozen importlib._bootstrap>'):
             raise AssertionError("此为SDK内部使用类，无法使用，注册机器人请使用from qg_botsdk.qg_bot import BOT")
         self.session = session
-        self.__ssl = ssl
+        self._ssl = ssl
         self.logger = logger
         self.total_shard = total_shard
         self.shard_no = shard_no
@@ -81,6 +81,7 @@ class BotWs:
                        "AUDIO_START": on_audio_function, "AUDIO_FINISH": on_audio_function,
                        "AUDIO_ON_MIC": on_audio_function, "AUDIO_OFF_MIC": on_audio_function}
         self.threads = ThreadPoolExecutor(max_workers) if not self.is_async else None
+        self.api = api
 
     async def send_connect(self):
         connect_paras = {
@@ -110,7 +111,7 @@ class BotWs:
 
     async def heart(self):
         heart_json = {"op": 1, "d": None}
-        while True:
+        while self.running:
             await sleep(self.heartbeat_time)
             if not self.ws.closed:
                 heart_json['d'] = self.s
@@ -145,9 +146,9 @@ class BotWs:
         data["d"]["event_id"] = data["id"]
         if function is not None:
             if not self.is_async:
-                self.threads.submit(self.start_task(function, objectize(data["d"])))
+                self.threads.submit(self.start_task, function, objectize(data["d"], self.api, self.is_async))
             else:
-                self.loop.create_task(self.async_start_task(function, objectize(data["d"])))
+                self.loop.create_task(self.async_start_task(function, objectize(data["d"], self.api, self.is_async)))
 
     @exception_processor
     async def data_process(self, data):
@@ -206,7 +207,7 @@ class BotWs:
                 self.logger.error('[错误] 参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）')
                 exit()
         elif op == 10:
-            self.heartbeat_time = float(int(data["d"]["heartbeat_interval"]) * 0.001)
+            self.heartbeat_time = int(data["d"]["heartbeat_interval"]) * 0.001
             if not self.re_connect:
                 await self.send_connect()
             else:
@@ -237,7 +238,7 @@ class BotWs:
         self.reconnect_times += 1
         try:
             async with ClientSession() as ws_session:
-                async with ws_session.ws_connect(self.url, ssl=self.__ssl) as self.ws:
+                async with ws_session.ws_connect(self.url, ssl=self._ssl) as self.ws:
                     while not self.ws.closed:
                         message = await self.ws.receive()
                         if message.type == WSMsgType.TEXT:
@@ -266,7 +267,7 @@ class BotWs:
     def starter(self):
         self.loop.run_until_complete(self.connect())
         while self.running:
-            self.re_connect = False if self.reconnect_times >= 20 else True
+            self.re_connect = self.reconnect_times < 20
             try:
                 self.loop.run_until_complete(self.connect())
             except WSServerHandshakeError:

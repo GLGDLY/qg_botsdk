@@ -12,7 +12,8 @@ def deliver(data: Model.MESSAGE):
             send_msg = '检测不通过，内容有违规'
         else:
             send_msg = '检测通过，内容并无违规'
-        bot.api.send_msg(data.channel_id, send_msg, message_id=data.id)
+        # SDK版本 >= v2.4.0 可直接使用reply()
+        data.reply(send_msg)
     return
 
 

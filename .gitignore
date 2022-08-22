@@ -7,3 +7,4 @@ update.txt
 build
 dist
 qg_botsdk.egg-info
+/docs/.vscode/

@@ -5,32 +5,34 @@ from qg_botsdk import BOT, Model
 
 
 def deliver(data: Model.MESSAGE):
+    # SDK版本 >= v2.4.0 可直接使用reply()
     if '你好' in data.treated_msg:
-        bot.api.send_msg(data.channel_id, '你好，世界 <emoji:106>', message_id=data.id)   # 发送QQ系统表情emoji
-        bot.api.send_msg(data.channel_id, '你好，世界 \U0001F600', message_id=data.id)    # 发送unicode格式的emoji
+        data.reply('你好，世界 <emoji:106>')   # 发送QQ系统表情emoji
+        data.reply('你好，世界 \U0001F600')    # 发送unicode格式的emoji
     elif '图片' in data.treated_msg:
         # 方法1（阅读档案后传入bytes类型图片数据）：
         with open('example_10_image.jpg', 'rb') as img:
             img_bytes = img.read()
-            bot.api.send_msg(data.channel_id, file_image=img_bytes, message_id=data.id)
+            data.reply(file_image=img_bytes)
         # 方法2（打开档案后直接传入档案）：
         with open('example_10_image.jpg', 'rb') as img:
-            bot.api.send_msg(data.channel_id, file_image=img, message_id=data.id)
+            data.reply(file_image=img)
         # 方法3（直接传入图片路径）：
-        bot.api.send_msg(data.channel_id, file_image='example_10_image.jpg',  message_id=data.id)
+        data.reply(file_image='example_10_image.jpg')
 
 
 def deliver_dm(data: Model.DIRECT_MESSAGE):
+    # SDK版本 >= v2.4.0 可直接使用reply()
     if '图片' in data.treated_msg:
         # 方法1（阅读档案后传入bytes类型图片数据）：
         with open('example_10_image.jpg', 'rb') as img:
             img_bytes = img.read()
-            bot.api.send_dm(data.guild_id, file_image=img_bytes, message_id=data.id)
+            data.reply(file_image=img_bytes)
         # 方法2（打开档案后直接传入档案）：
         with open('example_10_image.jpg', 'rb') as img:
-            bot.api.send_dm(data.guild_id, file_image=img, message_id=data.id)
+            data.reply(file_image=img)
         # 方法3（直接传入图片路径）：
-        bot.api.send_dm(data.guild_id, file_image='example_10_image.jpg', message_id=data.id)
+        data.reply(file_image='example_10_image.jpg')
 
 
 if __name__ == '__main__':

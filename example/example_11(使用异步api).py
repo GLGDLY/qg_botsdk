@@ -33,32 +33,33 @@ async def on_start():
 
 
 async def deliver(data: Model.MESSAGE):
+    # SDK版本 >= v2.4.0 可直接使用reply()
+
     # example_10 的异步版本
     if '你好' in data.treated_msg:
-        await bot.api.send_msg(data.channel_id, '你好，世界 <emoji:106>', message_id=data.id)  # 发送QQ系统表情emoji
-        await bot.api.send_msg(data.channel_id, '你好，世界 \U0001F600', message_id=data.id)  # 发送unicode格式的emoji
+        await data.reply('你好，世界 <emoji:106>')  # 发送QQ系统表情emoji
+        await data.reply('你好，世界 \U0001F600')  # 发送unicode格式的emoji
     elif '图片' in data.treated_msg:
         with open('example_10_image.jpg', 'rb') as img:
             img_bytes = img.read()
-            await bot.api.send_msg(data.channel_id, file_image=img_bytes, message_id=data.id)
+            await data.reply(file_image=img_bytes)
         with open('example_10_image.jpg', 'rb') as img:
-            await bot.api.send_msg(data.channel_id, file_image=img, message_id=data.id)
-        await bot.api.send_msg(data.channel_id, file_image='example_10_image.jpg', message_id=data.id)
+            await data.reply(file_image=img)
+        await data.reply(file_image='example_10_image.jpg')
 
     # example_8 创建身份组模块的异步版本
     elif '创建我的身份组' in data.treated_msg:
         cr = await bot.api.create_role(data.guild_id, name=f'{data.author.username}的身份组', color='#019F86', hoist=True)
         await bot.api.create_role_member(data.author.id, data.guild_id, cr.data.role_id)
         if cr.result:
-            await bot.api.send_msg(data.channel_id, f'【{data.author.username}的身份组】（id:{cr.data.role_id}）'
-                                                    f'已经被创建好啦！', message_id=data.id)
+            await data.reply(f'【{data.author.username}的身份组】（id:{cr.data.role_id}）已经被创建好啦！')
 
 
 async def deliver_dm(data: Model.DIRECT_MESSAGE):  # example_8 私信模块的异步版本
     if '给爷笑一个' in data.treated_msg:
         with open('example_10_image.jpg', 'rb') as img:
             img_bytes = img.read()
-        await bot.api.send_dm(data.guild_id, '嘿嘿~', file_image=img_bytes, message_id=data.id)
+        await data.reply('嘿嘿~', file_image=img_bytes)
 
 
 if __name__ == '__main__':

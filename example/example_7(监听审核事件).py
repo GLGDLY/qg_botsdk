@@ -10,7 +10,8 @@ def on_start():
 
 def deliver(data: Model.MESSAGE):
     if '你好' in data.treated_msg:
-        bot.api.send_msg(data.channel_id, '你好，世界', message_id=data.id)
+        # SDK版本 >= v2.4.0 可直接使用reply()
+        data.reply('你好，世界')
 
 
 def msg_audit(data: Model.MESSAGE_AUDIT):

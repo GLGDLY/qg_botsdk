@@ -1,6 +1,7 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from typing import List
+from ._utils import event_class
 
 
 class Model:
@@ -10,7 +11,7 @@ class Model:
     GUILDS - 频道事件
     GUILD_MEMBERS -
     """
-    class GUILDS:
+    class GUILDS(event_class):
         """
         频道事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -34,7 +35,7 @@ class Model:
         t: str
         event_id: str
 
-    class CHANNELS:
+    class CHANNELS(event_class):
         """
         子频道事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -62,7 +63,7 @@ class Model:
         t: str
         event_id: str
 
-    class GUILD_MEMBERS:
+    class GUILD_MEMBERS(event_class):
         """
         频道成员事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -88,7 +89,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE:
+    class MESSAGE(event_class):
         """
         消息事件的数据模，可从t字段判断具体事件，其中包含：
 
@@ -148,7 +149,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE_DELETE:
+    class MESSAGE_DELETE(event_class):
         """
         消息撤回事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -179,7 +180,7 @@ class Model:
         t: str
         event_id: str
 
-    class DIRECT_MESSAGE:
+    class DIRECT_MESSAGE(event_class):
         """
         私信消息事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -223,7 +224,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE_AUDIT:
+    class MESSAGE_AUDIT(event_class):
         """
         主动消息审核事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -246,7 +247,7 @@ class Model:
         t: str
         event_id: str
 
-    class FORUMS_EVENT:
+    class FORUMS_EVENT(event_class):
         """
         论坛事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -334,7 +335,7 @@ class Model:
         t: str
         event_id: str
 
-    class AUDIO_ACTION:
+    class AUDIO_ACTION(event_class):
         """
         音频事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -357,7 +358,7 @@ class Model:
         t: str
         event_id: str
 
-    class REACTION:
+    class REACTION(event_class):
         """
         表情表态事件的数据模型，可从t字段判断具体事件，其中包含：
 
