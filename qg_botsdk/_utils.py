@@ -9,6 +9,7 @@ from functools import wraps
 from re import split as re_split
 from typing import Optional, Union, BinaryIO
 from os import PathLike
+from .version import __version__
 
 
 def __getattr__(identifier: str) -> object:
@@ -19,6 +20,10 @@ def __getattr__(identifier: str) -> object:
     return globals()[identifier.__path__]
 
 
+general_header = {'User-Agent': f'qg-botsdk v{__version__}'}
+security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8', 'User-Agent': f'qg-botsdk v{__version__}'}
+retry_err_code = (101, 11281, 11252, 11263, 11242, 11252, 306003, 306005, 306006, 501002, 501003, 501004, 501006,
+                  501007, 501011, 501012, 620007)
 msg_t = ('MESSAGE_CREATE', 'AT_MESSAGE_CREATE', 'DIRECT_MESSAGE_CREATE')
 event_t = ('GUILD_MEMBER_ADD', 'GUILD_MEMBER_UPDATE', 'GUILD_MEMBER_REMOVE', 'MESSAGE_REACTION_ADD',
            'MESSAGE_REACTION_REMOVE', 'FORUM_THREAD_CREATE', 'FORUM_THREAD_UPDATE', 'FORUM_THREAD_DELETE',
@@ -149,11 +154,11 @@ class async_event_class(object_class):
             kwargs['message_id'] = getattr(self, 'event_id', None)
         if 'DIRECT_MESSAGE' in t:
             kwargs['guild_id'] = getattr(self, 'guild_id')
-            return getattr(self, 'api').send_dm(**kwargs)
+            return await getattr(self, 'api').send_dm(**kwargs)
         else:
             kwargs['channel_id'] = getattr(self, 'channel_id') if hasattr(self, 'channel_id') \
                 else getattr(self, 'id', None)
-            return getattr(self, 'api').send_msg(**kwargs)
+            return await getattr(self, 'api').send_msg(**kwargs)
 
 
 def objectize(data, api=None, is_async=False):  # if api is no None, the event is a resp class

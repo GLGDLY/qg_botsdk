@@ -10,9 +10,8 @@ from json.decoder import JSONDecodeError
 from io import BufferedReader
 from typing import Optional, Union, BinaryIO, List, Tuple, Dict
 from . import _api_model
-from .version import __version__
 from ._utils import (objectize, async_regular_temp, async_http_temp, async_empty_temp, sdk_error_temp,
-                     exception_handler, security_wrapper)
+                     exception_handler, security_wrapper, security_header, retry_err_code, general_header)
 from .utils import convert_color
 
 try:
@@ -32,10 +31,6 @@ for version_index in range(3):
             break
     except (ValueError, IndexError):
         pass
-
-security_header = {'Content-Type': 'application/json', 'charset': 'UTF-8', 'User-Agent': f'qg-botsdk v{__version__}'}
-retry_err_code = (101, 11281, 11252, 11263, 11242, 11252, 306003, 306005, 306006, 501002, 501003, 501004, 501006,
-                  501007, 501011, 501012, 620007)
 
 
 # derived from aiohttp FormData object, changing the return of _is_processed to allow retry using the same data object
@@ -112,7 +107,7 @@ class _Session:
 
     async def request(self, method, url, retry=False, **kwargs):
         await self._check_session()
-        kwargs['headers'] = kwargs.get('headers', {'User-Agent': f'qg-botsdk v\\{__version__}'})
+        kwargs['headers'] = kwargs.get('headers', general_header)
         resp = await self._session.request(method, url, timeout=self._timeout, **kwargs)
         if resp.ok:
             return resp
