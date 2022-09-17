@@ -1,6 +1,5 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from os import PathLike
 from os.path import exists
 from time import time
 from json import loads
@@ -487,7 +486,7 @@ class API:
         return regular_temp(return_)
 
     def send_msg(self, channel_id: str, content: Optional[str] = None, image: Optional[str] = None,
-                 file_image: Optional[Union[bytes, BinaryIO, str, PathLike[str]]] = None,
+                 file_image: Optional[Union[bytes, BinaryIO, str]] = None,
                  message_id: Optional[str] = None, event_id: Optional[str] = None,
                  message_reference_id: Optional[str] = None,
                  ignore_message_reference_error: Optional[bool] = None) -> _api_model.send_msg():
@@ -711,7 +710,7 @@ class API:
         return regular_temp(return_)
 
     def send_dm(self, guild_id: str, content: Optional[str] = None, image: Optional[str] = None,
-                file_image: Optional[Union[bytes, BinaryIO, str, PathLike[str]]] = None,
+                file_image: Optional[Union[bytes, BinaryIO, str]] = None,
                 message_id: Optional[str] = None, event_id: Optional[str] = None,
                 message_reference_id: Optional[str] = None,
                 ignore_message_reference_error: Optional[bool] = None) -> _api_model.send_msg():

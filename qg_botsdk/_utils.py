@@ -8,7 +8,6 @@ from json.decoder import JSONDecodeError
 from functools import wraps
 from re import split as re_split
 from typing import Optional, Union, BinaryIO
-from os import PathLike
 from .version import __version__
 
 
@@ -27,7 +26,7 @@ retry_err_code = (101, 11281, 11252, 11263, 11242, 11252, 306003, 306005, 306006
 msg_t = ('MESSAGE_CREATE', 'AT_MESSAGE_CREATE', 'DIRECT_MESSAGE_CREATE')
 event_t = ('GUILD_MEMBER_ADD', 'GUILD_MEMBER_UPDATE', 'GUILD_MEMBER_REMOVE', 'MESSAGE_REACTION_ADD',
            'MESSAGE_REACTION_REMOVE', 'FORUM_THREAD_CREATE', 'FORUM_THREAD_UPDATE', 'FORUM_THREAD_DELETE',
-           'FORUM_POST_CREATE', 'FORUM_POST_DELETE', 'FORUM_REPLY_CREATE', 'FORUM_REPLY_DELETE')
+           'FORUM_POST_CREATE', 'FORUM_POST_DELETE', 'FORUM_REPLY_CREATE', 'FORUM_REPLY_DELETE', 'INTERACTION_CREATE')
 
 
 def template_wrapper(func):
@@ -89,15 +88,14 @@ class object_class(type):
 
 class event_class(object_class):
     def reply(self, content: Optional[str] = None, image: Optional[str] = None,
-              file_image: Optional[Union[bytes, BinaryIO, str, PathLike[str]]] = None,
-              message_reference_id: Optional[str] = None,
+              file_image: Optional[Union[bytes, BinaryIO, str]] = None, message_reference_id: Optional[str] = None,
               ignore_message_reference_error: Optional[bool] = None):
         """
         目前支持reply()发送被动消息的事件类型有:
 
         GUILD_MEMBER_ADD GUILD_MEMBER_UPDATE GUILD_MEMBER_REMOVE MESSAGE_REACTION_ADD MESSAGE_REACTION_REMOVE
         FORUM_THREAD_CREATE FORUM_THREAD_UPDATE FORUM_THREAD_DELETE FORUM_POST_CREATE FORUM_POST_DELETE
-        FORUM_REPLY_CREATE FORUM_REPLY_DELETE
+        FORUM_REPLY_CREATE FORUM_REPLY_DELETE INTERACTION_CREATE
 
         剩余事件的reply()将会转为发送主动消息
 
@@ -126,15 +124,14 @@ class event_class(object_class):
 
 class async_event_class(object_class):
     async def reply(self, content: Optional[str] = None, image: Optional[str] = None,
-                    file_image: Optional[Union[bytes, BinaryIO, str, PathLike[str]]] = None,
-                    message_reference_id: Optional[str] = None,
-                    ignore_message_reference_error: Optional[bool] = None):
+                    file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+                    message_reference_id: Optional[str] = None, ignore_message_reference_error: Optional[bool] = None):
         """
         目前支持reply()发送被动消息的事件类型有:
 
         GUILD_MEMBER_ADD GUILD_MEMBER_UPDATE GUILD_MEMBER_REMOVE MESSAGE_REACTION_ADD MESSAGE_REACTION_REMOVE
         FORUM_THREAD_CREATE FORUM_THREAD_UPDATE FORUM_THREAD_DELETE FORUM_POST_CREATE FORUM_POST_DELETE
-        FORUM_REPLY_CREATE FORUM_REPLY_DELETE
+        FORUM_REPLY_CREATE FORUM_REPLY_DELETE INTERACTION_CREATE
 
         剩余事件的reply()将会转为发送主动消息
 

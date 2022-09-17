@@ -382,3 +382,24 @@ class Model:
         guild_id: str
         t: str
         event_id: str
+
+    class INTERACTION(event_class):
+        """
+
+        """
+        class data:
+            class resolved:
+                button_data: str
+                button_id: str
+                message_id: str
+                user_id: str
+            type: int
+
+        application_id: str
+        channel_id: str
+        guild_id: str
+        id: str
+        type: int
+        version: int
+        t: str
+        event_id: str

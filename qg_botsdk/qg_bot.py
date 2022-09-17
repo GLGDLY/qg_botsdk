@@ -116,8 +116,8 @@ class BOT:
 
     async def __time_event_check(self):
         while self.__running:
-            self.__time_event_run()
             await sleep(self.check_interval)
+            self.__time_event_run()
 
     def bind_msg(self, on_msg_function: Callable[[Model.MESSAGE], Any], treated_data: bool = True,
                  all_msg: bool = None):
@@ -210,9 +210,9 @@ class BOT:
         self.intents = self.intents | 1 << 10
         self.logger.info('表情表态事件订阅成功')
 
-    def bind_interaction(self, on_interaction_function: Callable[[Any], Any]):
+    def bind_interaction(self, on_interaction_function: Callable[[Model.INTERACTION], Any]):
         """
-        用作绑定接收互动事件的函数，当前未有录入数据结构
+        用作绑定接收互动事件的函数
 
         :param on_interaction_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
         """

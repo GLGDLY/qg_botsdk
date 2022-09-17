@@ -15,7 +15,12 @@ def deliver(data: Model.MESSAGE):
                               keyboard_id='102012416_1660653100', message_id=data.id)
 
 
+def button(data: Model.INTERACTION):  # md按钮action type 1回调的interaction事件
+    data.reply(f'received button interaction event, button_data: {data.data.resolved.button_data}')
+
+
 if __name__ == '__main__':
     bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=True)
     bot.bind_msg(deliver)
+    bot.bind_interaction(button)
     bot.start()
