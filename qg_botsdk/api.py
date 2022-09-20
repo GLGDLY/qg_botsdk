@@ -14,11 +14,12 @@ from .utils import convert_color
 
 
 class _Session:
-    def __init__(self, session, is_retry, is_log_error, logger):
+    def __init__(self, session, is_retry, is_log_error, logger, lock):
         self._session = session
         self._is_retry = is_retry
         self._is_log_error = is_log_error
         self._logger = logger
+        self._lock = lock
 
     def _warning(self, url, resp):
         self._logger.warning(f'HTTP API(url:{url})调用错误[{resp.status_code}]，详情：{resp.text}，'
@@ -39,8 +40,10 @@ class _Session:
 
     def request(self, method, url, retry=False, **kwargs):
         kwargs['headers'] = kwargs.get('headers', general_header)
-        resp = self._session.request(method, url, timeout=20, **kwargs)
+        self._lock.acquire()
+        resp = self._session.request(method, url, timeout=30, **kwargs)
         if resp.status_code < 400:
+            self._lock.release()
             return resp
         if self._is_log_error and (not self._is_retry or retry):
             self._warning(url, resp)
@@ -49,17 +52,20 @@ class _Session:
                 json_ = resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     self._warning(url, resp)
+                    self._lock.release()
                     return resp
+            self._lock.release()
             return self.request(method, url, True, **kwargs)
+        self._lock.release()
         return resp
 
 
 class API:
-    def __init__(self, bot_url, bot_id, bot_secret, session, logger, check_warning, is_retry, is_log_error):
+    def __init__(self, bot_url, bot_id, bot_secret, session, logger, check_warning, is_retry, is_log_error, lock):
         self.bot_url = bot_url
         self.bot_id = bot_id
         self.bot_secret = bot_secret
-        self._session = _Session(session, is_retry, is_log_error, logger)
+        self._session = _Session(session, is_retry, is_log_error, logger, lock)
         self.logger = logger
         self.check_warning = check_warning
         self.security_code = ''

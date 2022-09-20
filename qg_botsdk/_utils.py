@@ -3,7 +3,7 @@
 from sys import exc_info
 from traceback import extract_tb
 from inspect import stack
-from json import dumps
+from json import dumps, loads
 from json.decoder import JSONDecodeError
 from functools import wraps
 from re import split as re_split
@@ -13,7 +13,8 @@ from .version import __version__
 
 def __getattr__(identifier: str) -> object:
     if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'qg_bot_ws.py', 'api.py', 'async_api.py',
-                                                           'model.py', '<frozen importlib._bootstrap>'):
+                                                           'model.py', '_api_model.py',
+                                                           '<frozen importlib._bootstrap>'):
         raise AssertionError("此为SDK内部使用文件，无法使用")
 
     return globals()[identifier.__path__]
@@ -37,7 +38,7 @@ def template_wrapper(func):
         except (JSONDecodeError, AttributeError, KeyError):
             return_ = args[0]
             code = return_.status_code if hasattr(return_, 'status_code') else getattr(return_, 'status', None)
-            trace_id = getattr(return_, 'headers', None).get('X-Tps-Trace-Id')
+            trace_id = getattr(return_, 'headers', {}).get('X-Tps-Trace-Id')
             return objectize({'data': None, 'trace_id': trace_id, 'http_code': code, 'result': False})
 
     return wrap
@@ -84,6 +85,14 @@ def exception_processor(func):
 class object_class(type):
     def __repr__(self):
         return self.__doc__
+
+    @property
+    def dict(self):
+        try:
+            return_ = loads(self.__doc__)
+        except JSONDecodeError:
+            return_ = {}
+        return return_
 
 
 class event_class(object_class):

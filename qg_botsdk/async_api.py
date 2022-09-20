@@ -72,10 +72,11 @@ class _FormData(FormData):
 
 
 class _Session:
-    def __init__(self, loop, is_retry, is_log_error, logger, **kwargs):
+    def __init__(self, loop, is_retry, is_log_error, logger, lock, **kwargs):
         self._is_retry = is_retry
         self._is_log_error = is_log_error
         self._logger = logger
+        self._lock = lock
         self._kwargs = kwargs
         self._session: Optional[ClientSession] = None
         self._timeout = ClientTimeout(total=20)
@@ -107,8 +108,10 @@ class _Session:
     async def request(self, method, url, retry=False, **kwargs):
         await self._check_session()
         kwargs['headers'] = kwargs.get('headers', general_header)
+        await self._lock.acquire()
         resp = await self._session.request(method, url, timeout=self._timeout, **kwargs)
         if resp.ok:
+            await self._lock.release()
             return resp
         if self._is_log_error and (not self._is_retry or retry):
             await self._warning(url, resp)
@@ -117,13 +120,17 @@ class _Session:
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     await self._warning(url, resp)
+                    await self._lock.release()
                     return resp
+            await self._lock.release()
             return await self.request(method, url, True, **kwargs)
+        await self._lock.release()
         return resp
 
 
 class AsyncAPI:
-    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, is_retry, is_log_error):
+    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, is_retry, is_log_error,
+                 lock):
         self.bot_url = bot_url
         self.bot_id = bot_id
         self.bot_secret = bot_secret
@@ -132,7 +139,8 @@ class AsyncAPI:
         self.loop = loop
         self.check_warning = check_warning
         self.__client_conn = TCPConnector(limit=500, ssl=ssl, force_close=True)
-        self._session = _Session(loop, is_retry, is_log_error, logger, headers=headers, connector=self.__client_conn)
+        self._session = _Session(loop, is_retry, is_log_error, logger, lock,
+                                 headers=headers, connector=self.__client_conn)
         self.security_code = ''
         self.code_expire = 0
 

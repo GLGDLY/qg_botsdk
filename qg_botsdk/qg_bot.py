@@ -1,7 +1,8 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from os import getpid
-from asyncio import get_event_loop, sleep
+from asyncio import get_event_loop, sleep, Lock as ALock
+from threading import Lock as TLock
 from time import sleep as t_sleep
 from ssl import SSLContext
 from requests import Session
@@ -88,13 +89,15 @@ class BOT:
         self.max_workers = max_workers
         self.is_async = is_async
         if not is_async:
+            self.lock = TLock()
             self.api: API = API(self.bot_url, bot_id, bot_secret, self.__session, self.logger, self._check_warning,
-                                is_retry, is_log_error)
+                                is_retry, is_log_error, self.lock)
         else:
             from .async_api import AsyncAPI
+            self.lock = ALock()
             self.api: Union[AsyncAPI, API] = AsyncAPI(self.bot_url, bot_id, bot_secret, self.__ssl, self.bot_headers,
-                                                      self.logger, self._loop, self._check_warning,
-                                                      is_retry, is_log_error)
+                                                      self.logger, self._loop, self._check_warning, is_retry,
+                                                      is_log_error, self.lock)
 
     def __repr__(self):
         return f"<qg_botsdk.BOT object [id: {self.bot_id}, token: {self.bot_token}]>"

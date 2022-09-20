@@ -3,6 +3,7 @@
 from inspect import stack
 from typing import List, Optional
 from re import split as re_split
+from ._utils import object_class
 
 apis = {('获取用户ID', 'get_bot_id'): [False, '此API不需要请求权限'],
         ('获取用户信息', 'get_bot_info'): ['GET', '/users/@me'],
@@ -107,7 +108,7 @@ def robot():
 
 
 def get_bot_info():
-    class GetBotInfo:
+    class GetBotInfo(object_class):
         class data:
             id: str
             username: str
@@ -125,7 +126,7 @@ def get_bot_info():
 
 
 def get_bot_guilds():
-    class GetBotGuilds:
+    class GetBotGuilds(object_class):
         class __guild:
             id: str
             name: str
@@ -148,7 +149,7 @@ def get_bot_guilds():
 
 
 def get_guild_info():
-    class GetGuildInfo:
+    class GetGuildInfo(object_class):
         class data:
             id: str
             name: str
@@ -170,7 +171,7 @@ def get_guild_info():
 
 
 def get_guild_channels():
-    class GetGuildChannels:
+    class GetGuildChannels(object_class):
         class __channels:
             id: str
             guild_id: str
@@ -217,7 +218,7 @@ class _Channels:
 def get_channels_info():
     channels = _Channels
 
-    class GetChannelsInfo:
+    class GetChannelsInfo(object_class):
         data: channels
         http_code: int
         trace_id: str
@@ -229,7 +230,7 @@ def get_channels_info():
 def create_channels():
     channels = _Channels
 
-    class CreateChannels:
+    class CreateChannels(object_class):
         data: channels
         http_code: int
         trace_id: str
@@ -241,7 +242,7 @@ def create_channels():
 def patch_channels():
     channels = _Channels
 
-    class PatchChannels:
+    class PatchChannels(object_class):
         data: channels
         http_code: int
         trace_id: str
@@ -253,7 +254,7 @@ def patch_channels():
 def delete_channels():
     temp = _EmptyReturnTemplate
 
-    class DeleteChannels:
+    class DeleteChannels(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -282,7 +283,7 @@ class _Member:
 def get_guild_members():
     member = _Member
 
-    class GetGuildMembers:
+    class GetGuildMembers(object_class):
         data: List[member]
         http_code: List[int]
         trace_id: List[str]
@@ -294,7 +295,7 @@ def get_guild_members():
 def get_member_info():
     member = _Member
 
-    class GetMemberInfo:
+    class GetMemberInfo(object_class):
         data: member
         http_code: int
         trace_id: str
@@ -306,7 +307,7 @@ def get_member_info():
 def delete_member():
     temp = _EmptyReturnTemplate
 
-    class DeleteMember:
+    class DeleteMember(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -327,7 +328,7 @@ class _Role:
 def get_guild_roles():
     role_ = _Role
 
-    class GetGuildRoles:
+    class GetGuildRoles(object_class):
         class data:
             guild_id: str
             roles: List[role_]
@@ -345,7 +346,7 @@ def get_guild_roles():
 def create_role():
     role_ = _Role
 
-    class CreateRole:
+    class CreateRole(object_class):
         class data:
             role_id: str
             role: role_
@@ -362,7 +363,7 @@ def create_role():
 def patch_role():
     role_ = _Role
 
-    class PatchRole:
+    class PatchRole(object_class):
         class data:
             guild_id: str
             role_id: str
@@ -380,7 +381,7 @@ def patch_role():
 def delete_role():
     temp = _EmptyReturnTemplate
 
-    class DeleteRole:
+    class DeleteRole(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -390,7 +391,7 @@ def delete_role():
 
 
 def role_members():
-    class RoleMembers:
+    class RoleMembers(object_class):
         class data:
             code: int
             message: str
@@ -413,7 +414,7 @@ class _Permission_Mem:
 def get_channel_member_permission():
     permission = _Permission_Mem
 
-    class GetChannelMemberPermission:
+    class GetChannelMemberPermission(object_class):
         data: permission
         http_code: int
         trace_id: str
@@ -425,7 +426,7 @@ def get_channel_member_permission():
 def put_channel_mr_permission():
     temp = _EmptyReturnTemplate
 
-    class PutChannelMRPermission:
+    class PutChannelMRPermission(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -445,7 +446,7 @@ class _Permission_Role:
 def get_channel_role_permission():
     permission = _Permission_Role
 
-    class GetChannelRolePermission:
+    class GetChannelRolePermission(object_class):
         data: permission
         http_code: int
         trace_id: str
@@ -489,7 +490,7 @@ class _Message:
 def get_message_info():
     message_ = _Message
 
-    class GetMessageInfo:
+    class GetMessageInfo(object_class):
         class data:
             message: message_
 
@@ -501,7 +502,7 @@ def get_message_info():
 
 
 def send_msg():
-    class SendMsg:
+    class SendMsg(object_class):
         class data:
             id: str
             channel_id: str
@@ -528,7 +529,7 @@ def send_msg():
 def delete_msg():
     temp = _EmptyReturnTemplate
 
-    class DeleteMsg:
+    class DeleteMsg(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -538,7 +539,7 @@ def delete_msg():
 
 
 def get_guild_setting():
-    class GetGuildSetting:
+    class GetGuildSetting(object_class):
         class data:
             disable_create_dm: bool
             disable_push_msg: bool
@@ -555,7 +556,7 @@ def get_guild_setting():
 
 
 def create_dm_guild():
-    class CreateDmGuild:
+    class CreateDmGuild(object_class):
         class data:
             guild_id: str
             channel_id: str
@@ -573,7 +574,7 @@ def create_dm_guild():
 def mute_member():
     temp = _EmptyReturnTemplate
 
-    class MuteMember:
+    class MuteMember(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -583,7 +584,7 @@ def mute_member():
 
 
 def mute_members():
-    class MuteMembers:
+    class MuteMembers(object_class):
         class data:
             user_ids: List[str]
             code: int
@@ -601,7 +602,7 @@ def create_announce():
         channel_id: str
         introduce: str
 
-    class CreateAnnounce:
+    class CreateAnnounce(object_class):
         class data:
             guild_id: str
             channel_id: str
@@ -621,7 +622,7 @@ def create_announce():
 def delete_announce():
     temp = _EmptyReturnTemplate
 
-    class DeleteAnnounce:
+    class DeleteAnnounce(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -631,7 +632,7 @@ def delete_announce():
 
 
 def pinmsg():
-    class PinMsg:
+    class PinMsg(object_class):
         class data:
             guild_id: str
             channel_id: str
@@ -649,7 +650,7 @@ def pinmsg():
 def delete_pinmsg():
     temp = _EmptyReturnTemplate
 
-    class DeletePinMsg:
+    class DeletePinMsg(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -682,7 +683,7 @@ class __Schedule:
 def get_schedules():
     schedule = __Schedule
 
-    class GetSchedules:
+    class GetSchedules(object_class):
         data: List[schedule]
         http_code: int
         trace_id: str
@@ -694,7 +695,7 @@ def get_schedules():
 def schedule_info():
     schedule = __Schedule
 
-    class ScheduleInfo:
+    class ScheduleInfo(object_class):
         data: schedule
         http_code: int
         trace_id: str
@@ -706,7 +707,7 @@ def schedule_info():
 def delete_schedule():
     temp = _EmptyReturnTemplate
 
-    class DeleteSchedule:
+    class DeleteSchedule(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -718,7 +719,7 @@ def delete_schedule():
 def reactions():
     temp = _EmptyReturnTemplate
 
-    class Reactions:
+    class Reactions(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -735,7 +736,7 @@ def get_reaction_users():
         code: int
         message: str
 
-    class GetReactionUsers:
+    class GetReactionUsers(object_class):
         data: List[Users]
         http_code: List[int]
         trace_id: List[str]
@@ -747,7 +748,7 @@ def get_reaction_users():
 def audio():
     temp = _EmptyReturnTemplate
 
-    class Audio:
+    class Audio(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -808,7 +809,7 @@ class __Threads:
 def get_threads():
     thread = __Threads
 
-    class GetThreads:
+    class GetThreads(object_class):
         data: List[thread]
         http_code: List[int]
         trace_id: List[str]
@@ -820,7 +821,7 @@ def get_threads():
 def get_thread_info():
     thread = __Threads
 
-    class GetThreadInfo:
+    class GetThreadInfo(object_class):
         data: thread
         http_code: int
         trace_id: str
@@ -830,7 +831,7 @@ def get_thread_info():
 
 
 def create_thread():
-    class CreateThread:
+    class CreateThread(object_class):
         class data:
             task_id: str
             create_time: str
@@ -847,7 +848,7 @@ def create_thread():
 def delete_thread():
     temp = _EmptyReturnTemplate
 
-    class DeleteThread:
+    class DeleteThread(object_class):
         data: temp
         http_code: int
         trace_id: str
@@ -864,7 +865,7 @@ def get_guild_permissions():
         desc: str
         auth_status: int
 
-    class GetGuildPermissions:
+    class GetGuildPermissions(object_class):
         class data:
             apis = List[Api]
             code: int
@@ -878,7 +879,7 @@ def get_guild_permissions():
 
 
 def create_permission_demand():
-    class CreatePermissionDemand:
+    class CreatePermissionDemand(object_class):
         class data:
             class api_identify:
                 path: str
