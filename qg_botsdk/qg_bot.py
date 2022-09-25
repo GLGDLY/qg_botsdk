@@ -97,7 +97,7 @@ class BOT:
             self.lock = ALock()
             self.api: Union[AsyncAPI, API] = AsyncAPI(self.bot_url, bot_id, bot_secret, self.__ssl, self.bot_headers,
                                                       self.logger, self._loop, self._check_warning, is_retry,
-                                                      is_log_error, self.lock)
+                                                      is_log_error)
 
     def __repr__(self):
         return f"<qg_botsdk.BOT object [id: {self.bot_id}, token: {self.bot_token}]>"

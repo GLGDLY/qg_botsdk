@@ -15,6 +15,7 @@ apis = {('获取用户ID', 'get_bot_id'): [False, '此API不需要请求权限']
         ('修改子频道', 'patch_channels'): ['PATCH', '/channels/{channel_id}'],
         ('删除子频道', 'delete_channels'): ['DELETE', '/channels/{channel_id}'],
         ('获取频道成员列表', 'get_guild_members'): ['GET', '/guilds/{guild_id}/members'],
+        ('获取频道身份组成员列表', 'get_role_members'): ['GET', '/guilds/{guild_id}/roles/{role_id}/members'],
         ('获取频道成员详情', 'get_member_info'): ['GET', '/guilds/{guild_id}/members/{user_id}'],
         ('删除频道成员', 'delete_member'): ['DELETE', '/guilds/{guild_id}/members/{user_id}'],
         ('获取频道身份组列表', 'get_guild_roles'): ['GET', '/guilds/{guild_id}/roles'],
@@ -281,10 +282,8 @@ class _Member:
 
 
 def get_guild_members():
-    member = _Member
-
     class GetGuildMembers(object_class):
-        data: List[member]
+        data: List[_Member]
         http_code: List[int]
         trace_id: List[str]
         result: List[bool]
@@ -292,11 +291,19 @@ def get_guild_members():
     return GetGuildMembers
 
 
-def get_member_info():
-    member = _Member
+def get_role_members():
+    class GetRoleMembers(object_class):
+        data: List[_Member]
+        http_code: List[int]
+        trace_id: List[str]
+        result: List[bool]
 
+    return GetRoleMembers
+
+
+def get_member_info():
     class GetMemberInfo(object_class):
-        data: member
+        data: _Member
         http_code: int
         trace_id: str
         result: bool

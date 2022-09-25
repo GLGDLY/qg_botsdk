@@ -72,11 +72,10 @@ class _FormData(FormData):
 
 
 class _Session:
-    def __init__(self, loop, is_retry, is_log_error, logger, lock, **kwargs):
+    def __init__(self, loop, is_retry, is_log_error, logger, **kwargs):
         self._is_retry = is_retry
         self._is_log_error = is_log_error
         self._logger = logger
-        self._lock = lock
         self._kwargs = kwargs
         self._session: Optional[ClientSession] = None
         self._timeout = ClientTimeout(total=20)
@@ -108,10 +107,8 @@ class _Session:
     async def request(self, method, url, retry=False, **kwargs):
         await self._check_session()
         kwargs['headers'] = kwargs.get('headers', general_header)
-        await self._lock.acquire()
         resp = await self._session.request(method, url, timeout=self._timeout, **kwargs)
         if resp.ok:
-            await self._lock.release()
             return resp
         if self._is_log_error and (not self._is_retry or retry):
             await self._warning(url, resp)
@@ -120,17 +117,13 @@ class _Session:
                 json_ = await resp.json()
                 if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
                     await self._warning(url, resp)
-                    await self._lock.release()
                     return resp
-            await self._lock.release()
             return await self.request(method, url, True, **kwargs)
-        await self._lock.release()
         return resp
 
 
 class AsyncAPI:
-    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, is_retry, is_log_error,
-                 lock):
+    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, is_retry, is_log_error):
         self.bot_url = bot_url
         self.bot_id = bot_id
         self.bot_secret = bot_secret
@@ -139,7 +132,7 @@ class AsyncAPI:
         self.loop = loop
         self.check_warning = check_warning
         self.__client_conn = TCPConnector(limit=500, ssl=ssl, force_close=True)
-        self._session = _Session(loop, is_retry, is_log_error, logger, lock,
+        self._session = _Session(loop, is_retry, is_log_error, logger,
                                  headers=headers, connector=self.__client_conn)
         self.security_code = ''
         self.code_expire = 0
@@ -344,6 +337,48 @@ class AsyncAPI:
                     for items in return_dict:
                         if items not in data:
                             data.append(items)
+        except (JSONDecodeError, AttributeError, KeyError):
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
+        if data:
+            return objectize({'data': data, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
+        else:
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
+
+    async def get_role_members(self, guild_id: str, role_id: str) -> _api_model.get_role_members():
+        """
+        用于获取 guild_id 频道中指定 role_id 身份组下所有成员的详情列表
+
+        :param guild_id: 频道id
+        :param role_id: 身份组id
+        :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
+        """
+        trace_ids = []
+        codes = []
+        results = []
+        data = []
+        return_dict = None
+        start_index = 0
+        try:
+            while True:
+                if return_dict is not None and not return_dict.get('data'):
+                    break
+                return_ = await self._session.get(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}/members?'
+                                                  f'limit=400&start_index={start_index}')
+                trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                codes.append(return_.status)
+                return_dict = await return_.json()
+                if isinstance(return_dict, dict) and 'code' in return_dict.keys():
+                    results.append(False)
+                    data.append(return_dict)
+                    break
+                else:
+                    results.append(True)
+                    for items in return_dict.get('data', {}):
+                        if items not in data:
+                            data.append(items)
+                    start_index = return_dict.get('next')
+                    if not start_index:
+                        break
         except (JSONDecodeError, AttributeError, KeyError):
             return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
         if data:

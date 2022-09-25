@@ -4,6 +4,14 @@
 
 > \*\*\*注意v2.2.0后，所有api的路径都变为qg_botsdk.qg_bot.BOT().api.get_bot_info()
 
+### 所有API返回的数据默认以object方式返回，但亦可以通过返回数据.dict获取字典形式的数据（要求SDK版本>=v2.4.3），如:
+
+```python
+bot.api.get_bot_info().dict
+# 返回：
+# {'data': {'id': 'xxx', 'username': 'xxx', 'avatar': 'xxx'}, 'trace_id': 'xxx', 'http_code': 200, 'result': True}
+```
+
 ## 引言-API
 
 让我们先重温一下简单的工作流：
@@ -344,6 +352,33 @@ bot.api.get_guild_members()
 | trace_id | list[string] | 腾讯官方提供的错误追踪 ID ，每次请求整合的列表   |
 | result   | list[bool]   | 成功为True；否则为False ，每次请求整合的列表 |
 
+### 获取频道身份组成员列表（需求SDK版本>=v2.4.4）
+
+-   用于获取 `guild_id` 频道中指定 `role_id` 身份组下所有成员的详情列表
+
+-   已解决分页获取问题，将直接获取全部数据
+
+![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+
+```python
+bot.api.get_role_members()
+# v2.2.0前路径：qg_botsdk.qg_bot.BOT().get_role_members()
+# v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.get_role_members()
+```
+
+| 参数       |        |        |       |
+| -------- | ------ | ------ | ----- |
+| 字段名      | 类型     | 默认值    | 说明    |
+| guild_id | string | 无，必选参数 | 频道ID  |
+| role_id  | string | 无，必选参数 | 身份组ID |
+
+| 返回       |              |                             |
+| -------- | ------------ | --------------------------- |
+| 字段       | 类型           | 说明                          |
+| data     | list[object] | 返回包含所有数据的列表，其每个项均为object    |
+| trace_id | list[string] | 腾讯官方提供的错误追踪 ID ，每次请求整合的列表   |
+| result   | list[bool]   | 成功为True；否则为False ，每次请求整合的列表 |
+
 ### 获取频道成员详情
 
 -   用于获取 `guild_id` 指定的频道中 `user_id` 对应成员的详细信息
@@ -444,13 +479,13 @@ bot.api.create_role()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_role()
 ```
 
-| 参数       |             |        |                                       |
-| -------- | ----------- | ------ | ------------------------------------- |
-| 字段名      | 类型          | 默认值    | 说明                                    |
-| guild_id | string      | 无，必选参数 | 频道ID                                  |
-| name     | string None | None   | 身份组名（选填)                              |
+| 参数       |             |        |                                        |
+| -------- | ----------- | ------ | -------------------------------------- |
+| 字段名      | 类型          | 默认值    | 说明                                     |
+| guild_id | string      | 无，必选参数 | 频道ID                                   |
+| name     | string None | None   | 身份组名（选填)                               |
 | color    | string None | None   | 身份组颜色，支持输入RGB的三位tuple或HEX的string颜色（选填) |
-| hoist    | string None | None   | 是否在成员列表中单独展示（选填）                      |
+| hoist    | string None | None   | 是否在成员列表中单独展示（选填）                       |
 
 | 返回       |        |                  |
 | -------- | ------ | ---------------- |
@@ -473,14 +508,14 @@ bot.api.patch_role()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.patch_role()
 ```
 
-| 参数       |             |        |                                       |
-| -------- | ----------- | ------ | ------------------------------------- |
-| 字段名      | 类型          | 默认值    | 说明                                    |
-| guild_id | string      | 无，必选参数 | 频道ID                                  |
-| role_id  | string      | 无，必选参数 | 需要修改的身份组ID                            |
-| name     | string None | None   | 身份组名（选填)                              |
+| 参数       |             |        |                                        |
+| -------- | ----------- | ------ | -------------------------------------- |
+| 字段名      | 类型          | 默认值    | 说明                                     |
+| guild_id | string      | 无，必选参数 | 频道ID                                   |
+| role_id  | string      | 无，必选参数 | 需要修改的身份组ID                             |
+| name     | string None | None   | 身份组名（选填)                               |
 | color    | string None | None   | 身份组颜色，支持输入RGB的三位tuple或HEX的string颜色（选填) |
-| hoist    | string None | None   | 是否在成员列表中单独展示（选填）                      |
+| hoist    | string None | None   | 是否在成员列表中单独展示（选填）                       |
 
 | 返回       |        |                  |
 | -------- | ------ | ---------------- |
@@ -944,17 +979,17 @@ bot.api.send_markdown()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.send_markdown()
 ```
 
-| 参数         |             |        |                                            |
-| ---------- | ----------- | ------ | ------------------------------------------ |
-| 字段名        | 类型          | 默认值    | 说明                                         |
-| channel_id | string      | 无，必选参数 | 子频道ID                                       |
-| template_id| string None | None   | markdown 模板 id（选填，与content不可同时存在）               |
-| key_values | list[{str: str/list[str]}] None | None   | markdown 模版 key values列表，格式为：[{key1: value1}, {key2: value2}]（选填，与content不可同时存在）|
-| content    | string None | None   | 原生 markdown 内容（选填，与template_id, key, values不可同时存在） |
-| keyboard_id| string None | None   | keyboard 模板 id（选填，与keyboard_content不可同时存在）       |
-| keyboard_content| dict None | None   | 原生 keyboard 内容（选填，与keyboard_id不可同时存在）      |
-| message_id | string None | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）   |
-| event_id   | string None | None   | 事件id（选填，如此项数据项与message_id均为None，则为此消息主动消息） |
+| 参数               |                                  |        |                                                                                  |
+| ---------------- | -------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| 字段名              | 类型                               | 默认值    | 说明                                                                               |
+| channel_id       | string                           | 无，必选参数 | 子频道ID                                                                            |
+| template_id      | string None                      | None   | markdown 模板 id（选填，与content不可同时存在）                                                |
+| key_values       | list\[{str: str/list[str]}] None | None   | markdown 模版 key values列表，格式为：[{key1: value1}, {key2: value2}]（选填，与content不可同时存在） |
+| content          | string None                      | None   | 原生 markdown 内容（选填，与template_id, key, values不可同时存在）                               |
+| keyboard_id      | string None                      | None   | keyboard 模板 id（选填，与keyboard_content不可同时存在）                                       |
+| keyboard_content | dict None                        | None   | 原生 keyboard 内容（选填，与keyboard_id不可同时存在）                                            |
+| message_id       | string None                      | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）                                         |
+| event_id         | string None                      | None   | 事件id（选填，如此项数据项与message_id均为None，则为此消息主动消息）                                       |
 
 > `template_id` `content`至少需要有一个字段，否则无法下发消息
 

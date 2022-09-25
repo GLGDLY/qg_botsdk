@@ -275,6 +275,48 @@ class API:
         else:
             return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
 
+    def get_role_members(self, guild_id: str, role_id: str) -> _api_model.get_role_members():
+        """
+        用于获取 guild_id 频道中指定 role_id 身份组下所有成员的详情列表
+
+        :param guild_id: 频道id
+        :param role_id: 身份组id
+        :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
+        """
+        trace_ids = []
+        codes = []
+        results = []
+        data = []
+        return_dict = None
+        start_index = 0
+        try:
+            while True:
+                if return_dict is not None and not return_dict.get('data'):
+                    break
+                return_ = self._session.get(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}/members?'
+                                            f'limit=400&start_index={start_index}')
+                trace_ids.append(return_.headers['X-Tps-Trace-Id'])
+                codes.append(return_.status_code)
+                return_dict = return_.json()
+                if isinstance(return_dict, dict) and 'code' in return_dict.keys():
+                    results.append(False)
+                    data.append(return_dict)
+                    break
+                else:
+                    results.append(True)
+                    for items in return_dict.get('data', {}):
+                        if items not in data:
+                            data.append(items)
+                    start_index = return_dict.get('next')
+                    if not start_index:
+                        break
+        except (JSONDecodeError, AttributeError, KeyError):
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
+        if data:
+            return objectize({'data': data, 'trace_id': trace_ids, 'http_code': codes, 'result': results})
+        else:
+            return objectize({'data': [], 'trace_id': trace_ids, 'http_code': codes, 'result': [False]})
+
     def get_member_info(self, guild_id: str, user_id: str) -> _api_model.get_member_info():
         """
         用于获取 guild_id 指定的频道中 user_id 对应成员的详细信息

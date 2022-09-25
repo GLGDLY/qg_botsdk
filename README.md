@@ -101,6 +101,7 @@ if __name__ == '__main__':
 -   patch_channels
 -   delete_channels
 -   get_guild_members
+-   get_role_members
 -   get_member_info
 -   delete_member
 -   get_guild_roles

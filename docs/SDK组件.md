@@ -78,6 +78,19 @@ bot.robot:
 # 路径：qg_botsdk.qg_bot.BOT().robot.id/username/avatar
 ```
 
+> 无参数
+
+### 获取SDK内置锁（需求SDK版本>=2.4.3）
+
+-   返回SDK内置锁（根据SDK并发配置分配thread或async的Lock）
+
+```yaml
+bot.lock
+# 路径：qg_botsdk.qg_bot.BOT().robot.lock
+```
+
+> 无参数
+
 ## 绑定组件
 
 ### 绑定接收消息事件
