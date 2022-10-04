@@ -4,7 +4,7 @@ from os import getpid
 from asyncio import get_event_loop, sleep, Lock as ALock
 from threading import Lock as TLock
 from time import sleep as t_sleep
-from ssl import SSLContext
+from ssl import create_default_context
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from typing import Any, Callable, Union, Optional
@@ -74,8 +74,8 @@ class BOT:
         self.is_filter_self = True
         self.check_interval = 10
         self.__running = False
-        self.bot_headers = {'Authorization': f"Bot {self.bot_id}.{self.bot_token}"}
-        self.__ssl = SSLContext()
+        self.bot_headers = {'Authorization': f'Bot {self.bot_id}.{self.bot_token}'}
+        self.__ssl = create_default_context()
         self.__session = Session()
         self.__session.headers = self.bot_headers
         self.__session.keep_alive = False
@@ -110,6 +110,10 @@ class BOT:
     def running(self):
         return self.__running
 
+    @property
+    def loop(self):
+        return self._loop
+
     @exception_processor
     def __time_event_run(self):
         if self.is_async:
@@ -135,15 +139,18 @@ class BOT:
         if not treated_data:
             self.msg_treat = False
         if all_msg is None:
-            if not self.is_private:
-                self.intents = self.intents | 1 << 30
+            if self.is_private:
+                self.intents = self.intents | 1 << 9
                 self.logger.info('消息（所有消息）接收函数订阅成功')
             else:
-                self.intents = self.intents | 1 << 9
+                self.intents = self.intents | 1 << 30
                 self.logger.info('消息（艾特消息）接收函数订阅成功')
+        elif all_msg:
+            self.intents = self.intents | 1 << 9
+            self.logger.info('消息（所有消息）接收函数订阅成功')
         else:
             self.intents = self.intents | 1 << 30
-            self.logger.info('消息（所有消息）接收函数订阅成功')
+            self.logger.info('消息（艾特消息）接收函数订阅成功')
 
     def bind_dm(self, on_dm_function: Callable[[Model.DIRECT_MESSAGE], Any], treated_data: bool = True):
         """
@@ -168,9 +175,9 @@ class BOT:
         self.__on_delete_function = on_delete_function
         self.is_filter_self = is_filter_self
         if self.is_private:
-            self.intents = self.intents | 1 << 30
-        else:
             self.intents = self.intents | 1 << 9
+        else:
+            self.intents = self.intents | 1 << 30
         self.logger.info('撤回事件订阅成功')
 
     def bind_guild_event(self, on_guild_event_function: Callable[[Model.GUILDS], Any]):
@@ -300,7 +307,7 @@ class BOT:
         try:
             if not self.__running and not self.__bot_class:
                 self.__running = True
-                gateway = self.__session.get(self.bot_url + '/gateway/bot').json()
+                gateway = self.__session.get(f'{self.bot_url}/gateway/bot').json()
                 url = gateway.get('url')
                 if not url:
                     raise type('IdTokenError', (Exception,), {})(

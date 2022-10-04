@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="qg-botsdk",
-    version="2.4.4",
+    version="2.4.5",
     author="GDLY",
     author_email="tzlgdly@gmail.com",
     description="easy-to-use SDK for Tencent QQ guild robot",
