@@ -2,138 +2,25 @@
 # -*- coding: utf-8 -*-
 from os.path import exists
 from time import time
-from asyncio import get_event_loop
-from aiohttp import ClientSession, TCPConnector, FormData, ClientTimeout, multipart, hdrs, payload
 from json import loads
 from json.decoder import JSONDecodeError
 from io import BufferedReader
 from typing import Optional, Union, BinaryIO, List, Tuple, Dict
+
 from . import _api_model
-from ._utils import (objectize, async_regular_temp, async_http_temp, async_empty_temp, sdk_error_temp,
-                     exception_handler, security_wrapper, security_header, retry_err_code, general_header)
+from ._utils import (objectize, regular_temp, http_temp, empty_temp, sdk_error_temp, security_wrapper, security_header)
 from .utils import convert_color
-
-try:
-    from importlib.metadata import version
-
-    aio_version = version('aiohttp')
-except (ImportError, ModuleNotFoundError):
-    from pkg_resources import get_distribution
-
-    aio_version = get_distribution('aiohttp').version
-
-version_checking = (3, 8, 1)
-for version_index in range(3):
-    try:
-        if int(aio_version[2 * version_index]) < version_checking[version_index]:
-            print(f'\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1，避免出现无法预计的错误\033[0m')
-            break
-    except (ValueError, IndexError):
-        pass
-
-
-# derived from aiohttp FormData object, changing the return of _is_processed to allow retry using the same data object
-class _FormData(FormData):
-    def _gen_form_data(self) -> multipart.MultipartWriter:
-        """Encode a list of fields using the multipart/form-data MIME format"""
-        if self._is_processed:
-            return self._writer
-        for dispparams, headers, value in self._fields:
-            try:
-                if hdrs.CONTENT_TYPE in headers:
-                    part = payload.get_payload(
-                        value,
-                        content_type=headers[hdrs.CONTENT_TYPE],
-                        headers=headers,
-                        encoding=self._charset,
-                    )
-                else:
-                    part = payload.get_payload(
-                        value, headers=headers, encoding=self._charset
-                    )
-            except Exception as exc:
-                print(value)
-                raise TypeError(
-                    "Can not serialize value type: %r\n "
-                    "headers: %r\n value: %r" % (type(value), headers, value)
-                ) from exc
-
-            if dispparams:
-                part.set_content_disposition(
-                    "form-data", quote_fields=self._quote_fields, **dispparams
-                )
-                assert part.headers is not None
-                part.headers.popall(hdrs.CONTENT_LENGTH, None)
-
-            self._writer.append_payload(part)
-
-        self._is_processed = True
-        return self._writer
-
-
-class _Session:
-    def __init__(self, loop, is_retry, is_log_error, logger, **kwargs):
-        self._is_retry = is_retry
-        self._is_log_error = is_log_error
-        self._logger = logger
-        self._kwargs = kwargs
-        self._session: Optional[ClientSession] = None
-        self._timeout = ClientTimeout(total=20)
-        loop.run_until_complete(self._check_session())
-
-    def __del__(self):
-        if self._session and not self._session.closed:
-            _loop = get_event_loop()
-            _loop.run_until_complete(self._session.close())
-
-    async def _check_session(self):
-        if not self._session or self._session.closed:
-            self._session = ClientSession(**self._kwargs)
-
-    async def _warning(self, url, resp):
-        self._logger.warning(f'HTTP API(url:{url})调用错误[{resp.status}]，详情：{await resp.text()}，'
-                             f'trace_id：{resp.headers.get("X-Tps-Trace-Id", None)}')
-
-    def __getattr__(self, item):
-        if item in ('get', 'post', 'delete', 'patch', 'put'):
-            def wrap(*args, **kwargs):
-                try:
-                    return self.request(item, *args, **kwargs)
-                except Exception as e:
-                    self._logger.error(f'HTTP API(url:{args[0]})调用错误，详情：{exception_handler(e)}')
-
-            return wrap
-
-    async def request(self, method, url, retry=False, **kwargs):
-        await self._check_session()
-        kwargs['headers'] = kwargs.get('headers', general_header)
-        resp = await self._session.request(method, url, timeout=self._timeout, **kwargs)
-        if resp.ok:
-            return resp
-        if self._is_log_error and (not self._is_retry or retry):
-            await self._warning(url, resp)
-        if self._is_retry and not retry:
-            if resp.headers['content-type'] == 'application/json':
-                json_ = await resp.json()
-                if not isinstance(json_, dict) or json_.get('code', None) not in retry_err_code:
-                    await self._warning(url, resp)
-                    return resp
-            return await self.request(method, url, True, **kwargs)
-        return resp
+from .http import FormData_
 
 
 class AsyncAPI:
-    def __init__(self, bot_url, bot_id, bot_secret, ssl, headers, logger, loop, check_warning, is_retry, is_log_error):
+    def __init__(self, bot_url, bot_id, bot_secret, session, logger, check_warning):
         self.bot_url = bot_url
         self.bot_id = bot_id
         self.bot_secret = bot_secret
-        self.headers = headers
+        self._session = session
         self.logger = logger
-        self.loop = loop
         self.check_warning = check_warning
-        self.__client_conn = TCPConnector(limit=500, ssl=ssl, force_close=True)
-        self._session = _Session(loop, is_retry, is_log_error, logger,
-                                 headers=headers, connector=self.__client_conn)
         self.security_code = ''
         self.code_expire = 0
 
@@ -164,7 +51,7 @@ class AsyncAPI:
             json={'content': content}, headers=security_header)
         check = await return_.json()
         self.logger.debug(check)
-        if check['errCode'] in (-1800110107, -1800110108):
+        if check.get('errCode') in (-1800110107, -1800110108, -1800110109):
             await self.__security_check_code()
             return_ = await self._session.post(
                 f'https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self.security_code}',
@@ -182,7 +69,7 @@ class AsyncAPI:
         :return:返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/users/@me')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def get_bot_guilds(self) -> _api_model.get_bot_guilds():
         """
@@ -226,7 +113,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/guilds/{guild_id}')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def get_guild_channels(self, guild_id: str) -> _api_model.get_guild_channels():
         """
@@ -236,7 +123,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/guilds/{guild_id}/channels')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def get_channels_info(self, channel_id: str) -> _api_model.get_channels_info():
         """
@@ -246,7 +133,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/channels/{channel_id}')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def create_channels(self, guild_id: str, name: str, type_: int, position: int, parent_id: str, sub_type: int,
                               private_type: int, private_user_ids: List[str], speak_permission: int,
@@ -271,7 +158,7 @@ class AsyncAPI:
                  "private_type": private_type, "private_user_ids": private_user_ids,
                  "speak_permission": speak_permission, "application_id": application_id}
         return_ = await self._session.post(f'{self.bot_url}/guilds/{guild_id}/channels', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def patch_channels(self, channel_id: str, name: Optional[str] = None, position: Optional[int] = None,
                              parent_id: Optional[str] = None, private_type: Optional[int] = None,
@@ -291,7 +178,7 @@ class AsyncAPI:
         json_ = {"name": name, "position": position, "parent_id": parent_id, "private_type": private_type,
                  "speak_permission": speak_permission}
         return_ = await self._session.patch(f'{self.bot_url}/channels/{channel_id}', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def delete_channels(self, channel_id) -> _api_model.delete_channels():
         """
@@ -302,7 +189,7 @@ class AsyncAPI:
         """
         self.check_warning('删除子频道')
         return_ = await self._session.delete(f'{self.bot_url}/channels/{channel_id}')
-        return await async_http_temp(return_, 200)
+        return await http_temp(return_, 200)
 
     async def get_guild_members(self, guild_id: str) -> _api_model.get_guild_members():
         """
@@ -395,7 +282,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def delete_member(self, guild_id: str, user_id: str, add_blacklist: bool = False,
                             delete_history_msg_days: int = 0) -> _api_model.delete_member():
@@ -413,7 +300,7 @@ class AsyncAPI:
             return sdk_error_temp('注意delete_history_msg_days的数值只能是3，7，15，30，0，-1')
         json_ = {'add_blacklist': add_blacklist, 'delete_history_msg_days': delete_history_msg_days}
         return_ = await self._session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}', json=json_)
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def get_guild_roles(self, guild_id: str) -> _api_model.get_guild_roles():
         """
@@ -423,7 +310,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/guilds/{guild_id}/roles')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def create_role(self, guild_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
                           color: Optional[Union[str, Tuple[int, int, int]]] = None) -> _api_model.create_role():
@@ -449,7 +336,7 @@ class AsyncAPI:
             color_ = None
         json_ = {'name': name, 'color': color_, 'hoist': hoist_}
         return_ = await self._session.post(f'{self.bot_url}/guilds/{guild_id}/roles', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def patch_role(self, guild_id: str, role_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
                          color: Optional[Union[str, Tuple[int, int, int]]] = None) -> _api_model.patch_role():
@@ -476,7 +363,7 @@ class AsyncAPI:
             color_ = None
         json_ = {'name': name, 'color': color_, 'hoist': hoist_}
         return_ = await self._session.patch(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def delete_role(self, guild_id: str, role_id: str) -> _api_model.delete_role():
         """
@@ -487,7 +374,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(f'{self.bot_url}/guilds/{guild_id}/roles/{role_id}')
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def create_role_member(self, user_id: str, guild_id: str, role_id: str,
                                  channel_id: Optional[str] = None) -> _api_model.role_members():
@@ -508,7 +395,7 @@ class AsyncAPI:
                 return sdk_error_temp('注意如果要增加的身份组ID是5-子频道管理员，需要输入channel_id项来指定具体是哪个子频道')
         else:
             return_ = await self._session.put(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}')
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def delete_role_member(self, user_id: str, guild_id: str, role_id: str,
                                  channel_id: Optional[str] = None) -> _api_model.role_members():
@@ -529,7 +416,7 @@ class AsyncAPI:
                 return sdk_error_temp('注意如果要增加的身份组ID是5-子频道管理员，需要输入channel_id项来指定具体是哪个子频道')
         else:
             return_ = await self._session.delete(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}')
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def get_channel_member_permission(self, channel_id: str, user_id: str) -> \
             _api_model.get_channel_member_permission():
@@ -541,7 +428,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def put_channel_member_permission(self, channel_id: str, user_id: str, add: Optional[str] = None,
                                             remove: Optional[str] = None) -> _api_model.put_channel_mr_permission():
@@ -559,7 +446,7 @@ class AsyncAPI:
         json_ = {'add': add, 'remove': remove}
         return_ = await self._session.put(f'{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions',
                                           json=json_)
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def get_channel_role_permission(self, channel_id: str, role_id: str) -> \
             _api_model.get_channel_role_permission():
@@ -571,7 +458,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def put_channel_role_permission(self, channel_id: str, role_id: str, add: Optional[str] = None,
                                           remove: Optional[str] = None) -> _api_model.put_channel_mr_permission():
@@ -589,7 +476,7 @@ class AsyncAPI:
         json_ = {'add': add, 'remove': remove}
         return_ = await self._session.put(f'{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions',
                                           json=json_)
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def get_message_info(self, channel_id: str, message_id: str) -> _api_model.get_message_info():
         """
@@ -600,7 +487,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def send_msg(self, channel_id: str, content: Optional[str] = None, image: Optional[str] = None,
                        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
@@ -638,14 +525,14 @@ class AsyncAPI:
                 else:
                     return sdk_error_temp('目标图片路径不存在，无法发送')
             json_['file_image'] = file_image
-            data_ = _FormData()
+            data_ = FormData_()
             for keys, values in json_.items():
                 if values is not None:
                     data_.add_field(keys, values)
             return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', data=data_)
         else:
             return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def send_embed(self, channel_id: str, title: Optional[str] = None, content: Optional[List[str]] = None,
                          image: Optional[str] = None, prompt: Optional[str] = None, message_id: Optional[str] = None,
@@ -668,7 +555,7 @@ class AsyncAPI:
             for items in content:
                 json_["embed"]["fields"].append({"name": items})
         return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def send_ark_23(self, channel_id: str, content: List[str], link: List[str], desc: Optional[str] = None,
                           prompt: Optional[str] = None, message_id: Optional[str] = None,
@@ -694,7 +581,7 @@ class AsyncAPI:
             json_["ark"]["kv"][2]["obj"].append({"obj_kv": [{"key": "desc", "value": items},
                                                             {"key": "link", "value": link[i]}]})
         return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def send_ark_24(self, channel_id: str, title: Optional[str] = None, content: Optional[str] = None,
                           subtitile: Optional[str] = None, link: Optional[str] = None, image: Optional[str] = None,
@@ -724,7 +611,7 @@ class AsyncAPI:
                                                    {'key': '#SUBTITLE#', 'value': subtitile}]},
                  'msg_id': message_id, 'event_id': event_id}
         return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def send_ark_37(self, channel_id: str, title: Optional[str] = None, content: Optional[str] = None,
                           link: Optional[str] = None, image: Optional[str] = None, prompt: Optional[str] = None,
@@ -749,7 +636,7 @@ class AsyncAPI:
                                                    {"key": "#METAURL#", "value": link}]},
                  'msg_id': message_id, 'event_id': event_id}
         return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def send_markdown(self, channel_id: str, template_id: Optional[str] = None,
                             key_values: Optional[Dict[str, Union[str, List[str]]]] = None,
@@ -792,7 +679,7 @@ class AsyncAPI:
             json_ = {"markdown": {"custom_template_id": template_id, "params": params},
                      'msg_id': message_id, 'event_id': event_id, 'keyboard': keyboard}
         return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/messages', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def delete_msg(self, channel_id: str, message_id: str, hidetip: bool = False) -> _api_model.delete_msg():
         """
@@ -806,7 +693,7 @@ class AsyncAPI:
         self.check_warning('撤回消息')
         return_ = await self._session.delete(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}'
                                              f'?hidetip={str(hidetip).lower()}')
-        return await async_http_temp(return_, 200)
+        return await http_temp(return_, 200)
 
     async def get_guild_setting(self, guild_id: str) -> _api_model.get_guild_setting():
         """
@@ -816,7 +703,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/guilds/{guild_id}/message/setting')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def create_dm_guild(self, target_id: str, guild_id: str) -> _api_model.create_dm_guild():
         """
@@ -828,7 +715,7 @@ class AsyncAPI:
         """
         json_ = {"recipient_id": target_id, "source_guild_id": guild_id}
         return_ = await self._session.post(f'{self.bot_url}/users/@me/dms', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def send_dm(self, guild_id: str, content: Optional[str] = None, image: Optional[str] = None,
                       file_image: Optional[Union[bytes, BinaryIO, str]] = None,
@@ -866,14 +753,14 @@ class AsyncAPI:
                 else:
                     return sdk_error_temp('目标图片路径不存在，无法发送')
             json_['file_image'] = file_image
-            data_ = _FormData()
+            data_ = FormData_()
             for keys, values in json_.items():
                 if values is not None:
                     data_.add_field(keys, values)
             return_ = await self._session.post(f'{self.bot_url}/dms/{guild_id}/messages', data=data_)
         else:
             return_ = await self._session.post(f'{self.bot_url}/dms/{guild_id}/messages', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def delete_dm_msg(self, guild_id: str, message_id: str, hidetip: bool = False) -> _api_model.delete_msg():
         """
@@ -887,7 +774,7 @@ class AsyncAPI:
         self.check_warning('撤回私信消息')
         return_ = await self._session.delete(f'{self.bot_url}/dms/{guild_id}/messages/{message_id}?'
                                              f'hidetip={str(hidetip).lower()}')
-        return await async_http_temp(return_, 200)
+        return await http_temp(return_, 200)
 
     async def mute_all_member(self, guild_id: str, mute_end_timestamp: Optional[str], mute_seconds: Optional[str]) -> \
             _api_model.mute_member():
@@ -901,7 +788,7 @@ class AsyncAPI:
         """
         json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds}
         return_ = await self._session.patch(f'{self.bot_url}/guilds/{guild_id}/mute', json=json_)
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def mute_member(self, guild_id: str, user_id: str, mute_end_timestamp: Optional[str],
                           mute_seconds: Optional[str]) -> _api_model.mute_member():
@@ -917,7 +804,7 @@ class AsyncAPI:
         json_ = {'mute_end_timestamp': mute_end_timestamp, 'mute_seconds': mute_seconds}
         return_ = await self._session.patch(f'{self.bot_url}/guilds/{guild_id}/members/{user_id}/mute',
                                             json=json_)
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def mute_members(self, guild_id: str, user_id: List[str], mute_end_timestamp: Optional[str],
                            mute_seconds: Optional[str]) -> _api_model.mute_members():
@@ -969,7 +856,7 @@ class AsyncAPI:
             else:
                 return sdk_error_temp('注意推荐子频道ID列表长度，应与推荐子频道推荐语列表长度一致')
         return_ = await self._session.post(f'{self.bot_url}/guilds/{guild_id}/announces', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def delete_announce(self, guild_id: str, message_id: str = 'all') -> _api_model.delete_announce():
         """
@@ -980,7 +867,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(f'{self.bot_url}/guilds/{guild_id}/announces/{message_id}')
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def create_pinmsg(self, channel_id: str, message_id: str) -> _api_model.pinmsg():
         """
@@ -991,7 +878,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.put(f'{self.bot_url}/channels/{channel_id}/pins/{message_id}')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def delete_pinmsg(self, channel_id: str, message_id: str) -> _api_model.delete_pinmsg():
         """
@@ -1002,7 +889,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(f'{self.bot_url}/channels/{channel_id}/pins/{message_id}')
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def get_pinmsg(self, channel_id: str) -> _api_model.pinmsg():
         """
@@ -1012,7 +899,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/channels/{channel_id}/pins')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def get_schedules(self, channel_id: str, since: Optional[int] = None) -> _api_model.get_schedules():
         """
@@ -1024,7 +911,7 @@ class AsyncAPI:
         """
         json_ = {"since": since}
         return_ = await self._session.get(f'{self.bot_url}/channels/{channel_id}/schedules', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def get_schedule_info(self, channel_id: str, schedule_id: str) -> _api_model.schedule_info():
         """
@@ -1035,7 +922,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def create_schedule(self, channel_id: str, schedule_name: str, start_timestamp: str, end_timestamp: str,
                               jump_channel_id: str, remind_type: str) -> _api_model.schedule_info():
@@ -1054,7 +941,7 @@ class AsyncAPI:
                               "end_timestamp": end_timestamp, "jump_channel_id": jump_channel_id,
                               "remind_type": remind_type}}
         return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/schedules', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def patch_schedule(self, channel_id: str, schedule_id: str, schedule_name: str, start_timestamp: str,
                              end_timestamp: str, jump_channel_id: str, remind_type: str) -> _api_model.schedule_info():
@@ -1075,7 +962,7 @@ class AsyncAPI:
                               "remind_type": remind_type}}
         return_ = await self._session.patch(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}',
                                             json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def delete_schedule(self, channel_id: str, schedule_id: str) -> _api_model.delete_schedule():
         """
@@ -1086,7 +973,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(f'{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}')
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def create_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> _api_model.reactions():
         """
@@ -1100,7 +987,7 @@ class AsyncAPI:
         """
         return_ = await self._session.put(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
                                           f'{type_}/{id_}')
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def delete_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> _api_model.reactions():
         """
@@ -1114,7 +1001,7 @@ class AsyncAPI:
         """
         return_ = await self._session.delete(f'{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/'
                                              f'{type_}/{id_}')
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def get_reaction_users(self, channel_id: str, message_id: str, type_: str, id_: str) -> \
             _api_model.get_reaction_users():
@@ -1174,7 +1061,7 @@ class AsyncAPI:
         """
         json_ = {"audio_url": audio_url, "text": text, "status": status}
         return_ = await self._session.post(f'{self.bot_url}/channels/{channel_id}/audio', json=json_)
-        return await async_empty_temp(return_)
+        return await empty_temp(return_)
 
     async def bot_on_mic(self, channel_id: str) -> _api_model.audio():
         """
@@ -1184,7 +1071,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.put(f'{self.bot_url}/channels/{channel_id}/mic')
-        return await async_empty_temp(return_)
+        return await empty_temp(return_)
 
     async def bot_off_mic(self, channel_id: str) -> _api_model.audio():
         """
@@ -1194,7 +1081,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(f'{self.bot_url}/channels/{channel_id}/mic')
-        return await async_empty_temp(return_)
+        return await empty_temp(return_)
 
     async def get_threads(self, channel_id: str) -> _api_model.get_threads():
         """
@@ -1250,7 +1137,7 @@ class AsyncAPI:
         """
         self.check_warning('获取帖子详情')
         return_ = await self._session.get(f'{self.bot_url}/channels/{channel_id}/threads/{thread_id}')
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def create_thread(self, channel_id: str, title: str, content: str, format_: int) -> \
             _api_model.create_thread():
@@ -1266,7 +1153,7 @@ class AsyncAPI:
         self.check_warning('发表帖子')
         json_ = {'title': title, 'content': content, 'format': format_}
         return_ = await self._session.put(f'{self.bot_url}/channels/{channel_id}/threads', json=json_)
-        return await async_regular_temp(return_)
+        return await regular_temp(return_)
 
     async def delete_thread(self, channel_id: str, thread_id: str) -> _api_model.delete_thread():
         """
@@ -1278,7 +1165,7 @@ class AsyncAPI:
         """
         self.check_warning('删除帖子')
         return_ = await self._session.delete(f'{self.bot_url}/channels/{channel_id}/threads/{thread_id}')
-        return await async_http_temp(return_, 204)
+        return await http_temp(return_, 204)
 
     async def get_guild_permissions(self, guild_id: str) -> _api_model.get_guild_permissions():
         """
@@ -1319,4 +1206,4 @@ class AsyncAPI:
             return sdk_error_temp('目标API不存在，请检查API名称是否正确')
         json_ = {"channel_id": channel_id, "api_identify": {"path": path, "method": method.upper()}, "desc": desc}
         return_ = await self._session.post(f'{self.bot_url}/guilds/{guild_id}/api_permission/demand', json=json_)
-        return await async_empty_temp(return_)
+        return await empty_temp(return_)

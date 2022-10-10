@@ -91,7 +91,45 @@ bot.lock
 
 > 无参数
 
-## 绑定组件
+### 指令装饰器（需求SDK版本>=2.5.0）
+
+-   指令装饰器。用于快速注册消息事件
+
+```python
+@bot.on_command(command='c_0')
+def c_0(data: Model.MESSAGE):
+    data.reply('消息包含c_0可触发此函数')
+# 路径：qg_botsdk.qg_bot.BOT().on_command
+```
+
+| 参数                    |        |        |                                                    |
+| --------------------- | ------ | ------ | -------------------------------------------------- |
+| 字段名                   | 类型     | 默认值    | 说明                                                 |
+| command           | List[str], str | None | 可触发事件的指令列表，与正则regex互斥，优先使用此项                   |
+| regex             | Pattern, str   | None | 可触发指令的正则compile实例或正则表达式，与指令表互斥                 |
+| is_require_at     | bool           | False| 是否要求必须艾特机器人才能触发指令                                   |
+| is_short_circuit  | bool           | False| 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和command先regex后排序指令的短路机制）   |
+| is_require_admin  | bool           | False| 是否要求频道主或或管理才可触发指令                                   |
+
+> （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/blob/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
+
+## 绑定组件（SDK版本>=2.5.0支持装饰器）
+
+> 装饰器用法：
+
+```python
+bot = BOT(bot_id='xxx', bot_token='xxx')
+
+@bot.bind_msg()
+def msg_function(data):   # 可使用 def msg_function(data: Model.MESSAGE): 调用模型数据
+	"""
+	这是接收消息的函数，包含了一个data的参数以接收Object类型数据；
+	处理后的消息数据treated_msg为：data.treated_msg
+	处理前的消息数据为：data.content
+	:param data: 可从model取用模型数据，方法 —— data: Model.MESSAGE
+	"""
+	print('收到了消息： %s ！' % data.treated_msg)
+```
 
 ### 绑定接收消息事件
 
@@ -406,7 +444,7 @@ bot.bind_audio(on_audio_function=audio_function)
 
 ## 辅助组件
 
-### 注册初始运行事件
+### 注册初始运行事件（SDK版本>=2.5.0支持装饰器）
 
 -   用作注册机器人开始时运行的函数，此函数不应有无限重复（如：While True）的内容
 
@@ -438,7 +476,7 @@ bot.register_start_event(on_start_function=start_event)
 | 字段名               | 类型         | 默认值    | 说明          |
 | on_start_function | function函数 | 无，必选参数 | 该函数不应包含任何参数 |
 
-### 注册循环运行事件
+### 注册循环运行事件（SDK版本>=2.5.0支持装饰器）
 
 -   用作注册重复事件的函数，注册并开始机器人后，会根据间隔时间不断调用注册的函数
 
@@ -446,10 +484,10 @@ bot.register_start_event(on_start_function=start_event)
 
 ```python
 def loop_event():
-	"""
-	这是一个在机器人开始运行后，不断重复运行的函数
-	"""
-	print('由于check_interval的值是60，代表每一分钟会运行函数并输出一次此段文字')
+    """
+    这是一个在机器人开始运行后，不断重复运行的函数
+    """
+    print('由于check_interval的值是60，代表每一分钟会运行函数并输出一次此段文字')
 
 
 bot = BOT(bot_id='xxx', bot_token='xxx')

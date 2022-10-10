@@ -2,18 +2,20 @@
 # -*- coding: utf-8 -*-
 from sys import exc_info
 from traceback import extract_tb
-from inspect import stack
+from inspect import stack, signature
 from json import dumps, loads
 from json.decoder import JSONDecodeError
 from functools import wraps
 from re import split as re_split
-from typing import Optional, Union, BinaryIO
+from typing import Optional, Union, BinaryIO, Callable
+from asyncio import iscoroutinefunction
+
 from .version import __version__
 
 
 def __getattr__(identifier: str) -> object:
     if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'qg_bot_ws.py', 'api.py', 'async_api.py',
-                                                           'model.py', '_api_model.py',
+                                                           'model.py', '_api_model.py', 'http.py',
                                                            '<frozen importlib._bootstrap>'):
         raise AssertionError("此为SDK内部使用文件，无法使用")
 
@@ -95,10 +97,35 @@ class object_class(type):
         return return_
 
 
+def _send_msg():  # Cannot direct import from _api_model.py since circular import
+    class SendMsg(object_class):
+        class data:
+            id: str
+            channel_id: str
+            guild_id: str
+            content: str
+            timestamp: str
+            tts: bool
+            mention_everyone: bool
+            author: dict
+            pinned: bool
+            type: int
+            flags: int
+            seq_in_channel: str
+            code: int
+            message: str
+
+        http_code: int
+        trace_id: str
+        result: bool
+
+    return SendMsg
+
+
 class event_class(object_class):
     def reply(self, content: Optional[str] = None, image: Optional[str] = None,
               file_image: Optional[Union[bytes, BinaryIO, str]] = None, message_reference_id: Optional[str] = None,
-              ignore_message_reference_error: Optional[bool] = None):
+              ignore_message_reference_error: Optional[bool] = None) -> _send_msg():
         """
         目前支持reply()发送被动消息的事件类型有:
 
@@ -117,24 +144,24 @@ class event_class(object_class):
         """
         kwargs = locals()
         kwargs.pop('self', None)
-        t = getattr(self, 't')
+        t = getattr(self, 't', None)
         if t in msg_t:
             kwargs['message_id'] = getattr(self, 'id', None)
         elif t in event_t:
             kwargs['message_id'] = getattr(self, 'event_id', None)
         if 'DIRECT_MESSAGE' in t:
-            kwargs['guild_id'] = getattr(self, 'guild_id')
+            kwargs['guild_id'] = getattr(self, 'guild_id', None)
             return getattr(self, 'api').send_dm(**kwargs)
         else:
-            kwargs['channel_id'] = getattr(self, 'channel_id') if hasattr(self, 'channel_id') \
-                else getattr(self, 'id', None)
+            kwargs['channel_id'] = self.channel_id if hasattr(self, 'channel_id') else getattr(self, 'id', None)
             return getattr(self, 'api').send_msg(**kwargs)
 
 
 class async_event_class(object_class):
     async def reply(self, content: Optional[str] = None, image: Optional[str] = None,
                     file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-                    message_reference_id: Optional[str] = None, ignore_message_reference_error: Optional[bool] = None):
+                    message_reference_id: Optional[str] = None,
+                    ignore_message_reference_error: Optional[bool] = None) -> _send_msg():
         """
         目前支持reply()发送被动消息的事件类型有:
 
@@ -153,17 +180,16 @@ class async_event_class(object_class):
         """
         kwargs = locals()
         kwargs.pop('self', None)
-        t = getattr(self, 't')
+        t = getattr(self, 't', None)
         if t in msg_t:
             kwargs['message_id'] = getattr(self, 'id', None)
         elif t in event_t:
             kwargs['message_id'] = getattr(self, 'event_id', None)
         if 'DIRECT_MESSAGE' in t:
-            kwargs['guild_id'] = getattr(self, 'guild_id')
+            kwargs['guild_id'] = getattr(self, 'guild_id', None)
             return await getattr(self, 'api').send_dm(**kwargs)
         else:
-            kwargs['channel_id'] = getattr(self, 'channel_id') if hasattr(self, 'channel_id') \
-                else getattr(self, 'id', None)
+            kwargs['channel_id'] = self.channel_id if hasattr(self, 'channel_id') else getattr(self, 'id', None)
             return await getattr(self, 'api').send_msg(**kwargs)
 
 
@@ -203,18 +229,7 @@ def treat_msg(raw_msg: str):
 
 
 @template_wrapper
-def http_temp(return_, code: int):
-    trace_id = return_.headers.get("X-Tps-Trace-Id")
-    real_code = return_.status_code
-    if real_code == code:
-        return objectize({'data': None, 'trace_id': trace_id, 'http_code': real_code, 'result': True})
-    else:
-        return_dict = return_.json()
-        return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': real_code, 'result': False})
-
-
-@template_wrapper
-async def async_http_temp(return_, code: int):
+async def http_temp(return_, code: int):
     trace_id = return_.headers.get("X-Tps-Trace-Id")
     real_code = return_.status
     if real_code == code:
@@ -225,18 +240,7 @@ async def async_http_temp(return_, code: int):
 
 
 @template_wrapper
-def regular_temp(return_):
-    trace_id = return_.headers.get("X-Tps-Trace-Id")
-    return_dict = return_.json()
-    if isinstance(return_dict, dict) and 'code' in return_dict:
-        result = False
-    else:
-        result = True
-    return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status_code, 'result': result})
-
-
-@template_wrapper
-async def async_regular_temp(return_):
+async def regular_temp(return_):
     trace_id = return_.headers.get("X-Tps-Trace-Id")
     return_dict = await return_.json()
     if isinstance(return_dict, dict) and 'code' in return_dict:
@@ -247,19 +251,7 @@ async def async_regular_temp(return_):
 
 
 @template_wrapper
-def empty_temp(return_):
-    trace_id = return_.headers.get("X-Tps-Trace-Id")
-    return_dict = return_.json()
-    if not return_dict:
-        result = True
-        return_dict = None
-    else:
-        result = False
-    return objectize({'data': return_dict, 'trace_id': trace_id, 'http_code': return_.status_code, 'result': result})
-
-
-@template_wrapper
-async def async_empty_temp(return_):
+async def empty_temp(return_):
     trace_id = return_.headers.get("X-Tps-Trace-Id")
     return_dict = await return_.json()
     if not return_dict:
@@ -273,3 +265,20 @@ async def async_empty_temp(return_):
 def sdk_error_temp(message):
     return objectize({'data': {'code': -1, 'message': f'这是来自SDK的错误信息：{message}'}, 'trace_id': None,
                       'http_code': None, 'result': False})
+
+
+def check_func(func, *args, is_async: bool = False):
+    sig = signature(func).parameters
+    sig_keys = list(sig.keys())
+    sig_keys_len = len(sig_keys)
+    if sig_keys_len != len(args):
+        raise TypeError(f'函数{func.__name__}应包含以下类型的参数：{" ".join(args)}')
+    for i in range(sig_keys_len):
+        if sig[sig_keys[i]].annotation != args[i]:
+            raise TypeError(f'函数{func.__name__}中{sig_keys[i]}参数应为类型：{args[i]}')
+    if is_async:
+        if not iscoroutinefunction(func):
+            raise TypeError(f'函数{func.__name__}应为一个async coroutine函数')
+    else:
+        if not isinstance(func, Callable) or iscoroutinefunction(func):
+            raise TypeError(f'函数{func.__name__}应为一个普通函数')

@@ -54,15 +54,16 @@ pip install qg-botsdk   # 注意是qg-botsdk（中线），不是qg_botsdk（底
 ```python
 from qg_botsdk import BOT, Model   # 导入SDK核心类（BOT）、所有数据模型（Model）
 
+bot = BOT(bot_id='xxx', bot_token='xxx', is_private=True, is_sandbox=True)   # 实例化SDK核心类
 
+
+@bot.bind_msg()   # 绑定接收消息事件的函数
 def deliver(data: Model.MESSAGE):   # 创建接收消息事件的函数
     if '你好' in data.treated_msg:   # 判断消息是否存在特定内容
         data.reply('你好，世界')   # 发送被动回复（带message_id直接reply回复）
 
 
 if __name__ == '__main__':
-    bot = BOT(bot_id='xxx', bot_token='xxx', is_private=True, is_sandbox=True)   # 实例化SDK核心类
-    bot.bind_msg(deliver)   # 绑定接收消息事件的函数
     bot.start()   # 开始运行机器人
 ```
 
