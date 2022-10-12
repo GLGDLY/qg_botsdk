@@ -19,6 +19,7 @@ from .version import __version__
 from .qg_bot import BOT
 from .model import Model
 from .logger import Logger
+from .plugins import Plugins
 
 __title__ = "requests"
 __description__ = "easy-to-use SDK for Tencent QQ guild robot"
@@ -30,4 +31,4 @@ __copyright__ = "Copyright (c) 2022 GLGDLY"
 
 
 name = "qg_botsdk"
-__all__ = ("BOT", "Model", "Logger")
+__all__ = ("BOT", "Model", "Logger", "Plugins")

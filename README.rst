@@ -35,6 +35,8 @@
 
 -   迅速的更新速度，跟上最新潮流（v2.3.6已更新发送markdown消息能力，使用例子可参阅 `example_12(markdown).py <./example/example_12(markdown).py>`_
 
+-   简单易用的plugins编写与加载，使用例子可参阅 `example_13(装饰器).py <./example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>`_
+
 下载方式
 =======
 

@@ -1,6 +1,6 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import List
+from typing import List, Union
 
 from ._utils import event_class
 
@@ -146,7 +146,7 @@ class Model:
         pinned: bool
         type: int
         flags: int
-        treated_msg: str
+        treated_msg: Union[str, tuple]
         t: str
         event_id: str
 

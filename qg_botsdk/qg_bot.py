@@ -1,11 +1,13 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from os import getpid
+from os.path import exists
 from asyncio import get_event_loop, sleep, Lock as ALock
 from threading import Lock as TLock
 from time import sleep as t_sleep
 from typing import Any, Callable, Union, Optional, List
 from re import Pattern, compile as re_compile
+from importlib import import_module
 
 from . import _api_model
 from .version import __version__
@@ -16,6 +18,7 @@ from ._utils import exception_processor, check_func
 from .api import API
 from .async_api import AsyncAPI
 from .http import Session
+from .plugins import Plugins
 
 pid = getpid()
 print(f'本次程序进程ID：{pid} | SDK版本：{__version__} | 即将开始运行机器人……')
@@ -131,13 +134,39 @@ class BOT:
                 if is_log:
                     self.logger.info('消息（艾特消息）接收函数订阅成功')
 
+    def _refresh_plugins(self):
+        commands, regex_commands = Plugins(self)
+        if commands or regex_commands:
+            self.__register_msg_intents()
+            self._commands = {**self._commands, **commands}
+            self._regex_commands = {**self._regex_commands, **regex_commands}
+
+    def load_plugins(self, path_to_plugins: str):
+        """
+        用于加载插件的.py程序
+
+        :param path_to_plugins:
+        :return:
+        """
+        if not exists(path_to_plugins):
+            raise ModuleNotFoundError(f'指向plugin的路径 [{path_to_plugins}] 并不存在')
+        try:
+            with open(path_to_plugins, 'r', encoding='utf-8') as f:
+                exec(f.read())
+        except Exception:
+            raise ImportError(f'plugin [{path_to_plugins}] 导入失败')
+        self._refresh_plugins()
+
     def on_command(self, command: Optional[Union[List[str], str]] = None, regex: Optional[Union[Pattern, str]] = None,
-                   is_require_at: bool = False, is_short_circuit: bool = False, is_require_admin: bool = False):
+                   is_treat: bool = True, is_require_at: bool = False, is_short_circuit: bool = False,
+                   is_require_admin: bool = False,
+                   ):
         """
         指令装饰器。用于快速注册消息事件
 
         :param command: 可触发事件的指令列表，与正则regex互斥，优先使用此项
         :param regex: 可触发指令的正则compile实例或正则表达式，与指令表互斥
+        :param is_treat: 是否在treated_msg中同时处理指令，如正则将返回.groups()，默认是
         :param is_require_at: 是否要求必须艾特机器人才能触发指令，默认否
         :param is_short_circuit: 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和command先regex后排序指令的短路机制），默认否
         :param is_require_admin: 是否要求频道主或或管理才可触发指令，默认否
@@ -147,18 +176,19 @@ class BOT:
             check_func(func, Model.MESSAGE, is_async=self.is_async)
             if command:
                 if isinstance(command, str):
-                    self._commands[command] = {'alias': [], 'func': func, 'at': is_require_at,
+                    self._commands[command] = {'func': func, 'treat': is_treat, 'at': is_require_at,
                                                'short_circuit': is_short_circuit, 'admin': is_require_admin}
                 else:
-                    self._commands[command[0]] = {'alias': command[1:], 'func': func, 'at': is_require_at,
-                                                  'short_circuit': is_short_circuit, 'admin': is_require_admin}
+                    for com in command:
+                        self._commands[com] = {'func': func, 'treat': is_treat, 'at': is_require_at,
+                                               'short_circuit': is_short_circuit, 'admin': is_require_admin}
             else:
                 if isinstance(regex, str):
-                    self._regex_commands[re_compile(regex)] = {'func': func, 'at': is_require_at,
+                    self._regex_commands[re_compile(regex)] = {'func': func, 'treat': is_treat, 'at': is_require_at,
                                                                'short_circuit': is_short_circuit,
                                                                'admin': is_require_admin}
                 elif isinstance(regex, Pattern):
-                    self._regex_commands[regex] = {'func': func, 'at': is_require_at,
+                    self._regex_commands[regex] = {'func': func, 'treat': is_treat, 'at': is_require_at,
                                                    'short_circuit': is_short_circuit, 'admin': is_require_admin}
                 else:
                     raise TypeError('regex参数仅接受re.compile返回的实例或str类型的正则表达式')
@@ -426,6 +456,7 @@ class BOT:
                         '你输入的 bot_id 和/或 bot_token 错误，无法连接使用机器人\n如尚未有相关票据，'
                         '请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情')
                 self.logger.debug('[机器人ws地址] ' + url)
+                self._refresh_plugins()
                 if self._repeat_function is not None:
                     self._loop.create_task(self.__time_event_check())
                 self._bot_class = BotWs(self._session, self.logger, self._total_shard, self._shard_no, url,

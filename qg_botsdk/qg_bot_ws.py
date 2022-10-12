@@ -159,25 +159,34 @@ class BotWs:
             else:
                 self.loop.create_task(self.async_start_task(function, objectize(d, self.api, self.is_async)))
 
+    def treat_command(self, data, command=None, regex=None):
+        if self.msg_treat:
+            msg = data["d"]["treated_msg"]
+            data["d"]["treated_msg"] = msg[msg.find(command) + len(command):] if command else regex.groups()
+
     async def distribute_commands(self, data):
         msg = data.get('d', {}).get('content', '')
-        # commands = {[commands_list]: {alias, func, at, short_circuit, admin}}
+        # commands = {[commands_list]: {func, treat, at, short_circuit, admin}}
         for k, v in self.commands.items():
-            if (k in msg or any(x in msg for x in v['alias'])) and (not v['at'] or self.at in msg):
+            if k in msg and (not v['at'] or self.at in msg):
                 if v['admin']:
                     roles = data.get('d', {}).get('member', {}).get('roles', [])
                     if '2' not in roles and '4' not in roles:  # if not admin
                         continue
+                if v['treat']:
+                    self.treat_command(data, command=k)
                 await self.distribute(v['func'], data)
                 if v['short_circuit']:
                     return True
-        # regex_commands = {pattern: {func, at, short_circuit, admin}}
+        # regex_commands = {pattern: {func, at, treat, short_circuit, admin}}
         for k, v in self.regex_commands.items():
-            if k.search(msg) and (not v['at'] or self.at in msg):
+            regex = k.search(msg)
+            if regex and (not v['at'] or self.at in msg):
                 if v['admin']:
                     roles = data.get('d', {}).get('member', {}).get('roles', [])
                     if '2' not in roles and '4' not in roles:  # if not admin
                         continue
+                self.treat_command(data, regex=regex)
                 await self.distribute(v['func'], data)
                 if v['short_circuit']:
                     return True
@@ -198,8 +207,8 @@ class BotWs:
                 await self.distribute(self.on_msg_function, data)
         elif t in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE", "DIRECT_MESSAGE_DELETE"):
             if self.is_filter_self:
-                target = data.get('d', {}).get('message', {}).get('author', {}).get('id')
-                op_user = data.get('d', {}).get('op_user', {}).get('id')
+                target = d.get('message', {}).get('author', {}).get('id')
+                op_user = d.get('op_user', {}).get('id')
                 if op_user == target:
                     return
             await self.distribute(self.on_delete_function, data)

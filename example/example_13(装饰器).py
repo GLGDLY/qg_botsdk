@@ -1,9 +1,11 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# 发送装饰器的一个实例（装饰器要求SDK版本>=2.5.0）
+# 使用装饰器与plugins的一个实例（装饰器要求SDK版本>=2.5.0 & plugins要求SDK版本>=2.5.1）
 from qg_botsdk import BOT, Model
+# import example_13_plugins  # 使用plugins的方法一，直接import相应module，BOT.start()时将自动加载
 
 bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=True)
+bot.load_plugins('example_13_plugins.py')  # 使用plugins的方法二，使用BOT.load_plugins()加载
 
 
 # is_short_circuit代表短路机制，即如用户输入c_0c_1，理论可触发c_0、c_1两个函数，但由于短路机制，仅会触发c_0的函数

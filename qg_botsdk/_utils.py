@@ -15,7 +15,7 @@ from .version import __version__
 
 def __getattr__(identifier: str) -> object:
     if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'qg_bot_ws.py', 'api.py', 'async_api.py',
-                                                           'model.py', '_api_model.py', 'http.py',
+                                                           'model.py', '_api_model.py', 'http.py', 'plugins.py',
                                                            '<frozen importlib._bootstrap>'):
         raise AssertionError("此为SDK内部使用文件，无法使用")
 
