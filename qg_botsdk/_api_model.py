@@ -1,7 +1,5 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from inspect import stack
-from re import split as re_split
 from typing import List, Optional
 
 from ._utils import object_class
@@ -126,18 +124,6 @@ apis = {
         "create_permission_demand",
     ): [False, "此API不需要请求权限"],
 }
-
-
-def __getattr__(identifier: str) -> object:
-    if re_split(r"[/\\]", stack()[1].filename)[-1] not in (
-        "qg_bot.py",
-        "api.py",
-        "async_api.py",
-        "<frozen importlib._bootstrap>",
-    ):
-        raise AssertionError("此为SDK内部使用文件，无法使用，使用机器人Model库请from model import Model")
-
-    return globals()[identifier.__path__]
 
 
 def api_converter(api: str):

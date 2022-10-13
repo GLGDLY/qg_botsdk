@@ -170,7 +170,7 @@ class BOT:
         """
         用于加载插件的.py程序
 
-        :param path_to_plugins:
+        :param path_to_plugins: 指向相应.py插件文件的相对或绝对路径
         :return:
         """
         if not exists(path_to_plugins):

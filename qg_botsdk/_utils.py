@@ -2,32 +2,14 @@
 # -*- coding: utf-8 -*-
 from asyncio import iscoroutinefunction
 from functools import wraps
-from inspect import signature, stack
+from inspect import signature
 from json import dumps, loads
 from json.decoder import JSONDecodeError
-from re import split as re_split
 from sys import exc_info
 from traceback import extract_tb
 from typing import BinaryIO, Callable, Optional, Union
 
 from .version import __version__
-
-
-def __getattr__(identifier: str) -> object:
-    if re_split(r"[/\\]", stack()[1].filename)[-1] not in (
-        "qg_bot.py",
-        "qg_bot_ws.py",
-        "api.py",
-        "async_api.py",
-        "model.py",
-        "_api_model.py",
-        "http.py",
-        "plugins.py",
-        "<frozen importlib._bootstrap>",
-    ):
-        raise AssertionError("此为SDK内部使用文件，无法使用")
-
-    return globals()[identifier.__path__]
 
 
 general_header = {"User-Agent": f"qg-botsdk v{__version__}"}
@@ -291,10 +273,9 @@ def objectize(
         return data
 
 
-def treat_msg(raw_msg: str, bot_id: str):
+def treat_msg(raw_msg: str, at: str):
     if not raw_msg:
         return ""
-    at = f"<@!{bot_id}>"
     raw_msg = raw_msg if raw_msg.find(at) else raw_msg.replace(at, "", 1).strip()
     if raw_msg[0] == "/":
         raw_msg = raw_msg[1:]

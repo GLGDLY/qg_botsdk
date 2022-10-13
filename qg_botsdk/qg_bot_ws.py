@@ -258,10 +258,9 @@ class BotWs:
         if t in ("AT_MESSAGE_CREATE", "MESSAGE_CREATE"):
             if self.msg_treat:
                 raw_msg = d.get("content", "").strip()
-                data["d"]["treated_msg"] = treat_msg(raw_msg, self.robot.id)
-            if not await self.distribute_commands(
-                data
-            ):  # when short circuit return True
+                data["d"]["treated_msg"] = treat_msg(raw_msg, self.at)
+            # distribute_commands return True when short circuit
+            if not await self.distribute_commands(data):
                 await self.distribute(self.on_msg_function, data)
         elif t in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE", "DIRECT_MESSAGE_DELETE"):
             if self.is_filter_self:
@@ -273,7 +272,7 @@ class BotWs:
         elif t == "DIRECT_MESSAGE_CREATE":
             if self.dm_treat:
                 raw_msg = d.get("content", "").strip()
-                data["d"]["treated_msg"] = treat_msg(raw_msg, self.robot.id)
+                data["d"]["treated_msg"] = treat_msg(raw_msg, self.at)
             await self.distribute(self.on_dm_function, data)
         elif t in (
             "FORUM_THREAD_CREATE",
