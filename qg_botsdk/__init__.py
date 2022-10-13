@@ -15,11 +15,11 @@ qg_botsdk Library
 :license: MIT, see LICENSE for more details.
 """
 
-from .version import __version__
-from .qg_bot import BOT
-from .model import Model
 from .logger import Logger
+from .model import Model
 from .plugins import Plugins
+from .qg_bot import BOT
+from .version import __version__
 
 __title__ = "requests"
 __description__ = "easy-to-use SDK for Tencent QQ guild robot"

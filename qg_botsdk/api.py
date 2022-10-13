@@ -1,7 +1,7 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from asyncio import run_coroutine_threadsafe, AbstractEventLoop
-from typing import Optional, Union, BinaryIO, List, Tuple, Dict
+from asyncio import AbstractEventLoop, run_coroutine_threadsafe
+from typing import BinaryIO, Dict, List, Optional, Tuple, Union
 
 from . import _api_model
 from .async_api import AsyncAPI
@@ -20,8 +20,10 @@ class API:
         :return: True或False（bool），代表是否通过安全检测
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.security_check(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.security_check(**_args), self._loop
+        )
         return future_.result()
 
     def get_bot_info(self) -> _api_model.get_bot_info():
@@ -50,8 +52,10 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_guild_info(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_guild_info(**_args), self._loop
+        )
         return future_.result()
 
     def get_guild_channels(self, guild_id: str) -> _api_model.get_guild_channels():
@@ -62,8 +66,10 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_guild_channels(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_guild_channels(**_args), self._loop
+        )
         return future_.result()
 
     def get_channels_info(self, channel_id: str) -> _api_model.get_channels_info():
@@ -74,13 +80,25 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_channels_info(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_channels_info(**_args), self._loop
+        )
         return future_.result()
 
-    def create_channels(self, guild_id: str, name: str, type_: int, position: int, parent_id: str, sub_type: int,
-                        private_type: int, private_user_ids: List[str], speak_permission: int,
-                        application_id: Optional[str] = None) -> _api_model.create_channels():
+    def create_channels(
+        self,
+        guild_id: str,
+        name: str,
+        type_: int,
+        position: int,
+        parent_id: str,
+        sub_type: int,
+        private_type: int,
+        private_user_ids: List[str],
+        speak_permission: int,
+        application_id: Optional[str] = None,
+    ) -> _api_model.create_channels():
         """
         用于在 guild_id 指定的频道下创建一个子频道，一般仅私域机器人可用
 
@@ -97,13 +115,21 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.create_channels(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.create_channels(**_args), self._loop
+        )
         return future_.result()
 
-    def patch_channels(self, channel_id: str, name: Optional[str] = None, position: Optional[int] = None,
-                       parent_id: Optional[str] = None, private_type: Optional[int] = None,
-                       speak_permission: Optional[int] = None) -> _api_model.patch_channels():
+    def patch_channels(
+        self,
+        channel_id: str,
+        name: Optional[str] = None,
+        position: Optional[int] = None,
+        parent_id: Optional[str] = None,
+        private_type: Optional[int] = None,
+        speak_permission: Optional[int] = None,
+    ) -> _api_model.patch_channels():
         """
         用于修改 channel_id 指定的子频道的信息，需要修改哪个字段，就传递哪个字段即可
 
@@ -116,8 +142,10 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.patch_channels(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.patch_channels(**_args), self._loop
+        )
         return future_.result()
 
     def delete_channels(self, channel_id) -> _api_model.delete_channels():
@@ -128,8 +156,10 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.delete_channels(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.delete_channels(**_args), self._loop
+        )
         return future_.result()
 
     def get_guild_members(self, guild_id: str) -> _api_model.get_guild_members():
@@ -140,11 +170,15 @@ class API:
         :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_guild_members(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_guild_members(**_args), self._loop
+        )
         return future_.result()
 
-    def get_role_members(self, guild_id: str, role_id: str) -> _api_model.get_role_members():
+    def get_role_members(
+        self, guild_id: str, role_id: str
+    ) -> _api_model.get_role_members():
         """
         用于获取 guild_id 频道中指定 role_id 身份组下所有成员的详情列表
 
@@ -153,11 +187,15 @@ class API:
         :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_role_members(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_role_members(**_args), self._loop
+        )
         return future_.result()
 
-    def get_member_info(self, guild_id: str, user_id: str) -> _api_model.get_member_info():
+    def get_member_info(
+        self, guild_id: str, user_id: str
+    ) -> _api_model.get_member_info():
         """
         用于获取 guild_id 指定的频道中 user_id 对应成员的详细信息
 
@@ -166,12 +204,19 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_member_info(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_member_info(**_args), self._loop
+        )
         return future_.result()
 
-    def delete_member(self, guild_id: str, user_id: str, add_blacklist: bool = False,
-                      delete_history_msg_days: int = 0) -> _api_model.delete_member():
+    def delete_member(
+        self,
+        guild_id: str,
+        user_id: str,
+        add_blacklist: bool = False,
+        delete_history_msg_days: int = 0,
+    ) -> _api_model.delete_member():
         """
         用于删除 guild_id 指定的频道下的成员 user_id
 
@@ -182,7 +227,7 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.delete_member(**_args), self._loop)
         return future_.result()
 
@@ -194,12 +239,19 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_guild_roles(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_guild_roles(**_args), self._loop
+        )
         return future_.result()
 
-    def create_role(self, guild_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
-                    color: Optional[Union[str, Tuple[int, int, int]]] = None) -> _api_model.create_role():
+    def create_role(
+        self,
+        guild_id: str,
+        name: Optional[str] = None,
+        hoist: Optional[bool] = None,
+        color: Optional[Union[str, Tuple[int, int, int]]] = None,
+    ) -> _api_model.create_role():
         """
         用于在 guild_id 指定的频道下创建一个身份组
 
@@ -210,12 +262,18 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.create_role(**_args), self._loop)
         return future_.result()
 
-    def patch_role(self, guild_id: str, role_id: str, name: Optional[str] = None, hoist: Optional[bool] = None,
-                   color: Optional[Union[str, Tuple[int, int, int]]] = None) -> _api_model.patch_role():
+    def patch_role(
+        self,
+        guild_id: str,
+        role_id: str,
+        name: Optional[str] = None,
+        hoist: Optional[bool] = None,
+        color: Optional[Union[str, Tuple[int, int, int]]] = None,
+    ) -> _api_model.patch_role():
         """
         用于修改频道 guild_id 下 role_id 指定的身份组
 
@@ -227,7 +285,7 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.patch_role(**_args), self._loop)
         return future_.result()
 
@@ -240,12 +298,17 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.delete_role(**_args), self._loop)
         return future_.result()
 
-    def create_role_member(self, user_id: str, guild_id: str, role_id: str,
-                           channel_id: Optional[str] = None) -> _api_model.role_members():
+    def create_role_member(
+        self,
+        user_id: str,
+        guild_id: str,
+        role_id: str,
+        channel_id: Optional[str] = None,
+    ) -> _api_model.role_members():
         """
         为频道指定成员添加指定身份组
 
@@ -256,12 +319,19 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.create_role_member(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.create_role_member(**_args), self._loop
+        )
         return future_.result()
 
-    def delete_role_member(self, user_id: str, guild_id: str, role_id: str,
-                           channel_id: Optional[str] = None) -> _api_model.role_members():
+    def delete_role_member(
+        self,
+        user_id: str,
+        guild_id: str,
+        role_id: str,
+        channel_id: Optional[str] = None,
+    ) -> _api_model.role_members():
         """
         删除频道指定成员的指定身份组
 
@@ -272,12 +342,15 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.delete_role_member(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.delete_role_member(**_args), self._loop
+        )
         return future_.result()
 
-    def get_channel_member_permission(self, channel_id: str, user_id: str) -> \
-            _api_model.get_channel_member_permission():
+    def get_channel_member_permission(
+        self, channel_id: str, user_id: str
+    ) -> _api_model.get_channel_member_permission():
         """
         用于获取 子频道 channel_id 下用户 user_id 的权限
 
@@ -286,12 +359,19 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_channel_member_permission(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_channel_member_permission(**_args), self._loop
+        )
         return future_.result()
 
-    def put_channel_member_permission(self, channel_id: str, user_id: str, add: Optional[str] = None,
-                                      remove: Optional[str] = None) -> _api_model.put_channel_mr_permission():
+    def put_channel_member_permission(
+        self,
+        channel_id: str,
+        user_id: str,
+        add: Optional[str] = None,
+        remove: Optional[str] = None,
+    ) -> _api_model.put_channel_mr_permission():
         """
         用于修改子频道 channel_id 下用户 user_id 的权限
 
@@ -302,12 +382,15 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.put_channel_member_permission(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.put_channel_member_permission(**_args), self._loop
+        )
         return future_.result()
 
-    def get_channel_role_permission(self, channel_id: str, role_id: str) -> \
-            _api_model.get_channel_role_permission():
+    def get_channel_role_permission(
+        self, channel_id: str, role_id: str
+    ) -> _api_model.get_channel_role_permission():
         """
         用于获取 子频道 channel_id 下身份组 role_id 的权限
 
@@ -316,12 +399,19 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_channel_role_permission(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_channel_role_permission(**_args), self._loop
+        )
         return future_.result()
 
-    def put_channel_role_permission(self, channel_id: str, role_id: str, add: Optional[str] = None,
-                                    remove: Optional[str] = None) -> _api_model.put_channel_mr_permission():
+    def put_channel_role_permission(
+        self,
+        channel_id: str,
+        role_id: str,
+        add: Optional[str] = None,
+        remove: Optional[str] = None,
+    ) -> _api_model.put_channel_mr_permission():
         """
         用于修改子频道 channel_id 下身份组 role_id 的权限
 
@@ -332,11 +422,15 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.put_channel_role_permission(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.put_channel_role_permission(**_args), self._loop
+        )
         return future_.result()
 
-    def get_message_info(self, channel_id: str, message_id: str) -> _api_model.get_message_info():
+    def get_message_info(
+        self, channel_id: str, message_id: str
+    ) -> _api_model.get_message_info():
         """
         用于获取子频道 channel_id 下的消息 message_id 的详情
 
@@ -345,15 +439,23 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_message_info(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_message_info(**_args), self._loop
+        )
         return future_.result()
 
-    def send_msg(self, channel_id: str, content: Optional[str] = None, image: Optional[str] = None,
-                 file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-                 message_id: Optional[str] = None, event_id: Optional[str] = None,
-                 message_reference_id: Optional[str] = None,
-                 ignore_message_reference_error: Optional[bool] = None) -> _api_model.send_msg():
+    def send_msg(
+        self,
+        channel_id: str,
+        content: Optional[str] = None,
+        image: Optional[str] = None,
+        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
+    ) -> _api_model.send_msg():
         """
         发送普通消息的API
 
@@ -368,13 +470,20 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.send_msg(**_args), self._loop)
         return future_.result()
 
-    def send_embed(self, channel_id: str, title: Optional[str] = None, content: Optional[List[str]] = None,
-                   image: Optional[str] = None, prompt: Optional[str] = None, message_id: Optional[str] = None,
-                   event_id: Optional[str] = None) -> _api_model.send_msg():
+    def send_embed(
+        self,
+        channel_id: str,
+        title: Optional[str] = None,
+        content: Optional[List[str]] = None,
+        image: Optional[str] = None,
+        prompt: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+    ) -> _api_model.send_msg():
         """
         发送embed模板消息的API
 
@@ -388,13 +497,20 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.send_embed(**_args), self._loop)
         return future_.result()
 
-    def send_ark_23(self, channel_id: str, content: List[str], link: List[str], desc: Optional[str] = None,
-                    prompt: Optional[str] = None, message_id: Optional[str] = None,
-                    event_id: Optional[str] = None) -> _api_model.send_msg():
+    def send_ark_23(
+        self,
+        channel_id: str,
+        content: List[str],
+        link: List[str],
+        desc: Optional[str] = None,
+        prompt: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+    ) -> _api_model.send_msg():
         """
         发送ark（id=23）模板消息的API，请注意机器人是否有权限使用此API
 
@@ -408,14 +524,23 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.send_ark_23(**_args), self._loop)
         return future_.result()
 
-    def send_ark_24(self, channel_id: str, title: Optional[str] = None, content: Optional[str] = None,
-                    subtitile: Optional[str] = None, link: Optional[str] = None, image: Optional[str] = None,
-                    desc: Optional[str] = None, prompt: Optional[str] = None, message_id: Optional[str] = None,
-                    event_id: Optional[str] = None) -> _api_model.send_msg():
+    def send_ark_24(
+        self,
+        channel_id: str,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        subtitile: Optional[str] = None,
+        link: Optional[str] = None,
+        image: Optional[str] = None,
+        desc: Optional[str] = None,
+        prompt: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+    ) -> _api_model.send_msg():
         """
         发送ark（id=24）模板消息的API，请注意机器人是否有权限使用此API
 
@@ -432,13 +557,21 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.send_ark_24(**_args), self._loop)
         return future_.result()
 
-    def send_ark_37(self, channel_id: str, title: Optional[str] = None, content: Optional[str] = None,
-                    link: Optional[str] = None, image: Optional[str] = None, prompt: Optional[str] = None,
-                    message_id: Optional[str] = None, event_id: Optional[str] = None) -> _api_model.send_msg():
+    def send_ark_37(
+        self,
+        channel_id: str,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        link: Optional[str] = None,
+        image: Optional[str] = None,
+        prompt: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+    ) -> _api_model.send_msg():
         """
         发送ark（id=37）模板消息的API，请注意机器人是否有权限使用此API
 
@@ -453,15 +586,21 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.send_ark_37(**_args), self._loop)
         return future_.result()
 
-    def send_markdown(self, channel_id: str, template_id: Optional[str] = None,
-                      key_values: Optional[Dict[str, Union[str, List[str]]]] = None,
-                      content: Optional[str] = None, keyboard_id: Optional[str] = None,
-                      keyboard_content: Optional[dict] = None,
-                      message_id: Optional[str] = None, event_id: Optional[str] = None) -> _api_model.send_msg():
+    def send_markdown(
+        self,
+        channel_id: str,
+        template_id: Optional[str] = None,
+        key_values: Optional[Dict[str, Union[str, List[str]]]] = None,
+        content: Optional[str] = None,
+        keyboard_id: Optional[str] = None,
+        keyboard_content: Optional[dict] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+    ) -> _api_model.send_msg():
         """
         发送markdown消息的API，请注意机器人是否有权限使用此API
 
@@ -476,11 +615,13 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.send_markdown(**_args), self._loop)
         return future_.result()
 
-    def delete_msg(self, channel_id: str, message_id: str, hidetip: bool = False) -> _api_model.delete_msg():
+    def delete_msg(
+        self, channel_id: str, message_id: str, hidetip: bool = False
+    ) -> _api_model.delete_msg():
         """
         撤回消息的API，注意一般情况下仅私域可以使用
 
@@ -490,7 +631,7 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.delete_msg(**_args), self._loop)
         return future_.result()
 
@@ -502,11 +643,15 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_guild_setting(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_guild_setting(**_args), self._loop
+        )
         return future_.result()
 
-    def create_dm_guild(self, target_id: str, guild_id: str) -> _api_model.create_dm_guild():
+    def create_dm_guild(
+        self, target_id: str, guild_id: str
+    ) -> _api_model.create_dm_guild():
         """
         当机器人主动跟用户私信时，创建并获取一个虚拟频道id的API
 
@@ -515,15 +660,23 @@ class API:
         :return: 返回的.data中为解析后的json数据，注意发送私信仅需要使用guild_id这一项虚拟频道id的数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.create_dm_guild(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.create_dm_guild(**_args), self._loop
+        )
         return future_.result()
 
-    def send_dm(self, guild_id: str, content: Optional[str] = None, image: Optional[str] = None,
-                file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-                message_id: Optional[str] = None, event_id: Optional[str] = None,
-                message_reference_id: Optional[str] = None,
-                ignore_message_reference_error: Optional[bool] = None) -> _api_model.send_msg():
+    def send_dm(
+        self,
+        guild_id: str,
+        content: Optional[str] = None,
+        image: Optional[str] = None,
+        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
+    ) -> _api_model.send_msg():
         """
         私信用户的API
 
@@ -538,11 +691,13 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.send_dm(**_args), self._loop)
         return future_.result()
 
-    def delete_dm_msg(self, guild_id: str, message_id: str, hidetip: bool = False) -> _api_model.delete_msg():
+    def delete_dm_msg(
+        self, guild_id: str, message_id: str, hidetip: bool = False
+    ) -> _api_model.delete_msg():
         """
         用于撤回私信频道 guild_id 中 message_id 指定的私信消息。只能用于撤回机器人自己发送的私信
 
@@ -552,12 +707,16 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.delete_dm_msg(**_args), self._loop)
         return future_.result()
 
-    def mute_all_member(self, guild_id: str, mute_end_timestamp: Optional[str], mute_seconds: Optional[str]) -> \
-            _api_model.mute_member():
+    def mute_all_member(
+        self,
+        guild_id: str,
+        mute_end_timestamp: Optional[str],
+        mute_seconds: Optional[str],
+    ) -> _api_model.mute_member():
         """
         用于将频道的全体成员（非管理员）禁言
 
@@ -567,12 +726,19 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.mute_all_member(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.mute_all_member(**_args), self._loop
+        )
         return future_.result()
 
-    def mute_member(self, guild_id: str, user_id: str, mute_end_timestamp: Optional[str],
-                    mute_seconds: Optional[str]) -> _api_model.mute_member():
+    def mute_member(
+        self,
+        guild_id: str,
+        user_id: str,
+        mute_end_timestamp: Optional[str],
+        mute_seconds: Optional[str],
+    ) -> _api_model.mute_member():
         """
         用于禁言频道 guild_id 下的成员 user_id
 
@@ -583,12 +749,17 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.mute_member(**_args), self._loop)
         return future_.result()
 
-    def mute_members(self, guild_id: str, user_id: List[str], mute_end_timestamp: Optional[str],
-                     mute_seconds: Optional[str]) -> _api_model.mute_members():
+    def mute_members(
+        self,
+        guild_id: str,
+        user_id: List[str],
+        mute_end_timestamp: Optional[str],
+        mute_seconds: Optional[str],
+    ) -> _api_model.mute_members():
         """
         用于将频道的指定批量成员（非管理员）禁言
 
@@ -599,13 +770,19 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.mute_members(**_args), self._loop)
         return future_.result()
 
-    def create_announce(self, guild_id, channel_id: Optional[str] = None, message_id: Optional[str] = None,
-                        announces_type: Optional[int] = None, recommend_channels_id: Optional[List[str]] = None,
-                        recommend_channels_introduce: Optional[List[str]] = None) -> _api_model.create_announce():
+    def create_announce(
+        self,
+        guild_id,
+        channel_id: Optional[str] = None,
+        message_id: Optional[str] = None,
+        announces_type: Optional[int] = None,
+        recommend_channels_id: Optional[List[str]] = None,
+        recommend_channels_introduce: Optional[List[str]] = None,
+    ) -> _api_model.create_announce():
         """
         用于创建频道全局公告，公告类型分为 消息类型的频道公告 和 推荐子频道类型的频道公告
 
@@ -618,11 +795,15 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.create_announce(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.create_announce(**_args), self._loop
+        )
         return future_.result()
 
-    def delete_announce(self, guild_id: str, message_id: str = 'all') -> _api_model.delete_announce():
+    def delete_announce(
+        self, guild_id: str, message_id: str = "all"
+    ) -> _api_model.delete_announce():
         """
         用于删除频道 guild_id 下指定 message_id 的全局公告
 
@@ -631,8 +812,10 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.delete_announce(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.delete_announce(**_args), self._loop
+        )
         return future_.result()
 
     def create_pinmsg(self, channel_id: str, message_id: str) -> _api_model.pinmsg():
@@ -644,11 +827,13 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.create_pinmsg(**_args), self._loop)
         return future_.result()
 
-    def delete_pinmsg(self, channel_id: str, message_id: str) -> _api_model.delete_pinmsg():
+    def delete_pinmsg(
+        self, channel_id: str, message_id: str
+    ) -> _api_model.delete_pinmsg():
         """
         用于删除子频道 channel_id 下指定 message_id 的精华消息
 
@@ -657,7 +842,7 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.delete_pinmsg(**_args), self._loop)
         return future_.result()
 
@@ -669,11 +854,13 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.get_pinmsg(**_args), self._loop)
         return future_.result()
 
-    def get_schedules(self, channel_id: str, since: Optional[int] = None) -> _api_model.get_schedules():
+    def get_schedules(
+        self, channel_id: str, since: Optional[int] = None
+    ) -> _api_model.get_schedules():
         """
         用于获取channel_id指定的子频道中当天的日程列表
 
@@ -682,11 +869,13 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.get_schedules(**_args), self._loop)
         return future_.result()
 
-    def get_schedule_info(self, channel_id: str, schedule_id: str) -> _api_model.schedule_info():
+    def get_schedule_info(
+        self, channel_id: str, schedule_id: str
+    ) -> _api_model.schedule_info():
         """
         获取日程子频道 channel_id 下 schedule_id 指定的的日程的详情
 
@@ -695,12 +884,21 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_schedule_info(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_schedule_info(**_args), self._loop
+        )
         return future_.result()
 
-    def create_schedule(self, channel_id: str, schedule_name: str, start_timestamp: str, end_timestamp: str,
-                        jump_channel_id: str, remind_type: str) -> _api_model.schedule_info():
+    def create_schedule(
+        self,
+        channel_id: str,
+        schedule_name: str,
+        start_timestamp: str,
+        end_timestamp: str,
+        jump_channel_id: str,
+        remind_type: str,
+    ) -> _api_model.schedule_info():
         """
         用于在 channel_id 指定的日程子频道下创建一个日程
 
@@ -713,12 +911,22 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.create_schedule(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.create_schedule(**_args), self._loop
+        )
         return future_.result()
 
-    def patch_schedule(self, channel_id: str, schedule_id: str, schedule_name: str, start_timestamp: str,
-                       end_timestamp: str, jump_channel_id: str, remind_type: str) -> _api_model.schedule_info():
+    def patch_schedule(
+        self,
+        channel_id: str,
+        schedule_id: str,
+        schedule_name: str,
+        start_timestamp: str,
+        end_timestamp: str,
+        jump_channel_id: str,
+        remind_type: str,
+    ) -> _api_model.schedule_info():
         """
         用于修改日程子频道 channel_id 下 schedule_id 指定的日程的详情
 
@@ -732,11 +940,15 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.patch_schedule(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.patch_schedule(**_args), self._loop
+        )
         return future_.result()
 
-    def delete_schedule(self, channel_id: str, schedule_id: str) -> _api_model.delete_schedule():
+    def delete_schedule(
+        self, channel_id: str, schedule_id: str
+    ) -> _api_model.delete_schedule():
         """
         用于删除日程子频道 channel_id 下 schedule_id 指定的日程
 
@@ -745,11 +957,15 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.delete_schedule(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.delete_schedule(**_args), self._loop
+        )
         return future_.result()
 
-    def create_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> _api_model.reactions():
+    def create_reaction(
+        self, channel_id: str, message_id: str, type_: str, id_: str
+    ) -> _api_model.reactions():
         """
         对message_id指定的消息进行表情表态
 
@@ -760,11 +976,15 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.create_reaction(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.create_reaction(**_args), self._loop
+        )
         return future_.result()
 
-    def delete_reaction(self, channel_id: str, message_id: str, type_: str, id_: str) -> _api_model.reactions():
+    def delete_reaction(
+        self, channel_id: str, message_id: str, type_: str, id_: str
+    ) -> _api_model.reactions():
         """
         删除自己对message_id指定消息的表情表态
 
@@ -775,12 +995,15 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.delete_reaction(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.delete_reaction(**_args), self._loop
+        )
         return future_.result()
 
-    def get_reaction_users(self, channel_id: str, message_id: str, type_: str, id_: str) -> \
-            _api_model.get_reaction_users():
+    def get_reaction_users(
+        self, channel_id: str, message_id: str, type_: str, id_: str
+    ) -> _api_model.get_reaction_users():
         """
         拉取对消息 message_id 指定表情表态的用户列表
 
@@ -791,12 +1014,19 @@ class API:
         :return: 返回的.data中为解析后的json数据列表
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_reaction_users(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_reaction_users(**_args), self._loop
+        )
         return future_.result()
 
-    def control_audio(self, channel_id: str, status: int, audio_url: Optional[str] = None,
-                      text: Optional[str] = None) -> _api_model.audio():
+    def control_audio(
+        self,
+        channel_id: str,
+        status: int,
+        audio_url: Optional[str] = None,
+        text: Optional[str] = None,
+    ) -> _api_model.audio():
         """
         用于控制子频道 channel_id 下的音频
 
@@ -807,7 +1037,7 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.control_audio(**_args), self._loop)
         return future_.result()
 
@@ -819,7 +1049,7 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.bot_on_mic(**_args), self._loop)
         return future_.result()
 
@@ -831,7 +1061,7 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.bot_off_mic(**_args), self._loop)
         return future_.result()
 
@@ -843,11 +1073,13 @@ class API:
         :return: 返回的.data中为解析后的json数据列表
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.get_threads(**_args), self._loop)
         return future_.result()
 
-    def get_thread_info(self, channel_id: str, thread_id: str) -> _api_model.get_thread_info():
+    def get_thread_info(
+        self, channel_id: str, thread_id: str
+    ) -> _api_model.get_thread_info():
         """
         获取子频道下的帖子详情
 
@@ -856,11 +1088,15 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_thread_info(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_thread_info(**_args), self._loop
+        )
         return future_.result()
 
-    def create_thread(self, channel_id: str, title: str, content: str, format_: int) -> _api_model.create_thread():
+    def create_thread(
+        self, channel_id: str, title: str, content: str, format_: int
+    ) -> _api_model.create_thread():
         """
         创建帖子，创建成功后，返回创建成功的任务ID
 
@@ -871,11 +1107,13 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.create_thread(**_args), self._loop)
         return future_.result()
 
-    def delete_thread(self, channel_id: str, thread_id: str) -> _api_model.delete_thread():
+    def delete_thread(
+        self, channel_id: str, thread_id: str
+    ) -> _api_model.delete_thread():
         """
         删除指定子频道下的某个帖子
 
@@ -884,11 +1122,13 @@ class API:
         :return: 返回的.result显示是否成功
         """
         _args = locals()
-        _args.pop('self')
+        _args.pop("self")
         future_ = run_coroutine_threadsafe(self._api.delete_thread(**_args), self._loop)
         return future_.result()
 
-    def get_guild_permissions(self, guild_id: str) -> _api_model.get_guild_permissions():
+    def get_guild_permissions(
+        self, guild_id: str
+    ) -> _api_model.get_guild_permissions():
         """
         获取机器人在频道 guild_id 内可以使用的权限列表
 
@@ -896,12 +1136,15 @@ class API:
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.get_guild_permissions(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.get_guild_permissions(**_args), self._loop
+        )
         return future_.result()
 
-    def create_permission_demand(self, guild_id: str, channel_id: str, api: str, desc: Optional[str]) -> \
-            _api_model.create_permission_demand():
+    def create_permission_demand(
+        self, guild_id: str, channel_id: str, api: str, desc: Optional[str]
+    ) -> _api_model.create_permission_demand():
         """
         发送频道API接口权限授权链接到频道
 
@@ -912,6 +1155,8 @@ class API:
         :return: 返回成功或不成功
         """
         _args = locals()
-        _args.pop('self')
-        future_ = run_coroutine_threadsafe(self._api.create_permission_demand(**_args), self._loop)
+        _args.pop("self")
+        future_ = run_coroutine_threadsafe(
+            self._api.create_permission_demand(**_args), self._loop
+        )
         return future_.result()

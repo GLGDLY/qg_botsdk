@@ -7,17 +7,17 @@ from qg_botsdk import BOT, Model
 
 def deliver(data: Model.MESSAGE):
     content = data.content
-    if '内容检测' in content:
-        if not bot.api.security_check(content[content.find('内容检测') + 4:]):
-            send_msg = '检测不通过，内容有违规'
+    if "内容检测" in content:
+        if not bot.api.security_check(content[content.find("内容检测") + 4 :]):
+            send_msg = "检测不通过，内容有违规"
         else:
-            send_msg = '检测通过，内容并无违规'
+            send_msg = "检测通过，内容并无违规"
         # SDK版本 >= v2.4.0 可直接使用reply()
         data.reply(send_msg)
     return
 
 
-if __name__ == '__main__':
-    bot = BOT(bot_id='', bot_token='', bot_secret='', is_private=True, is_sandbox=True)
+if __name__ == "__main__":
+    bot = BOT(bot_id="", bot_token="", bot_secret="", is_private=True, is_sandbox=True)
     bot.bind_msg(deliver, treated_data=True)
     bot.start()

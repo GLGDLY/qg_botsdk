@@ -12,6 +12,7 @@ class Model:
     GUILDS - 频道事件
     GUILD_MEMBERS -
     """
+
     class GUILDS(event_class):
         """
         频道事件的数据模型，可从t字段判断具体事件，其中包含：
@@ -24,6 +25,7 @@ class Model:
             其子字段数据可参阅：
             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#guilds
         """
+
         description: str
         icon: str
         id: str
@@ -48,6 +50,7 @@ class Model:
             其子字段数据可参阅：
             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#channels-sdkv2-2-4
         """
+
         application_id: str
         guild_id: str
         id: str
@@ -76,6 +79,7 @@ class Model:
              其子字段数据可参阅：
              https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#guild-members
         """
+
         class user:
             avatar: str
             bot: bool
@@ -104,6 +108,7 @@ class Model:
              其子字段数据可参阅：
              https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#message
         """
+
         class __MsgMentions:
             avatar: str
             bot: bool
@@ -165,6 +170,7 @@ class Model:
              其子字段数据可参阅：
              https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#message-delete
         """
+
         class message:
             class author:
                 bot: bool
@@ -191,6 +197,7 @@ class Model:
              其子字段数据可参阅：
              https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#direct-message
         """
+
         class __MsgAttachments:
             content_type: str
             filename: str
@@ -239,6 +246,7 @@ class Model:
              其子字段数据可参阅：
              https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#message-audit
         """
+
         audit_id: str
         audit_time: str
         create_time: str
@@ -297,24 +305,24 @@ class Model:
                         class text:  # type = 1
                             text: str
 
-#                         class image:  # type = 2
-#                             class plat_image:
-#                                 url: str
-#                                 width: int
-#                                 height: int
-#                                 image_id: str
-#
-#                         class video:  # type = 3
-#                             class plat_video:
-#                                 class cover:
-#                                     url: str
-#                                     width: int
-#                                     height: int
-#
-#                                 url: str
-#                                 width: int
-#                                 height: int
-#                                 video_id: str
+                        #                         class image:  # type = 2
+                        #                             class plat_image:
+                        #                                 url: str
+                        #                                 width: int
+                        #                                 height: int
+                        #                                 image_id: str
+                        #
+                        #                         class video:  # type = 3
+                        #                             class plat_video:
+                        #                                 class cover:
+                        #                                     url: str
+                        #                                     width: int
+                        #                                     height: int
+                        #
+                        #                                 url: str
+                        #                                 width: int
+                        #                                 height: int
+                        #                                 video_id: str
 
                         class url:  # type = 4
                             url: str
@@ -352,6 +360,7 @@ class Model:
              其子字段数据可参阅：
              https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#audio-action
         """
+
         channel_id: str
         guild_id: str
         audio_url: str
@@ -370,6 +379,7 @@ class Model:
              其子字段数据可参阅：
              https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#reaction
         """
+
         class emoji:
             id: str
             type: int
@@ -385,15 +395,15 @@ class Model:
         event_id: str
 
     class INTERACTION(event_class):
-        """
+        """ """
 
-        """
         class data:
             class resolved:
                 button_data: str
                 button_id: str
                 message_id: str
                 user_id: str
+
             type: int
 
         application_id: str

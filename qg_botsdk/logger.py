@@ -1,24 +1,27 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from logging import getLogger, Formatter, StreamHandler, FileHandler
-from os import makedirs, PathLike, getcwd, sep
-from os.path import exists, join, isdir
-from time import strftime, localtime
 from functools import wraps
-from typing import Union, List
+from logging import FileHandler, Formatter, StreamHandler, getLogger
+from os import PathLike, getcwd, makedirs, sep
+from os.path import exists, isdir, join
 from re import split as re_split
+from time import localtime, strftime
+from typing import List, Union
+
 try:
     from colorama import init as color_init
+
     color_init(strip=False)
 except (ImportError, ModuleNotFoundError):
     from os import system
-    system('')
+
+    system("")
 
 
 def _log_wrapper(func):
     @wraps(func)
     def wrap(self, msg):
-        str_time = strftime('%m-%d', localtime())
+        str_time = strftime("%m-%d", localtime())
         if str_time != self._previous_time:
             self._logger.removeHandler(self._logh)
             self._new_logh(str_time)
@@ -31,7 +34,12 @@ def _log_wrapper(func):
 
 
 class Logger:
-    def __init__(self, bot_app_id: str, file_path: Union[str, PathLike] = None, disable_logger: List[str] = None):
+    def __init__(
+        self,
+        bot_app_id: str,
+        file_path: Union[str, PathLike] = None,
+        disable_logger: List[str] = None,
+    ):
         """
         用作logging输出的类，支持不同level的颜色log输出，可自定义格式
 
@@ -45,34 +53,36 @@ class Logger:
                 getLogger(items).disabled = True
         self._bot_app_id = bot_app_id
         self._logger = getLogger(__name__)
-        self._logger.setLevel('DEBUG')
-        self._format = '[%(asctime)s] [%(levelname)s] %(message)s'
-        self._date_format = '%m-%d %H:%M:%S'
+        self._logger.setLevel("DEBUG")
+        self._format = "[%(asctime)s] [%(levelname)s] %(message)s"
+        self._date_format = "%m-%d %H:%M:%S"
         self._cmdh = StreamHandler()
         self._cmdh.setFormatter(self._Stream_Formatter())
-        self._cmdh.setLevel('INFO')
+        self._cmdh.setLevel("INFO")
         self.file_path = file_path
         if file_path is not None:
-            file_path = re_split(r'[\\|/]', file_path)
-            if file_path[0] == '.':
+            file_path = re_split(r"[\\|/]", file_path)
+            if file_path[0] == ".":
                 self.file_path = join(*file_path)
             else:
                 file_path[0] += sep
                 self.file_path = join(sep, *file_path)
         else:
-            self.file_path = join(getcwd(), 'log', self._bot_app_id)
+            self.file_path = join(getcwd(), "log", self._bot_app_id)
         if not exists(self.file_path):
             makedirs(self.file_path)
-        assert isdir(self.file_path), '自定义Log输出路径必须为一个directory资料夹'
+        assert isdir(self.file_path), "自定义Log输出路径必须为一个directory资料夹"
         self._logh = None
-        self._new_logh(strftime('%m-%d', localtime()))
+        self._new_logh(strftime("%m-%d", localtime()))
         self._logger.addHandler(self._cmdh)
-        self._previous_time = strftime('%m-%d', localtime())
+        self._previous_time = strftime("%m-%d", localtime())
 
     class _Stream_Formatter(Formatter):
-        FORMATS = {20: '\033[1;32m[%(asctime)s] [%(levelname)s]\033[0m %(message)s',
-                   30: '\033[1;33m[%(asctime)s] [%(levelname)s]\033[0m %(message)s',
-                   40: '\033[1;31m[%(asctime)s] [%(levelname)s]\033[0m %(message)s'}
+        FORMATS = {
+            20: "\033[1;32m[%(asctime)s] [%(levelname)s]\033[0m %(message)s",
+            30: "\033[1;33m[%(asctime)s] [%(levelname)s]\033[0m %(message)s",
+            40: "\033[1;31m[%(asctime)s] [%(levelname)s]\033[0m %(message)s",
+        }
 
         def __init__(self, formats: dict = None, date_format: str = None):
             super().__init__()
@@ -80,15 +90,21 @@ class Logger:
                 self.FORMATS[20] = formats.get(20, None) or self.FORMATS[20]
                 self.FORMATS[30] = formats.get(30, None) or self.FORMATS[30]
                 self.FORMATS[40] = formats.get(40, None) or self.FORMATS[40]
-            self._date_format = date_format or '%m-%d %H:%M:%S'
+            self._date_format = date_format or "%m-%d %H:%M:%S"
 
         def format(self, record) -> str:
             log_fmt = self.FORMATS.get(record.levelno)
             formatter = Formatter(log_fmt, self._date_format)
             return formatter.format(record)
 
-    def set_formatter(self, debug_format: str = None, info_format: str = None, warning_format: str = None,
-                      error_format: str = None, date_format: str = None):
+    def set_formatter(
+        self,
+        debug_format: str = None,
+        info_format: str = None,
+        warning_format: str = None,
+        error_format: str = None,
+        date_format: str = None,
+    ):
         """
         用于更改logger日志的输出格式
 
@@ -122,7 +138,9 @@ class Logger:
             getLogger(loggers).disabled = True
 
     def _new_logh(self, str_time):
-        self._logh = FileHandler(join(self.file_path, f'{str_time}.log'), encoding='utf-8')
+        self._logh = FileHandler(
+            join(self.file_path, f"{str_time}.log"), encoding="utf-8"
+        )
         self._logh.setFormatter(Formatter(self._format, self._date_format))
         self._logger.addHandler(self._logh)
 

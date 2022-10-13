@@ -5,24 +5,24 @@ from qg_botsdk import BOT, Model
 
 
 def on_start():
-    bot.api.send_msg(channel_id='xxx', content='这是主动消息')
+    bot.api.send_msg(channel_id="xxx", content="这是主动消息")
 
 
 def deliver(data: Model.MESSAGE):
-    if '你好' in data.treated_msg:
+    if "你好" in data.treated_msg:
         # SDK版本 >= v2.4.0 可直接使用reply()
-        data.reply('你好，世界')
+        data.reply("你好，世界")
 
 
 def msg_audit(data: Model.MESSAGE_AUDIT):
     """
     只有审核通过事件才会有message_id的值
     """
-    bot.logger.info('主动消息审核通过啦，已自动发往子频道%s了！' % data.channel_id)
+    bot.logger.info("主动消息审核通过啦，已自动发往子频道%s了！" % data.channel_id)
 
 
-if __name__ == '__main__':
-    bot = BOT(bot_id='', bot_token='', is_private=True, is_sandbox=True)
+if __name__ == "__main__":
+    bot = BOT(bot_id="", bot_token="", is_private=True, is_sandbox=True)
     bot.bind_msg(deliver, treated_data=True)
     bot.bind_audit(msg_audit)
     bot.register_start_event(on_start)

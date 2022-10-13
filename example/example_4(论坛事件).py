@@ -5,8 +5,8 @@ from qg_botsdk import BOT, Model
 
 
 def deliver(data: Model.MESSAGE):
-    if '你好' in data.treated_msg:
-        bot.api.send_msg(data.channel_id, '你好，世界', message_id=data.id)
+    if "你好" in data.treated_msg:
+        bot.api.send_msg(data.channel_id, "你好，世界", message_id=data.id)
 
 
 def forums_event(data: Model.FORUMS_EVENT):
@@ -24,28 +24,30 @@ def forums_event(data: Model.FORUMS_EVENT):
     原type 4：表情，目前为空子字段，无任何内容反馈
     原type 5：#子频道，目前为空子字段，无任何内容反馈
     """
-    print(data)   # 可借此获取json格式的实际数据结构
-    if data.t == 'FORUM_THREAD_CREATE':
+    print(data)  # 可借此获取json格式的实际数据结构
+    if data.t == "FORUM_THREAD_CREATE":
         title = data.thread_info.title.paragraphs[0].elems[0].text.text
-        content = ''
+        content = ""
         for items in data.thread_info.content.paragraphs:
             d = items.elems[0]
-            if 'type' in d.__dict__:
+            if "type" in d.__dict__:
                 if d.type == 1:
                     content += d.text.text
                 elif d.type == 4:
-                    content += f'{d.url.desc}（链接：{d.url.url}）'
-        bot.logger.info(f'收到了一条新帖子！\n标题：{title}\n内容：{content}')
+                    content += f"{d.url.desc}（链接：{d.url.url}）"
+        bot.logger.info(f"收到了一条新帖子！\n标题：{title}\n内容：{content}")
         if not bot.api.security_check(content):
             dt = bot.api.delete_thread(data.channel_id, data.thread_info.thread_id)
             if not dt.result:
-                bot.logger.warning(f'上述帖子内容存在风险，但机器人无法自动删除（{dt.data.code}：{dt.data.message}）')
+                bot.logger.warning(
+                    f"上述帖子内容存在风险，但机器人无法自动删除（{dt.data.code}：{dt.data.message}）"
+                )
             else:
-                bot.logger.info('上述帖子内容存在风险，机器人已自动删除相关内容')
+                bot.logger.info("上述帖子内容存在风险，机器人已自动删除相关内容")
 
 
-if __name__ == '__main__':
-    bot = BOT(bot_id='', bot_token='', bot_secret='', is_private=True, is_sandbox=True)
+if __name__ == "__main__":
+    bot = BOT(bot_id="", bot_token="", bot_secret="", is_private=True, is_sandbox=True)
     bot.bind_msg(deliver, treated_data=True)
     bot.bind_forum(forums_event)
     bot.start()

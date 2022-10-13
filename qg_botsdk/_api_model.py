@@ -1,91 +1,152 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from inspect import stack
-from typing import List, Optional
 from re import split as re_split
+from typing import List, Optional
+
 from ._utils import object_class
 
-apis = {('获取用户ID', 'get_bot_id'): [False, '此API不需要请求权限'],
-        ('获取用户信息', 'get_bot_info'): ['GET', '/users/@me'],
-        ('获取用户频道列表', 'get_bot_guilds'): ['GET', '/users/@me/guilds'],
-        ('获取频道详情', 'get_guild_info'): ['GET', '/guilds/{guild_id}'],
-        ('获取子频道列表', 'get_guild_channels'): ['GET', '/guilds/{guild_id}/channels'],
-        ('获取子频道详情', 'get_channels_info'): ['GET', '/channels/{channel_id}'],
-        ('创建子频道', 'create_channels'): ['POST', '/guilds/{guild_id}/channels'],
-        ('修改子频道', 'patch_channels'): ['PATCH', '/channels/{channel_id}'],
-        ('删除子频道', 'delete_channels'): ['DELETE', '/channels/{channel_id}'],
-        ('获取频道成员列表', 'get_guild_members'): ['GET', '/guilds/{guild_id}/members'],
-        ('获取频道身份组成员列表', 'get_role_members'): ['GET', '/guilds/{guild_id}/roles/{role_id}/members'],
-        ('获取频道成员详情', 'get_member_info'): ['GET', '/guilds/{guild_id}/members/{user_id}'],
-        ('删除频道成员', 'delete_member'): ['DELETE', '/guilds/{guild_id}/members/{user_id}'],
-        ('获取频道身份组列表', 'get_guild_roles'): ['GET', '/guilds/{guild_id}/roles'],
-        ('创建频道身份组', 'create_role'): ['POST', '/guilds/{guild_id}/roles'],
-        ('修改频道身份组', 'patch_role'): ['PATCH', '/guilds/{guild_id}/roles/{role_id}'],
-        ('删除频道身份组', 'delete_role'): ['DELETE', '/guilds/{guild_id}/roles/{role_id}'],
-        ('创建频道身份组成员', 'create_role_member'): ['PUT', '/guilds/{guild_id}/members/{user_id}/roles/{role_id}'],
-        ('删除频道身份组成员', 'delete_role_member'): ['DELETE', '/guilds/{guild_id}/members/{user_id}/roles/{role_id}'],
-        ('获取子频道用户权限', 'get_channel_member_permission'):
-            ['GET', '/channels/{channel_id}/members/{user_id}/permissions'],
-        ('修改子频道用户权限', 'put_channel_member_permission'):
-            ['PUT', '/channels/{channel_id}/members/{user_id}/permissions'],
-        ('获取子频道身份组权限', 'get_channel_role_permission'):
-            ['GET', '/channels/{channel_id}/roles/{role_id}/permissions'],
-        ('修改子频道身份组权限', 'put_channel_role_permission'):
-            ['PUT', '/channels/{channel_id}/roles/{role_id}/permissions'],
-        ('获取指定消息', 'get_message_info'): ['GET', '/channels/{channel_id}/messages/{message_id}'],
-        ('发送普通消息', 'send_msg', '发送embed模板消息', 'send_embed', '发送 23 链接+文本列表模板ark消息', 'send_ark_23',
-         '发送 24 文本+缩略图模板ark消息', 'send_ark_24', '发送 37 大图模板ark消息', 'send_ark_37'):
-            ['POST', '/channels/{channel_id}/messages'],
-        ('撤回消息', 'delete_msg'): ['DELETE', '/channels/{channel_id}/messages/{message_id}'],
-        ('获取频道消息频率设置', 'get_guild_setting'): ['GET', '/guilds/{guild_id}/message/setting'],
-        ('创建私信会话', 'create_dm_guild'): ['POST', '/users/@me/dms'],
-        ('发送私信消息', 'send_dm'): ['POST', '/dms/{guild_id}/messages'],
-        ('撤回私信消息', 'delete_dm_msg'): ['DELETE', '/dms/{guild_id}/messages/{message_id}'],
-        ('禁言全员', 'mute_all_member'): ['PATCH', '/guilds/{guild_id}/mute'],
-        ('禁言指定成员', 'mute_member'): ['PATCH', '/guilds/{guild_id}/members/{user_id}/mute'],
-        ('禁言批量成员', 'mute_members'): ['PATCH', '/guilds/{guild_id}/mute'],
-        ('创建频道公告', 'create_announce'): ['POST', '/guilds/{guild_id}/announces'],
-        ('删除频道公告', 'delete_announce'): ['DELETE', '/guilds/{guild_id}/announces/{message_id}'],
-        ('添加精华消息', 'create_pinmsg'): ['PUT', '/channels/{channel_id}/pins/{message_id}'],
-        ('删除精华消息', 'delete_pinmsg'): ['DELETE', '/channels/{channel_id}/pins/{message_id}'],
-        ('获取精华消息', 'get_pinmsg'): ['GET', '/channels/{channel_id}/pins'],
-        ('获取频道日程列表', 'get_schedules'): ['GET', '/channels/{channel_id}/schedules'],
-        ('获取日程详情', 'get_schedule_info'): ['GET', '/channels/{channel_id}/schedules/{schedule_id}'],
-        ('创建日程', 'create_schedule'): ['POST', '/channels/{channel_id}/schedules'],
-        ('修改日程', 'patch_schedule'): ['PATCH', '/channels/{channel_id}/schedules/{schedule_id}'],
-        ('删除日程', 'delete_schedule'): ['DELETE', '/channels/{channel_id}/schedules/{schedule_id}'],
-        ('发表表情表态', 'create_reaction'):
-            ['PUT', '/channels/{channel_id}/messages/{message_id}/reactions/{type}/{id}'],
-        ('删除表情表态', 'delete_reaction'):
-            ['DELETE', '/channels/{channel_id}/messages/{message_id}/reactions/{type}/{id}'],
-        ('拉取表情表态用户列表', 'get_reaction_users'):
-            ['GET', '/channels/{channel_id}/messages/{message_id}/reactions/{type}/{id}'],
-        ('音频控制', 'control_audio'): ['POST', '/channels/{channel_id}/audio'],
-        ('机器人上麦', 'bot_on_mic'): ['PUT', '/channels/{channel_id}/mic'],
-        ('机器人下麦', 'bot_off_mic'): ['DELETE', '/channels/{channel_id}/mic'],
-        ('获取帖子列表', 'get_threads'): ['GET', '/channels/{channel_id}/threads'],
-        ('获取帖子详情', 'get_thread_info'): ['GET', '/channels/{channel_id}/threads/{thread_id}'],
-        ('发表帖子', 'create_thread'): ['PUT', '/channels/{channel_id}/threads'],
-        ('删除帖子', 'delete_thread'): ['DELETE', '/channels/{channel_id}/threads/{thread_id}'],
-        ('获取频道可用权限列表', 'get_guild_permissions', '创建频道 API 接口权限授权链接', 'create_permission_demand'):
-            [False, '此API不需要请求权限']}
+apis = {
+    ("获取用户ID", "get_bot_id"): [False, "此API不需要请求权限"],
+    ("获取用户信息", "get_bot_info"): ["GET", "/users/@me"],
+    ("获取用户频道列表", "get_bot_guilds"): ["GET", "/users/@me/guilds"],
+    ("获取频道详情", "get_guild_info"): ["GET", "/guilds/{guild_id}"],
+    ("获取子频道列表", "get_guild_channels"): ["GET", "/guilds/{guild_id}/channels"],
+    ("获取子频道详情", "get_channels_info"): ["GET", "/channels/{channel_id}"],
+    ("创建子频道", "create_channels"): ["POST", "/guilds/{guild_id}/channels"],
+    ("修改子频道", "patch_channels"): ["PATCH", "/channels/{channel_id}"],
+    ("删除子频道", "delete_channels"): ["DELETE", "/channels/{channel_id}"],
+    ("获取频道成员列表", "get_guild_members"): ["GET", "/guilds/{guild_id}/members"],
+    ("获取频道身份组成员列表", "get_role_members"): [
+        "GET",
+        "/guilds/{guild_id}/roles/{role_id}/members",
+    ],
+    ("获取频道成员详情", "get_member_info"): ["GET", "/guilds/{guild_id}/members/{user_id}"],
+    ("删除频道成员", "delete_member"): ["DELETE", "/guilds/{guild_id}/members/{user_id}"],
+    ("获取频道身份组列表", "get_guild_roles"): ["GET", "/guilds/{guild_id}/roles"],
+    ("创建频道身份组", "create_role"): ["POST", "/guilds/{guild_id}/roles"],
+    ("修改频道身份组", "patch_role"): ["PATCH", "/guilds/{guild_id}/roles/{role_id}"],
+    ("删除频道身份组", "delete_role"): ["DELETE", "/guilds/{guild_id}/roles/{role_id}"],
+    ("创建频道身份组成员", "create_role_member"): [
+        "PUT",
+        "/guilds/{guild_id}/members/{user_id}/roles/{role_id}",
+    ],
+    ("删除频道身份组成员", "delete_role_member"): [
+        "DELETE",
+        "/guilds/{guild_id}/members/{user_id}/roles/{role_id}",
+    ],
+    ("获取子频道用户权限", "get_channel_member_permission"): [
+        "GET",
+        "/channels/{channel_id}/members/{user_id}/permissions",
+    ],
+    ("修改子频道用户权限", "put_channel_member_permission"): [
+        "PUT",
+        "/channels/{channel_id}/members/{user_id}/permissions",
+    ],
+    ("获取子频道身份组权限", "get_channel_role_permission"): [
+        "GET",
+        "/channels/{channel_id}/roles/{role_id}/permissions",
+    ],
+    ("修改子频道身份组权限", "put_channel_role_permission"): [
+        "PUT",
+        "/channels/{channel_id}/roles/{role_id}/permissions",
+    ],
+    ("获取指定消息", "get_message_info"): [
+        "GET",
+        "/channels/{channel_id}/messages/{message_id}",
+    ],
+    (
+        "发送普通消息",
+        "send_msg",
+        "发送embed模板消息",
+        "send_embed",
+        "发送 23 链接+文本列表模板ark消息",
+        "send_ark_23",
+        "发送 24 文本+缩略图模板ark消息",
+        "send_ark_24",
+        "发送 37 大图模板ark消息",
+        "send_ark_37",
+    ): ["POST", "/channels/{channel_id}/messages"],
+    ("撤回消息", "delete_msg"): ["DELETE", "/channels/{channel_id}/messages/{message_id}"],
+    ("获取频道消息频率设置", "get_guild_setting"): ["GET", "/guilds/{guild_id}/message/setting"],
+    ("创建私信会话", "create_dm_guild"): ["POST", "/users/@me/dms"],
+    ("发送私信消息", "send_dm"): ["POST", "/dms/{guild_id}/messages"],
+    ("撤回私信消息", "delete_dm_msg"): ["DELETE", "/dms/{guild_id}/messages/{message_id}"],
+    ("禁言全员", "mute_all_member"): ["PATCH", "/guilds/{guild_id}/mute"],
+    ("禁言指定成员", "mute_member"): ["PATCH", "/guilds/{guild_id}/members/{user_id}/mute"],
+    ("禁言批量成员", "mute_members"): ["PATCH", "/guilds/{guild_id}/mute"],
+    ("创建频道公告", "create_announce"): ["POST", "/guilds/{guild_id}/announces"],
+    ("删除频道公告", "delete_announce"): [
+        "DELETE",
+        "/guilds/{guild_id}/announces/{message_id}",
+    ],
+    ("添加精华消息", "create_pinmsg"): ["PUT", "/channels/{channel_id}/pins/{message_id}"],
+    ("删除精华消息", "delete_pinmsg"): ["DELETE", "/channels/{channel_id}/pins/{message_id}"],
+    ("获取精华消息", "get_pinmsg"): ["GET", "/channels/{channel_id}/pins"],
+    ("获取频道日程列表", "get_schedules"): ["GET", "/channels/{channel_id}/schedules"],
+    ("获取日程详情", "get_schedule_info"): [
+        "GET",
+        "/channels/{channel_id}/schedules/{schedule_id}",
+    ],
+    ("创建日程", "create_schedule"): ["POST", "/channels/{channel_id}/schedules"],
+    ("修改日程", "patch_schedule"): [
+        "PATCH",
+        "/channels/{channel_id}/schedules/{schedule_id}",
+    ],
+    ("删除日程", "delete_schedule"): [
+        "DELETE",
+        "/channels/{channel_id}/schedules/{schedule_id}",
+    ],
+    ("发表表情表态", "create_reaction"): [
+        "PUT",
+        "/channels/{channel_id}/messages/{message_id}/reactions/{type}/{id}",
+    ],
+    ("删除表情表态", "delete_reaction"): [
+        "DELETE",
+        "/channels/{channel_id}/messages/{message_id}/reactions/{type}/{id}",
+    ],
+    ("拉取表情表态用户列表", "get_reaction_users"): [
+        "GET",
+        "/channels/{channel_id}/messages/{message_id}/reactions/{type}/{id}",
+    ],
+    ("音频控制", "control_audio"): ["POST", "/channels/{channel_id}/audio"],
+    ("机器人上麦", "bot_on_mic"): ["PUT", "/channels/{channel_id}/mic"],
+    ("机器人下麦", "bot_off_mic"): ["DELETE", "/channels/{channel_id}/mic"],
+    ("获取帖子列表", "get_threads"): ["GET", "/channels/{channel_id}/threads"],
+    ("获取帖子详情", "get_thread_info"): [
+        "GET",
+        "/channels/{channel_id}/threads/{thread_id}",
+    ],
+    ("发表帖子", "create_thread"): ["PUT", "/channels/{channel_id}/threads"],
+    ("删除帖子", "delete_thread"): ["DELETE", "/channels/{channel_id}/threads/{thread_id}"],
+    (
+        "获取频道可用权限列表",
+        "get_guild_permissions",
+        "创建频道 API 接口权限授权链接",
+        "create_permission_demand",
+    ): [False, "此API不需要请求权限"],
+}
 
 
 def __getattr__(identifier: str) -> object:
-    if re_split(r'[/\\]', stack()[1].filename)[-1] not in ('qg_bot.py', 'api.py', 'async_api.py',
-                                                           '<frozen importlib._bootstrap>'):
+    if re_split(r"[/\\]", stack()[1].filename)[-1] not in (
+        "qg_bot.py",
+        "api.py",
+        "async_api.py",
+        "<frozen importlib._bootstrap>",
+    ):
         raise AssertionError("此为SDK内部使用文件，无法使用，使用机器人Model库请from model import Model")
 
     return globals()[identifier.__path__]
 
 
 def api_converter(api: str):
-    if api[-2:] in ['()', '（）']:
+    if api[-2:] in ["()", "（）"]:
         api = api[:-2]
     for keys, values in apis.items():
         if api in keys:
             return values[1], values[0]
-    return False, '该API并不存在'
+    return False, "该API并不存在"
 
 
 def api_converter_re(method: str, path: str):

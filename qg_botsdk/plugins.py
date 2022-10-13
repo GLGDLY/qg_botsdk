@@ -1,56 +1,106 @@
-from typing import Optional, Union, List, Pattern
 from re import compile as re_compile
-
-from .model import Model
-from ._utils import check_func
+from typing import List, Optional, Pattern, Union
 
 
 class Plugins:
-    _commands = {}
-    _regex_commands = {}
+    _commands = []
+    _preprocessors = []
 
-    def __new__(cls, bot):
-        for k, v in cls._commands.items():
-            check_func(v['func'], Model.MESSAGE, is_async=bot.is_async)
-        for k, v in cls._regex_commands.items():
-            check_func(v['func'], Model.MESSAGE, is_async=bot.is_async)
-        return cls._commands, cls._regex_commands
+    def __new__(cls) -> tuple:
+        commands, preprocessors = cls._commands, cls._preprocessors
+        cls._commands, cls._preprocessors = [], []
+        return commands, preprocessors
 
     @classmethod
-    def on_command(cls, command: Optional[Union[List[str], str]] = None, regex: Optional[Union[Pattern, str]] = None,
-                   is_treat: bool = True, is_require_at: bool = False, is_short_circuit: bool = False,
-                   is_require_admin: bool = False,
-                   ):
+    def before_command(cls):
         """
-        指令装饰器。用于快速注册消息事件
+        注册plugins预处理器，将在检查所有commands前执行
+        """
+
+        def wrap(func):
+            cls._preprocessors.append(func)
+            return func
+
+        return wrap
+
+    @classmethod
+    def on_command(
+        cls,
+        command: Optional[Union[List[str], str]] = None,
+        regex: Optional[Union[Pattern, str]] = None,
+        is_treat: bool = True,
+        is_require_at: bool = False,
+        is_short_circuit: bool = True,
+        is_require_admin: bool = False,
+        admin_error_msg: Optional[str] = None,
+    ):
+        """
+        注册plugins指令装饰器，可用于分割式编写指令并注册进机器人
 
         :param command: 可触发事件的指令列表，与正则regex互斥，优先使用此项
         :param regex: 可触发指令的正则compile实例或正则表达式，与指令表互斥
         :param is_treat: 是否在treated_msg中同时处理指令，如正则将返回.groups()，默认是
         :param is_require_at: 是否要求必须艾特机器人才能触发指令，默认否
-        :param is_short_circuit: 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和command先regex后排序指令的短路机制），默认否
+        :param is_short_circuit: 如果触发指令成功是否短路不运行后续指令（将根据注册顺序排序指令的短路机制），默认是
         :param is_require_admin: 是否要求频道主或或管理才可触发指令，默认否
+        :param admin_error_msg: 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
         """
 
         def wrap(func):
             if command:
                 if isinstance(command, str):
-                    cls._commands[command] = {'func': func, 'treat': is_treat, 'at': is_require_at,
-                                              'short_circuit': is_short_circuit, 'admin': is_require_admin}
+                    cls._commands.append(
+                        {
+                            "command": [command],
+                            "func": func,
+                            "treat": is_treat,
+                            "at": is_require_at,
+                            "short_circuit": is_short_circuit,
+                            "admin": is_require_admin,
+                            "admin_error_msg": admin_error_msg,
+                        }
+                    )
+                elif isinstance(command, list):
+                    cls._commands.append(
+                        {
+                            "command": command,
+                            "func": func,
+                            "treat": is_treat,
+                            "at": is_require_at,
+                            "short_circuit": is_short_circuit,
+                            "admin": is_require_admin,
+                            "admin_error_msg": admin_error_msg,
+                        }
+                    )
                 else:
-                    for com in command:
-                        cls._commands[com] = {'func': func, 'treat': is_treat, 'at': is_require_at,
-                                              'short_circuit': is_short_circuit, 'admin': is_require_admin}
+                    raise TypeError("command参数仅接受str或list类型的指令内容")
             else:
                 if isinstance(regex, str):
-                    cls._regex_commands[re_compile(regex)] = {'func': func, 'treat': is_treat, 'at': is_require_at,
-                                                              'short_circuit': is_short_circuit,
-                                                              'admin': is_require_admin}
+                    cls._commands.append(
+                        {
+                            "regex": re_compile(regex),
+                            "func": func,
+                            "treat": is_treat,
+                            "at": is_require_at,
+                            "short_circuit": is_short_circuit,
+                            "admin": is_require_admin,
+                            "admin_error_msg": admin_error_msg,
+                        }
+                    )
                 elif isinstance(regex, Pattern):
-                    cls._regex_commands[regex] = {'func': func, 'treat': is_treat, 'at': is_require_at,
-                                                  'short_circuit': is_short_circuit, 'admin': is_require_admin}
+                    cls._commands.append(
+                        {
+                            "regex": regex,
+                            "func": func,
+                            "treat": is_treat,
+                            "at": is_require_at,
+                            "short_circuit": is_short_circuit,
+                            "admin": is_require_admin,
+                            "admin_error_msg": admin_error_msg,
+                        }
+                    )
                 else:
-                    raise TypeError('regex参数仅接受re.compile返回的实例或str类型的正则表达式')
+                    raise TypeError("regex参数仅接受re.compile返回的实例或str类型的正则表达式")
             return func
 
         return wrap
