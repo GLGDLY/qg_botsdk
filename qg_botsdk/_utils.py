@@ -11,7 +11,6 @@ from typing import BinaryIO, Callable, Optional, Union
 
 from .version import __version__
 
-
 general_header = {"User-Agent": f"qg-botsdk v{__version__}"}
 security_header = {
     "Content-Type": "application/json",
@@ -274,9 +273,9 @@ def objectize(
 
 
 def treat_msg(raw_msg: str, at: str):
+    raw_msg = raw_msg if raw_msg.find(at) else raw_msg.replace(at, "", 1).strip()
     if not raw_msg:
         return ""
-    raw_msg = raw_msg if raw_msg.find(at) else raw_msg.replace(at, "", 1).strip()
     if raw_msg[0] == "/":
         raw_msg = raw_msg[1:]
     return (
