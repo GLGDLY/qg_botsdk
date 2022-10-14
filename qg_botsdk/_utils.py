@@ -1,6 +1,7 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from asyncio import iscoroutinefunction
+from copy import deepcopy
 from functools import wraps
 from inspect import signature
 from json import dumps, loads
@@ -241,22 +242,28 @@ class async_event_class(object_class):
 
 
 def objectize(
-    data, api=None, is_async=False
+    data, api=None, is_async=False, is_recursion=False
 ):  # if api is no None, the event is a resp class
-    try:
-        doc = dumps(data)
-    except TypeError:
-        doc = str(data)
     if isinstance(data, dict):
+        doc = None
+        if not is_recursion:
+            # create doc
+            try:
+                doc = dumps(data)
+            except TypeError:
+                doc = str(data)
+            # create a copy that doesn't reference to the original data
+            data = deepcopy(data)
+        # main func to process data
         for keys, values in data.items():
             if keys.isnumeric():
                 return data
             if isinstance(values, dict):
-                data[keys] = objectize(values)
+                data[keys] = objectize(values, is_recursion=True)
             elif isinstance(values, list):
                 for i, items in enumerate(values):
                     if isinstance(items, dict):
-                        data[keys][i] = objectize(items)
+                        data[keys][i] = objectize(items, is_recursion=True)
         data["__doc__"] = doc
         if api:
             data["api"] = api
