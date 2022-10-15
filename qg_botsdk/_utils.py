@@ -7,6 +7,7 @@ from inspect import signature
 from json import dumps, loads
 from json.decoder import JSONDecodeError
 from sys import exc_info
+from time import localtime, strftime
 from traceback import extract_tb
 from typing import BinaryIO, Callable, Optional, Union
 
@@ -111,21 +112,33 @@ def exception_processor(func):
             if logger:
                 logger.error(e.__repr__())
                 logger.debug(exception_handler(e))
+            else:
+                t = strftime("%m-%d %H:%M:%S", localtime())
+                print(f"\033[1;31m[{t}] [ERROR]\033[0m {e.__repr__()}")
+                print(f"[{t}] [DEBUG] {exception_handler(e)}")
 
     return wrap
 
 
-class object_class(type):
+class object_class(object):
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            self.__setattr__(k, v)
+
+    def __getattribute__(self, item):
+        if item == "__doc__":
+            return object.__getattribute__(self, "__repr__")()
+        return object.__getattribute__(self, item)
+
     def __repr__(self):
-        return self.__doc__
+        try:
+            return dumps(self._data)
+        except (TypeError, ValueError):
+            return str(self._data)
 
     @property
     def dict(self):
-        try:
-            return_ = loads(self.__doc__)
-        except JSONDecodeError:
-            return_ = {}
-        return return_
+        return self._data
 
 
 def _send_msg():  # Cannot direct import from _api_model.py since circular import
@@ -245,13 +258,8 @@ def objectize(
     data, api=None, is_async=False, is_recursion=False
 ):  # if api is no None, the event is a resp class
     if isinstance(data, dict):
-        doc = None
+        _data = data
         if not is_recursion:
-            # create doc
-            try:
-                doc = dumps(data)
-            except TypeError:
-                doc = str(data)
             # create a copy that doesn't reference to the original data
             data = deepcopy(data)
         # main func to process data
@@ -264,16 +272,12 @@ def objectize(
                 for i, items in enumerate(values):
                     if isinstance(items, dict):
                         data[keys][i] = objectize(items, is_recursion=True)
-        data["__doc__"] = doc
+        data["_data"] = _data
         if api:
             data["api"] = api
-            object_data = (
-                async_event_class("object", (object,), data)
-                if is_async
-                else event_class("object", (object,), data)
-            )
+            object_data = async_event_class(**data) if is_async else event_class(**data)
         else:
-            object_data = object_class("object", (object,), data)
+            object_data = object_class(**data)
         return object_data
     else:
         return data
@@ -292,6 +296,16 @@ def treat_msg(raw_msg: str, at: str):
         .replace("\xa0", " ")
         .strip()
     )
+
+
+def treat_thread(data: dict):
+    for items in ("content", "title"):
+        try:
+            data["d"]["thread_info"][items] = loads(
+                data.get("d", {}).get("thread_info", {}).get(items, "{}")
+            )
+        except JSONDecodeError:
+            pass
 
 
 @template_wrapper

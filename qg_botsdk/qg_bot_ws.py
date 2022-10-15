@@ -2,19 +2,27 @@
 # -*- coding: utf-8 -*-
 from asyncio import all_tasks, get_event_loop, sleep
 from concurrent.futures import ThreadPoolExecutor
+from copy import copy, deepcopy
 from json import dumps, loads
-from json.decoder import JSONDecodeError
 from ssl import create_default_context
 from time import sleep as t_sleep
 from typing import Any, Callable, Union
 
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 
-from ._utils import exception_handler, exception_processor, objectize, treat_msg
+from ._utils import (
+    exception_handler,
+    exception_processor,
+    object_class,
+    objectize,
+    treat_msg,
+    treat_thread,
+)
 from .api import API
 from .async_api import AsyncAPI
 from .http import Session
 from .logger import Logger
+from .model import Model
 
 
 class BotWs:
@@ -178,61 +186,72 @@ class BotWs:
     def start_task(self, func, *args):
         func(*args)
 
-    async def distribute(self, function, data):
-        data["d"]["t"] = data.get("t")
-        data["d"]["event_id"] = data.get("id")
-        if function is not None:
-            d = data.get("d", {})
+    @exception_processor
+    async def distribute(
+        self, function, data: dict = None, objectized_data: object_class = None
+    ):
+        if function:
+            if not objectized_data:
+                objectized_data = objectize(data.get("d", {}), self.api, self.is_async)
             if not self.is_async:
-                self.threads.submit(
-                    self.start_task, function, objectize(d, self.api, self.is_async)
-                )
+                self.threads.submit(self.start_task, function, objectized_data)
             else:
-                self.loop.create_task(
-                    self.async_start_task(
-                        function, objectize(d, self.api, self.is_async)
-                    )
-                )
+                self.loop.create_task(self.async_start_task(function, objectized_data))
 
-    def treat_command(self, data, command=None, regex=None):
+    @exception_processor
+    def treat_command(
+        self, objectized_data: Model.MESSAGE, treated_msg, command=None, regex=None
+    ):
         if self.msg_treat:
-            msg = data["d"]["treated_msg"]
-            data["d"]["treated_msg"] = (
-                msg[msg.find(command) + len(command) :] if command else regex.groups()
+            msg = treated_msg
+            # deepcopy treated_msg with just shallow copy others
+            # resulting that changing of treated msg will not affect other commands
+            memo = {}
+            for x in objectized_data.__dict__.keys():
+                if x != "treated_msg":
+                    memo[id(getattr(objectized_data, x))] = copy(
+                        getattr(objectized_data, x)
+                    )
+            objectized_data = deepcopy(objectized_data, memo)
+            objectized_data.treated_msg = (
+                msg[msg.find(command) + len(command) :].strip()
+                if command
+                else regex.groups()
             )
+        return objectized_data
 
-    async def check_command(self, data, items, **kwargs):
-        d = data.get("d", {})
+    @exception_processor
+    async def check_command(
+        self, objectized_data: Model.MESSAGE, treated_msg, items, **kwargs
+    ):
         if items["admin"]:
-            roles = d.get("member", {}).get("roles", [])
+            roles = objectized_data.member.roles
             if "2" not in roles and "4" not in roles:  # if not admin
                 if items["admin_error_msg"]:
                     if self.is_async:
                         self.loop.create_task(
-                            self.api.send_msg(
-                                d.get("channel_id"),
+                            objectized_data.reply(
                                 items["admin_error_msg"],
-                                message_id=d.get("id"),
                             )
                         )
                     else:
                         self.threads.submit(
-                            self.api.send_msg,
-                            d.get("channel_id"),
+                            objectized_data.reply,
                             items["admin_error_msg"],
-                            message_id=d.get("id"),
                         )
                     return True
                 return False
-        if items["treat"]:
-            self.treat_command(data, **kwargs)
-        await self.distribute(items["func"], data)
-        return items["short_circuit"]
+        if items["treat"] and self.msg_treat:
+            objectized_data = self.treat_command(objectized_data, treated_msg, **kwargs)
+        await self.distribute(items["func"], objectized_data=objectized_data)
+        return items["short_circuit"]  # True or False
 
-    async def distribute_commands(self, data):
+    @exception_processor
+    async def distribute_commands(self, data, treated_msg):
+        objectized_data = objectize(data.get("d", {}), self.api, self.is_async)
         # run preprocessors
         for func in self.preprocessors:
-            await self.distribute(func, data)
+            await self.distribute(func, objectized_data=objectized_data)
         # check commands
         msg = data.get("d", {}).get("content", "")
         # commands = [{command or regex, func, treat, at, short_circuit, admin, admin_error_msg}]
@@ -241,26 +260,39 @@ class BotWs:
             if commands:
                 for command in commands:
                     if command in msg and (not items["at"] or self.at in msg):
-                        if await self.check_command(data, items, command=command):
+                        if await self.check_command(
+                            objectized_data, treated_msg, items, command=command
+                        ):
                             return True
             else:
                 regex = items.get("regex").search(msg)
                 if regex and (not items["at"] or self.at in msg):
-                    if await self.check_command(data, items, regex=regex):
+                    if await self.check_command(
+                        objectized_data, treated_msg, items, regex=regex
+                    ):
                         return True
 
     @exception_processor
     async def data_process(self, data):
+        # initialize values
         t = data.get("t")
         d = data.get("d", {})
         if not d:
             data["d"] = d
-        if t in ("AT_MESSAGE_CREATE", "MESSAGE_CREATE"):
+        data["d"]["t"] = t
+        data["d"]["event_id"] = data.get("id")
+        # process and distribute data
+        if t in self.events:
+            await self.distribute(self.events[t], data)
+        elif t in ("AT_MESSAGE_CREATE", "MESSAGE_CREATE"):
             if self.msg_treat:
                 raw_msg = d.get("content", "").strip()
-                data["d"]["treated_msg"] = treat_msg(raw_msg, self.at)
+                treated_msg = treat_msg(raw_msg, self.at)
+                data["d"]["treated_msg"] = treated_msg
+            else:
+                treated_msg = ""
             # distribute_commands return True when short circuit
-            if not await self.distribute_commands(data):
+            if not await self.distribute_commands(data, treated_msg):
                 await self.distribute(self.on_msg_function, data)
         elif t in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE", "DIRECT_MESSAGE_DELETE"):
             if self.is_filter_self:
@@ -284,21 +316,10 @@ class BotWs:
             "FORUM_REPLY_DELETE",
             "FORUM_PUBLISH_AUDIT_RESULT",
         ):
-            for items in ("content", "title"):
-                try:
-                    data["d"]["thread_info"][items] = loads(
-                        d.get("thread_info", {}).get(items, "{}")
-                    )
-                except JSONDecodeError:
-                    pass
+            treat_thread(data)
             await self.distribute(self.on_forum_function, data)
         else:
-            if t in self.events:
-                func = self.events[t]
-                if func:
-                    await self.distribute(func, data)
-            else:
-                self.logger.warning(f"unknown event type: [{t}]")
+            self.logger.warning(f"unknown event type: [{t}]")
 
     async def main(self, msg):
         data = loads(msg)
@@ -358,7 +379,7 @@ class BotWs:
                             self.logger.info("WS链接已结束")
                             return
                         if message.type == WSMsgType.TEXT:
-                            await self.main(message.data)
+                            self.loop.create_task(self.main(message.data))
                         elif message.type in (
                             WSMsgType.CLOSE,
                             WSMsgType.CLOSED,

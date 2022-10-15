@@ -1,26 +1,19 @@
-.. raw:: html
+.. image:: https://socialify.git.ci/GLGDLY/qg_botsdk/image?description=1&font=Source%20Code%20Pro&forks=1&issues=1&language=1&logo=https%3A%2F%2Fgithub.com%2Ftencent-connect%2Fbot-docs%2Fblob%2Fmain%2Fdocs%2F.vuepress%2Fpublic%2Ffavicon-64px.png%3Fraw%3Dtrue&name=1&owner=1&pattern=Floating%20Cogs&pulls=1&stargazers=1&theme=Light
 
-    <div align="center">
+|
 
-    <p><a target="_blank" rel="noopener noreferrer" href="https://camo.githubusercontent.com/21cd09e01e0a4b0f06d5425c750a59793fed9474b30e3c4047405a513b21ee2e/68747470733a2f2f736f6369616c6966792e6769742e63692f474c47444c592f71675f626f7473646b2f696d6167653f6465736372697074696f6e3d3126666f6e743d536f75726365253230436f646525323050726f26666f726b733d31266973737565733d31266c616e67756167653d31266c6f676f3d68747470732533412532462532466769746875622e636f6d25324674656e63656e742d636f6e6e656374253246626f742d646f6373253246626c6f622532466d61696e253246646f63732532462e76756570726573732532467075626c696325324666617669636f6e2d363470782e706e6725334672617725334474727565266e616d653d31266f776e65723d31267061747465726e3d466c6f6174696e67253230436f67732670756c6c733d31267374617267617a6572733d31267468656d653d4c69676874"><img src="https://camo.githubusercontent.com/21cd09e01e0a4b0f06d5425c750a59793fed9474b30e3c4047405a513b21ee2e/68747470733a2f2f736f6369616c6966792e6769742e63692f474c47444c592f71675f626f7473646b2f696d6167653f6465736372697074696f6e3d3126666f6e743d536f75726365253230436f646525323050726f26666f726b733d31266973737565733d31266c616e67756167653d31266c6f676f3d68747470732533412532462532466769746875622e636f6d25324674656e63656e742d636f6e6e656374253246626f742d646f6373253246626c6f622532466d61696e253246646f63732532462e76756570726573732532467075626c696325324666617669636f6e2d363470782e706e6725334672617725334474727565266e616d653d31266f776e65723d31267061747465726e3d466c6f6174696e67253230436f67732670756c6c733d31267374617267617a6572733d31267468656d653d4c69676874" alt="qg_botsdk" data-canonical-src="https://socialify.git.ci/GLGDLY/qg_botsdk/image?description=1&amp;font=Source%20Code%20Pro&amp;forks=1&amp;issues=1&amp;language=1&amp;logo=https%3A%2F%2Fgithub.com%2Ftencent-connect%2Fbot-docs%2Fblob%2Fmain%2Fdocs%2F.vuepress%2Fpublic%2Ffavicon-64px.png%3Fraw%3Dtrue&amp;name=1&amp;owner=1&amp;pattern=Floating%20Cogs&amp;pulls=1&amp;stargazers=1&amp;theme=Light" style="max-width: 100%;"></a></p>
-
-    <p><a href="https://www.python.org/" rel="nofollow"><img src="https://camo.githubusercontent.com/758ca08b7c08aa13b1233dc1611176da96830cc1256dcea118acf9b09fa09887/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c616e67756167652d707974686f6e2d677265656e2e7376673f7374796c653d706c6173746963" alt="Language" data-canonical-src="https://img.shields.io/badge/language-python-green.svg?style=plastic" style="max-width: 100%;"></a>
-    <a href="https://github.com/GLGDLY/qg_botsdk/blob/master/LICENSE"><img src="https://camo.githubusercontent.com/74431d882d9d06aa6b045791be8f005eaaf43a7b6f6aabb2bfb29f0bced8a63a/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d4d49542d6f72616e67652e7376673f7374796c653d706c6173746963" alt="License" data-canonical-src="https://img.shields.io/badge/license-MIT-orange.svg?style=plastic" style="max-width: 100%;"></a>
-    <a href="https://github.com/GLGDLY/qg_botsdk/releases"><img src="https://camo.githubusercontent.com/36724ccce6d358d91703b7d529d86879f14b6cd55851a5576c4e98465bfff6f4/68747470733a2f2f696d672e736869656c64732e696f2f6769746875622f762f72656c656173652f474c47444c592f71675f626f7473646b3f7374796c653d706c6173746963" alt="Releases" data-canonical-src="https://img.shields.io/github/v/release/GLGDLY/qg_botsdk?style=plastic" style="max-width: 100%;"></a>
-    <a href="https://pypi.org/project/qg-botsdk/" rel="nofollow"><img src="https://camo.githubusercontent.com/360de62d4dbcbe21b37202ed940ae211697f2663101fd65e4185f0369d6502ae/68747470733a2f2f696d672e736869656c64732e696f2f707970692f64772f71672d626f7473646b3f7374796c653d706c617374696326636f6c6f723d626c7565" alt="Pypi" data-canonical-src="https://img.shields.io/pypi/dw/qg-botsdk?style=plastic&amp;color=blue" style="max-width: 100%;"></a>
-    <a href="https://www.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=GLGDLY/qg_botsdk&amp;utm_campaign=Badge_Grade" rel="nofollow"><img src="https://camo.githubusercontent.com/c57e2d6f30166c52115b085095308aa0bc323135797777eaaa6438c0b631da6d/68747470733a2f2f6170702e636f646163792e636f6d2f70726f6a6563742f62616467652f47726164652f6630313535343962336462613436303262653266653066356438623061386435" alt="Codacy Badge" data-canonical-src="https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5" style="max-width: 100%;"></a></p>
-    <a href="https://qg-botsdk.readthedocs.io/zh_CN/latest/" rel="nofollow"><img src="https://readthedocs.org/projects/qg-botsdk/badge/?version=latest" alt="Codacy Badge" data-canonical-src="https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5" style="max-width: 100%;"></a></p>
-
-    ✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
-
-    <p><a href="https://qg-botsdk.readthedocs.io/zh_CN/latest/" rel="nofollow">文档</a>
-    ·
-    <a href="https://github.com/GLGDLY/qg_botsdk/releases">下载</a>
-    ·
-    <a href="https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start" rel="nofollow">快速入门</a></p>
-
-    </div>
-
+.. image:: https://img.shields.io/badge/language-python-green.svg?style=plastic
+   :target: https://www.python.org/
+.. image:: https://img.shields.io/badge/license-MIT-orange.svg?style=plastic
+   :target: https://github.com/GLGDLY/qg_botsdk/blob/master/LICENSE
+.. image:: https://img.shields.io/github/v/release/GLGDLY/qg_botsdk?style=plastic
+   :target: https://github.com/GLGDLY/qg_botsdk/releases
+.. image:: https://img.shields.io/pypi/dw/qg-botsdk?style=plastic&color=blue
+   :target: https://pypi.org/project/qg-botsdk/
+.. image:: https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5
+   :target: https://www.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=github.com&utm_medium=referral&utm_content=GLGDLY/qg_botsdk&utm_campaign=Badge_Grade
+.. image:: https://readthedocs.org/projects/qg-botsdk/badge/?version=latest
+   :target: https://qg-botsdk.readthedocs.io/zh_CN/latest/
 
 亮点
 =====
@@ -38,7 +31,7 @@
 -   简单易用的plugins编写与加载，使用例子可参阅 `example_13(装饰器).py <./example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>`_
 
 下载方式
-=======
+==========
 
 -   直接下载 `最新release <https://github.com/GLGDLY/qg_botsdk/releases>`_ ，放到项目中即可
 -   pip安装（推荐）：
@@ -50,7 +43,7 @@
 **注意是qg-botsdk（中线），不是qg_botsdk（底线）**
 
 一个简单的工作流
-===============
+==================
 
 | -   注册BOT实例，录入机器人平台获取的ID（BotAppId开发者ID）和token（机器人令牌）
 | -   编写接收事件的函数->下方例子：``def deliver(data)``，并可借助model库检查数据格式（``data: Model.MESSAGE``）
@@ -74,11 +67,11 @@
         bot.start()   # 开始运行机器人
 
 已实现事件接收（已支持解析论坛事件）
-=================================
+===========================================
 
 ::
 
-    >>> from qg_botsdk.model import Model
+    from qg_botsdk.model import Model
     此库为所有事件的数据格式结构，可套用到代码以检查结构是否正确
 
 -   bind_msg
