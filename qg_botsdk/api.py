@@ -12,6 +12,10 @@ class API:
         self._api = api
         self._loop = loop
 
+    def security_setup(self, mini_id: str, mini_secret: str):
+        self._api._mini_id = mini_id
+        self._api._mini_secret = mini_secret
+
     def security_check(self, content: str) -> bool:
         """
         腾讯小程序侧内容安全检测接口，使用此接口必须填入bot_secret密钥
@@ -594,7 +598,11 @@ class API:
         self,
         channel_id: str,
         template_id: Optional[str] = None,
-        key_values: Optional[Dict[str, Union[str, List[str]]]] = None,
+        key_values: Optional[
+            Union[
+                List[Dict[str, Union[str, List[str]]]], Dict[str, Union[str, List[str]]]
+            ]
+        ] = None,
         content: Optional[str] = None,
         keyboard_id: Optional[str] = None,
         keyboard_content: Optional[dict] = None,

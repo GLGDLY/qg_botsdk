@@ -97,6 +97,17 @@ class Logger:
             formatter = Formatter(log_fmt, self._date_format)
             return formatter.format(record)
 
+    def setLevel(self, level: Union[int, str]):
+        """
+        用于设置logger的level，同logging.logger.setLevel()
+
+        `在docs.python.org查阅更多资讯
+        <https://docs.python.org/zh-cn/3.10/library/logging.html#logging.Logger.setLevel>`_
+
+        :param level: level必须是int或str
+        """
+        self._logger.setLevel(level)
+
     def set_formatter(
         self,
         debug_format: str = None,

@@ -18,6 +18,8 @@ def deliver(data: Model.MESSAGE):
 
 
 if __name__ == "__main__":
-    bot = BOT(bot_id="", bot_token="", bot_secret="", is_private=True, is_sandbox=True)
+    # 注意由于安全接口封闭，仅允许小程序调用，原来的bot_secret已被废弃，转为应在security_setup()中输入小程序ID和secret
+    bot = BOT(bot_id="", bot_token="", is_private=True, is_sandbox=True)
+    bot.security_setup(mini_id="", mini_secret="")
     bot.bind_msg(deliver, treated_data=True)
     bot.start()

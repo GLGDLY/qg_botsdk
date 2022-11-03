@@ -344,6 +344,27 @@ class Model:
         t: str
         event_id: str
 
+    class OPEN_FORUMS(event_class):
+        """
+        公域论坛事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - OPEN_FORUM_THREAD_CREATE - 当用户创建主题（帖子）时
+        - OPEN_FORUM_THREAD_UPDATE - 当用户更新主题（帖子）时
+        - OPEN_FORUM_THREAD_DELETE - 当用户删除主题（帖子）时
+
+        *剩余公域论坛事件（如回帖和回复回帖）暂未有相关推送*
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#open-forums
+        """
+
+        guild_id: str
+        channel_id: str
+        author_id: str
+        t: str
+        event_id: str
+
     class AUDIO_ACTION(event_class):
         """
         音频事件的数据模型，可从t字段判断具体事件，其中包含：
@@ -395,7 +416,15 @@ class Model:
         event_id: str
 
     class INTERACTION(event_class):
-        """ """
+        """
+        互动事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - INTERACTION_CREATE - 互动事件创建时
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#interaction
+        """
 
         class data:
             class resolved:
@@ -412,5 +441,24 @@ class Model:
         id: str
         type: int
         version: int
+        t: str
+        event_id: str
+
+    class LIVE_CHANNEL_MEMBER(event_class):
+        """
+        音视频/直播子频道成员进出事件的数据模型，可从t字段判断具体事件，其中包含：
+
+        - AUDIO_OR_LIVE_CHANNEL_MEMBER_ENTER - 当用户进入音视频/直播子频道
+        - AUDIO_OR_LIVE_CHANNEL_MEMBER_EXIT - 当用户离开音视频/直播子频道
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#live_channel_member
+        """
+
+        channel_id: str
+        channel_type: int
+        guild_id: str
+        user_id: str
         t: str
         event_id: str

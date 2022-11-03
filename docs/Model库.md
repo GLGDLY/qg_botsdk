@@ -322,6 +322,19 @@ thread_info
 
 > 原type 5：##子频道，目前为空子字段，无任何内容反馈
 
+### OPEN_FORUMS
+
+-   公域版本的FORUMS论坛事件
+
+| 结构         |        |                      |
+| ---------- | ------ | -------------------- |
+| 字段名        | 类型     | 说明                   |
+| channel_id | string | 子频道ID                |
+| guild_id   | string | 频道ID                 |
+| author_id  | string | 帖子作者的频道ID            |
+| t          | string | 事件类型字段，如GUILD_CREATE |
+| event_id   | sring  | 事件ID                 |
+
 ### AUDIO_ACTION
 
 -   只有AUDIO_START、AUDIO_FINISH拥有audio_url和text字段
@@ -366,3 +379,44 @@ thread_info
 表态对象类型如下：
 
 ![](https://tcs.teambition.net/storage/312hc77d82b9a9db29ac7ee3266c18a8bf4d?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg4NSwiaWF0IjoxNjYwNTUwMDg1LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmhjNzdkODJiOWE5ZGIyOWFjN2VlMzI2NmMxOGE4YmY0ZCJ9.VHAY7tNfajcJDqLaDXq-0-28etBOPqA4H5n27qDIGEk&download=image.png)
+
+### INTERACTION
+
+| 结构             |        |                             |
+| -------------- | ------ | --------------------------- |
+| 字段名            | 类型     | 说明                          |
+| data           | object | 互动事件的返回数据，其子类请参阅下表【结构：data】 |
+| application_id | string | APP ID                      |
+| channel_id     | string | 子频道ID                       |
+| guild_id       | string | 频道ID                        |
+| id             | string | 未知                          |
+| type           | int    | 未知                          |
+| version        | int    | 未知                          |
+| t              | string | 事件类型字段，如GUILD_CREATE        |
+| event_id       | sring  | 事件ID                        |
+
+| 结构：data  |        |                                   |
+| -------- | ------ | --------------------------------- |
+| 字段名      | 类型     | 说明                                |
+| resolved | object | 互动事件的解析返回数据，其子类请参阅下表【结构：resolved】 |
+| type     | int    | 未知                                |
+
+| 结构：resolved |        |             |
+| ----------- | ------ | ----------- |
+| 字段名         | 类型     | 说明          |
+| button_data | string | 按钮配置的返回数据   |
+| button_id   | string | 按钮配置的按钮ID   |
+| message_id  | string | 触发按钮事件的消息ID |
+| user_id     | string | 触发按钮事件的用户ID |
+
+### LIVE_CHANNEL_MEMBER
+
+| 结构           |        |                         |
+| ------------ | ------ | ----------------------- |
+| 字段名          | 类型     | 说明                      |
+| channel_id   | string | 子频道ID                   |
+| channel_type | string | 子频道类型（2-音视频子频道 5-直播子频道） |
+| guild_id     | string | 频道ID                    |
+| user_id      | string | 用户ID                    |
+| t            | string | 事件类型字段，如GUILD_CREATE    |
+| event_id     | sring  | 事件ID                    |

@@ -505,7 +505,7 @@ bot.register_repeat_event(time_function=loop_event, check_interval=60)
 
 -   用作检测文本内容有无疑似违规的内容
 
--   腾讯小程序侧内容安全检测接口，使用此接口必须填入bot_secret密钥
+-   腾讯小程序侧内容安全检测接口，使用此接口必须使用security_setup填入小程序ID和secret
 
 ```python
 # 同步sync版调用方法
@@ -518,6 +518,7 @@ def msg_function(data: MESSAGE):
 
 
 bot = BOT(bot_id='xxx', bot_token='xxx', bot_secret='xxx')
+bot.security_setup(mini_id='xxx', mini_secret='xxx')
 bot.bind_msg(on_msg_function=msg_function)
 
 
@@ -532,6 +533,7 @@ async def msg_function(data: MESSAGE):
 
 
 bot = BOT(bot_id='xxx', bot_token='xxx', bot_secret='xxx')
+bot.security_setup(mini_id='xxx', mini_secret='xxx')
 bot.bind_msg(on_msg_function=msg_function)
 
 

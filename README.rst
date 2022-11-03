@@ -26,7 +26,7 @@
 
 -   保留官方http API中Json数据的结构字段，带你学习官方结构，日后可自行开发适合自己的SDK
 
--   迅速的更新速度，跟上最新潮流（v2.3.6已更新发送markdown消息能力，使用例子可参阅 `example_12(markdown).py <./example/example_12(markdown).py>`_
+-   迅速的更新速度，跟上最新潮流（v2.5.5已更新音视频/直播子频道成员进出事件、公域论坛事件）
 
 -   简单易用的plugins编写与加载，使用例子可参阅 `example_13(装饰器).py <./example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>`_
 
@@ -167,7 +167,6 @@
 
 -   文档：
      * `readthedocs <https://qg-botsdk.readthedocs.io/zh_CN/latest/>`_
-     * `thoughts <https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51>`_
 -   官方注册机器人：https://q.qq.com/#/
 -   官方API文档：https://bot.q.qq.com/wiki/develop/api/
 -   SDK QQ交流群：https://jq.qq.com/?_wv=1027&k=3NnWvGpz

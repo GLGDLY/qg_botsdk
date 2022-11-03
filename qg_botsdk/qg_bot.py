@@ -46,7 +46,7 @@ class BOT:
 
         :param bot_id: 机器人平台后台BotAppID（开发者ID）项，必填
         :param bot_token: 机器人平台后台机器人令牌项，必填
-        :param bot_secret: 机器人平台后台机器人密钥项，如需要使用安全检测功能需填写此项
+        :param bot_secret: 机器人平台后台机器人密钥项（已废弃）
         :param is_private: 机器人是否为私域机器人，默认False
         :param is_sandbox: 是否开启沙箱环境，默认False
         :param no_permission_warning: 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启
@@ -60,7 +60,10 @@ class BOT:
         self.logger = Logger(bot_id)
         self.bot_id = bot_id
         self.bot_token = bot_token
-        self.bot_secret = bot_secret
+        if bot_secret:
+            raise DeprecationWarning(
+                "bot_secret已被废弃，如需使用安全接口，请通过security_setup()绑定小程序ID和secret"
+            )
         self.is_private = is_private
         self.bot_url = (
             r"https://sandbox.api.sgroup.qq.com"
@@ -87,7 +90,9 @@ class BOT:
         self._on_interaction_function = None
         self._on_audit_function = None
         self._on_forum_function = None
+        self._on_open_forum_function = None
         self._on_audio_function = None
+        self._on_live_channel_member_function = None
         self._repeat_function = None
         self._on_start_function = None
         self.is_filter_self = True
@@ -105,8 +110,6 @@ class BOT:
         self.is_async = is_async
         self.api: Union[AsyncAPI, API] = AsyncAPI(
             self.bot_url,
-            bot_id,
-            bot_secret,
             self._session,
             self.logger,
             self._check_warning,
@@ -444,6 +447,28 @@ class BOT:
             return wraps
         wraps(on_forum_function)
 
+    def bind_open_forum(
+        self, on_open_forum_function: Callable[[Model.OPEN_FORUMS], Any] = None
+    ):
+        """
+        用作绑定接收公域论坛事件的函数
+
+        .. note::
+            当前仅可以接收FORUM_THREAD_CREATE、FORUM_THREAD_UPDATE、FORUM_THREAD_DELETE三个事件
+
+        :param on_open_forum_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        """
+
+        def wraps(func):
+            check_func(func, Model.OPEN_FORUMS, is_async=self.is_async)
+            self._on_open_forum_function = func
+            self._intents = self._intents | 1 << 18
+            self.logger.info("论坛事件订阅成功")
+
+        if not on_open_forum_function:
+            return wraps
+        wraps(on_open_forum_function)
+
     def bind_audio(self, on_audio_function: Callable[[Model.AUDIO_ACTION], Any] = None):
         """
         用作绑定接收论坛事件的函数
@@ -462,6 +487,28 @@ class BOT:
         if not on_audio_function:
             return wraps
         wraps(on_audio_function)
+
+    def bind_live_channel_member(
+        self,
+        on_live_channel_member_function: Callable[
+            [Model.LIVE_CHANNEL_MEMBER], Any
+        ] = None,
+    ):
+        """
+        用作绑定接收音视频/直播子频道成员进出事件的函数
+
+        :param on_live_channel_member_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        """
+
+        def wraps(func):
+            check_func(func, Model.LIVE_CHANNEL_MEMBER, is_async=self.is_async)
+            self._on_live_channel_member_function = func
+            self._intents = self._intents | 1 << 19
+            self.logger.info("音视频/直播子频道成员进出事件订阅成功")
+
+        if not on_live_channel_member_function:
+            return wraps
+        wraps(on_live_channel_member_function)
 
     def register_repeat_event(
         self,
@@ -500,6 +547,15 @@ class BOT:
         if not on_start_function:
             return wraps
         wraps(on_start_function)
+
+    def security_setup(self, mini_id: str, mini_secret: str):
+        """
+        用于注册小程序ID和secret以使用腾讯内容安全接口
+
+        :param mini_id: 小程序ID
+        :param mini_secret: 小程序secret
+        """
+        self.api.security_setup(mini_id, mini_secret)
 
     def _check_warning(self, name: str):
         if not self.is_private and self.no_permission_warning:
@@ -552,7 +608,9 @@ class BOT:
                     self._on_interaction_function,
                     self._on_audit_function,
                     self._on_forum_function,
+                    self._on_open_forum_function,
                     self._on_audio_function,
+                    self._on_live_channel_member_function,
                     self._intents,
                     self.msg_treat,
                     self.dm_treat,

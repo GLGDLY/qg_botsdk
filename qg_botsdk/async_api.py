@@ -22,27 +22,37 @@ from .utils import convert_color
 
 
 class AsyncAPI:
-    def __init__(self, bot_url, bot_id, bot_secret, session, logger, check_warning):
+    def __init__(self, bot_url, session, logger, check_warning):
         self.bot_url = bot_url
-        self.bot_id = bot_id
-        self.bot_secret = bot_secret
+        self._mini_id = None
+        self._mini_secret = None
         self._session = session
         self.logger = logger
         self.check_warning = check_warning
         self.security_code = ""
         self.code_expire = 0
 
+    def security_setup(self, mini_id: str, mini_secret: str):
+        self._mini_id = mini_id
+        self._mini_secret = mini_secret
+
     @security_wrapper
     async def __security_check_code(self):
-        if self.bot_secret is None:
-            self.logger.error("无法调用内容安全检测接口（备注：没有填入机器人密钥）")
+        if self._mini_secret is None:
+            self.logger.error("无法调用内容安全检测接口（备注：没有填入小程序密钥）")
             return None
         return_ = await self._session.get(
             f"https://api.q.qq.com/api/getToken?grant_type=client_credential&"
-            f"appid={self.bot_id}&secret={self.bot_secret}"
+            f"appid={self._mini_id}&secret={self._mini_secret}"
         )
-        code = await return_.json()
-        self.security_code = code["access_token"]
+        resp = await return_.json()
+        code = resp.get("access_token")
+        if not code:
+            self.logger.error(
+                f"无法调用内容安全检测接口（code: {return_.status}, content: {await return_.text()}）"
+            )
+            return None
+        self.security_code = code
         self.code_expire = time() + 7000
         return self.security_code
 
@@ -62,7 +72,7 @@ class AsyncAPI:
             headers=security_header,
         )
         check = await return_.json()
-        self.logger.debug(check)
+        self.logger.debug(f"[安全接口] {check}")
         if check.get("errCode") in (-1800110107, -1800110108, -1800110109):
             await self.__security_check_code()
             return_ = await self._session.post(
@@ -71,7 +81,7 @@ class AsyncAPI:
                 headers=security_header,
             )
             check = await return_.json()
-            self.logger.debug(check)
+            self.logger.debug(f"[安全接口] {check}")
         if check["errCode"] == 0:
             return True
         return False
@@ -932,7 +942,11 @@ class AsyncAPI:
         self,
         channel_id: str,
         template_id: Optional[str] = None,
-        key_values: Optional[Dict[str, Union[str, List[str]]]] = None,
+        key_values: Optional[
+            Union[
+                List[Dict[str, Union[str, List[str]]]], Dict[str, Union[str, List[str]]]
+            ]
+        ] = None,
         content: Optional[str] = None,
         keyboard_id: Optional[str] = None,
         keyboard_content: Optional[dict] = None,
@@ -974,11 +988,27 @@ class AsyncAPI:
         else:
             if not template_id or not key_values:
                 return sdk_error_temp("注意content与template_id必须存在任意一个，否则消息无法下发！")
-            params = []
-            for k, v in key_values.items():
-                if isinstance(v, str):
-                    v = [v]
-                params.append({"key": k, "values": v})
+            if isinstance(key_values, dict):
+                params = []
+                for k, v in key_values.items():
+                    if isinstance(v, list) or isinstance(v, tuple):
+                        v = list(v)
+                    else:
+                        v = [str(v)]
+                    params.append({"key": k, "values": v})
+            else:
+                try:
+                    params = list(key_values)
+                    for items in params:
+                        for k, v in items.items():
+                            if isinstance(v, list) or isinstance(v, tuple):
+                                items[k] = [str(v[0])]
+                            else:
+                                items[k] = [str(v)]
+                except Exception:
+                    return sdk_error_temp(
+                        "发送markdown消息的key_values仅可以是dict或list[dict]类型！"
+                    )
             json_ = {
                 "markdown": {"custom_template_id": template_id, "params": params},
                 "msg_id": message_id,
