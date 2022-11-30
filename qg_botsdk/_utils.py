@@ -26,6 +26,7 @@ retry_err_code = (
     11263,
     11242,
     11252,
+    130000,
     306003,
     306005,
     306006,
@@ -256,7 +257,7 @@ class async_event_class(object_class):
 
 def objectize(
     data, api=None, is_async=False, is_recursion=False
-):  # if api is no None, the event is a resp class
+):  # if api is not None, the event is a resp class
     if isinstance(data, dict):
         _data = data
         if not is_recursion:

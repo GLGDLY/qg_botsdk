@@ -1,6 +1,8 @@
 from re import compile as re_compile
 from typing import List, Optional, Pattern, Union
 
+from .model import Model
+
 
 class Plugins:
     _commands = []
@@ -17,7 +19,7 @@ class Plugins:
         注册plugins预处理器，将在检查所有commands前执行
         """
 
-        def wrap(func):
+        def wrap(func: Model.MESSAGE):
             cls._preprocessors.append(func)
             return func
 
@@ -31,6 +33,7 @@ class Plugins:
         is_treat: bool = True,
         is_require_at: bool = False,
         is_short_circuit: bool = True,
+        is_custom_short_circuit: bool = False,
         is_require_admin: bool = False,
         admin_error_msg: Optional[str] = None,
     ):
@@ -42,11 +45,16 @@ class Plugins:
         :param is_treat: 是否在treated_msg中同时处理指令，如正则将返回.groups()，默认是
         :param is_require_at: 是否要求必须艾特机器人才能触发指令，默认否
         :param is_short_circuit: 如果触发指令成功是否短路不运行后续指令（将根据注册顺序排序指令的短路机制），默认是
+        :param is_custom_short_circuit: 如果触发指令成功而返回True则不运行后续指令，与is_short_circuit不能同时存在，默认否
         :param is_require_admin: 是否要求频道主或或管理才可触发指令，默认否
         :param admin_error_msg: 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
         """
 
-        def wrap(func):
+        def wrap(func: Model.MESSAGE):
+            if is_short_circuit and is_custom_short_circuit:
+                raise AttributeError(
+                    "注意is_short_circuit与is_custom_short_circuit存在冲突，不可同时为True"
+                )
             if command:
                 if isinstance(command, str):
                     cls._commands.append(
@@ -56,6 +64,7 @@ class Plugins:
                             "treat": is_treat,
                             "at": is_require_at,
                             "short_circuit": is_short_circuit,
+                            "is_custom_short_circuit": is_custom_short_circuit,
                             "admin": is_require_admin,
                             "admin_error_msg": admin_error_msg,
                         }
@@ -68,6 +77,7 @@ class Plugins:
                             "treat": is_treat,
                             "at": is_require_at,
                             "short_circuit": is_short_circuit,
+                            "is_custom_short_circuit": is_custom_short_circuit,
                             "admin": is_require_admin,
                             "admin_error_msg": admin_error_msg,
                         }
@@ -83,6 +93,7 @@ class Plugins:
                             "treat": is_treat,
                             "at": is_require_at,
                             "short_circuit": is_short_circuit,
+                            "is_custom_short_circuit": is_custom_short_circuit,
                             "admin": is_require_admin,
                             "admin_error_msg": admin_error_msg,
                         }
@@ -95,6 +106,7 @@ class Plugins:
                             "treat": is_treat,
                             "at": is_require_at,
                             "short_circuit": is_short_circuit,
+                            "is_custom_short_circuit": is_custom_short_circuit,
                             "admin": is_require_admin,
                             "admin_error_msg": admin_error_msg,
                         }

@@ -11,6 +11,7 @@ from aiohttp import (
     payload,
 )
 
+from ._queue import Queue
 from ._utils import exception_handler, general_header, retry_err_code
 
 try:
@@ -74,10 +75,11 @@ class FormData_(FormData):
 
 
 class Session:
-    def __init__(self, loop, is_retry, is_log_error, logger, **kwargs):
+    def __init__(self, loop, is_retry, is_log_error, logger, max_concurrency, **kwargs):
         self._is_retry = is_retry
         self._is_log_error = is_log_error
         self._logger = logger
+        self._queue = Queue(max_concurrency)
         self._kwargs = kwargs
         if kwargs.get("connector") is None:
             kwargs["connector"] = TCPConnector(
@@ -107,7 +109,7 @@ class Session:
 
             def wrap(*args, **kwargs):
                 try:
-                    return self.request(item, *args, **kwargs)
+                    return self._queue.create_task(self._request, item, *args, **kwargs)
                 except Exception as e:
                     self._logger.error(
                         f"HTTP API(url:{args[0]})调用错误，详情：{exception_handler(e)}"
@@ -115,7 +117,7 @@ class Session:
 
             return wrap
 
-    async def request(self, method, url, retry=False, **kwargs):
+    async def _request(self, method, url, retry=False, **kwargs):
         await self._check_session()
         kwargs["headers"] = kwargs.get("headers", general_header)
         resp = await self._session.request(method, url, timeout=self._timeout, **kwargs)

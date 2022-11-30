@@ -1,7 +1,7 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from asyncio import Lock as ALock
-from asyncio import get_event_loop, sleep
+from asyncio import get_event_loop, new_event_loop, sleep
 from os import getpid
 from os.path import exists
 from re import Pattern
@@ -40,6 +40,7 @@ class BOT:
         shard_no: int = 0,
         total_shard: int = 1,
         max_workers: int = 32,
+        api_max_concurrency: int = 0,
     ):
         """
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
@@ -56,6 +57,7 @@ class BOT:
         :param shard_no: 当前分片数，如不熟悉相关配置请不要轻易改动此项，默认0
         :param total_shard: 最大分片数，如不熟悉相关配置请不要轻易改动此项，默认1
         :param max_workers: 在同步模式下，允许同时运行的最大线程数，默认32
+        :param api_max_concurrency: API允许的最大并发数，超过此并发数将进入队列，如此数值<=0代表不开启任何队列
         """
         self.logger = Logger(bot_id)
         self.bot_id = bot_id
@@ -75,7 +77,10 @@ class BOT:
                 "你还没有输入 bot_id 和 bot_token，无法连接使用机器人\n如尚未有相关票据，"
                 "请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情"
             )
-        self._loop = get_event_loop()
+        try:
+            self._loop = get_event_loop()
+        except RuntimeError:
+            self._loop = new_event_loop()
         self._intents = 0
         self._shard_no = shard_no
         self._total_shard = total_shard
@@ -101,7 +106,12 @@ class BOT:
         self.auth = f"Bot {bot_id}.{bot_token}"
         self.bot_headers = {"Authorization": self.auth}
         self._session = Session(
-            self._loop, is_retry, is_log_error, self.logger, headers=self.bot_headers
+            self._loop,
+            is_retry,
+            is_log_error,
+            self.logger,
+            api_max_concurrency,
+            headers=self.bot_headers,
         )
         self.msg_treat = True
         self.dm_treat = False
@@ -190,7 +200,7 @@ class BOT:
         注册预处理器，将在检查所有commands前执行
         """
 
-        def wrap(func):
+        def wrap(func: Model.MESSAGE):
             Plugins.before_command()(func)
             return func
 
@@ -203,6 +213,7 @@ class BOT:
         is_treat: bool = True,
         is_require_at: bool = False,
         is_short_circuit: bool = True,
+        is_custom_short_circuit: bool = False,
         is_require_admin: bool = False,
         admin_error_msg: Optional[str] = None,
     ):
@@ -214,17 +225,19 @@ class BOT:
         :param is_treat: 是否在treated_msg中同时处理指令，如正则将返回.groups()，默认是
         :param is_require_at: 是否要求必须艾特机器人才能触发指令，默认否
         :param is_short_circuit: 如果触发指令成功是否短路不运行后续指令（将根据注册顺序排序指令的短路机制），默认是
+        :param is_custom_short_circuit: 如果触发指令成功而返回True则不运行后续指令，与is_short_circuit不能同时存在，默认否
         :param is_require_admin: 是否要求频道主或或管理才可触发指令，默认否
         :param admin_error_msg: 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
         """
 
-        def wrap(func):
+        def wrap(func: Model.MESSAGE):
             Plugins.on_command(
                 command,
                 regex,
                 is_treat,
                 is_require_at,
                 is_short_circuit,
+                is_custom_short_circuit,
                 is_require_admin,
                 admin_error_msg,
             )(func)

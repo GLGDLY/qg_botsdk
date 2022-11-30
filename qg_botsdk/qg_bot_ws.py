@@ -94,7 +94,6 @@ class BotWs:
         self.session_id = 0
         self.is_first_run = False
         self.heartbeat = None
-        self.op9_flag = False
         self.is_async = is_async
         self.events = {
             "GUILD_CREATE": on_guild_event_function,
@@ -173,10 +172,8 @@ class BotWs:
                 await self.ws.send_str(dumps(heart_json))
 
     def start_heartbeat(self):
-        tasks = [task.get_name() for task in all_tasks()]
-        if "heartbeat_task" not in tasks:
+        if self.heartbeat is None or self.heartbeat not in all_tasks():
             self.heartbeat = self.loop.create_task(self.heart())
-            self.heartbeat.set_name("heartbeat_task")
 
     async def get_robot_info(self, retry=False):
         robot_info = await self.session.get(r"https://api.sgroup.qq.com/users/@me")
@@ -205,9 +202,11 @@ class BotWs:
             if not objectized_data:
                 objectized_data = objectize(data.get("d", {}), self.api, self.is_async)
             if not self.is_async:
-                self.threads.submit(self.start_task, function, objectized_data)
+                return self.threads.submit(self.start_task, function, objectized_data)
             else:
-                self.loop.create_task(self.async_start_task(function, objectized_data))
+                return self.loop.create_task(
+                    self.async_start_task(function, objectized_data)
+                )
 
     @exception_processor
     def treat_command(
@@ -254,8 +253,13 @@ class BotWs:
                 return False
         if items["treat"] and self.msg_treat:
             objectized_data = self.treat_command(objectized_data, treated_msg, **kwargs)
-        await self.distribute(items["func"], objectized_data=objectized_data)
-        return items["short_circuit"]  # True or False
+        task = await self.distribute(items["func"], objectized_data=objectized_data)
+        if not items["is_custom_short_circuit"]:
+            return items["short_circuit"]  # True or False
+        else:
+            while not task.done():
+                await sleep(0.5)
+            return task.result()  # True or False
 
     @exception_processor
     async def distribute_commands(self, data, treated_msg):
@@ -340,16 +344,12 @@ class BotWs:
         if op == 11:
             self.logger.debug("心跳发送成功")
         elif op == 9:
-            if not self.op9_flag:
-                self.op9_flag = True
-                if not self.is_reconnect:
-                    await self.send_connect()
-                else:
-                    await self.send_reconnect()
-                return
+            self.logger.error("[错误] 参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）")
+            await sleep(3)
+            if not self.is_reconnect:
+                await self.send_connect()
             else:
-                self.logger.error("[错误] 参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）")
-                exit()
+                await self.send_reconnect()
         elif op == 10:
             self.heartbeat_time = (
                 int(data.get("d", {}).get("heartbeat_interval", 40)) * 0.001
