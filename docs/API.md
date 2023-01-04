@@ -61,7 +61,7 @@ except AttributeError:
 
 而当需要使用一个API，但不清楚其会返回数据内容时，SDK也提供了基于model库的数据返回类型提示，方便大家了解具体数据结构，例子如下：
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api0.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api0.png)
 
 另外，大家也可以使用python的魔法函数`__doc__`直接获取实际的字段数据，此魔法函数返回的会是一个json格式的string文本，如下：
 
@@ -232,7 +232,7 @@ bot.api.get_channels_info()
 
 -   e.g. <https://github.com/GLGDLY/qg_botsdk/blob/master/example/example_6(%E5%88%9B%E5%BB%BA%E5%AD%90%E9%A2%91%E9%81%93).py>
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.create_channels()
@@ -269,7 +269,7 @@ bot.api.create_channels()
 
 -   修改成功后，会触发**子频道更新事件**
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.patch_channels()
@@ -304,7 +304,7 @@ bot.api.patch_channels()
 
 -   **子频道的删除是无法撤回的，一旦删除，将无法恢复**
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.delete_channels()
@@ -358,7 +358,7 @@ bot.api.get_guild_members()
 
 -   已解决分页获取问题，将直接获取全部数据
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.get_role_members()
@@ -412,7 +412,7 @@ bot.api.get_member_info()
 
 -   无法移除身份为管理员的成员
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.delete_member()
@@ -827,7 +827,7 @@ bot.api.send_msg()
 
 -   发送限制与普通消息相同
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api2.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api2.png)
 
 ```python
 bot.api.send_embed()
@@ -861,7 +861,7 @@ bot.api.send_embed()
 
 -   发送限制与普通消息相同
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api3.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api3.png)
 
 ```python
 bot.api.send_ark_23()
@@ -895,7 +895,7 @@ bot.api.send_ark_23()
 
 -   发送限制与普通消息相同
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api4.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api4.png)
 
 ```python
 bot.api.send_ark_24()
@@ -932,7 +932,7 @@ bot.api.send_ark_24()
 
 -   发送限制与普通消息相同
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api5.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api5.png)
 
 ```python
 bot.api.send_ark_37()
@@ -971,7 +971,7 @@ bot.api.send_ark_37()
 
 -   具体例子请参考[此处](https://github.com/GLGDLY/qg_botsdk/blob/master/example/example_12(markdown).py)
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api6.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api6.png)
 
 ```python
 bot.api.send_markdown()
@@ -1006,7 +1006,7 @@ bot.api.send_markdown()
 
 -   机器人需为管理员，可撤回普通成员的消息
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.delete_msg()
@@ -1034,7 +1034,7 @@ bot.api.delete_msg()
 
 -   内嵌格式仅在普通消息中会生效，在 `Ark` 和 `Embed` 中不生效，而会原样输出
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api7.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api7.png)
 
 ## 消息频率API
 
@@ -1062,7 +1062,7 @@ bot.api.get_guild_setting()
 
 `data`字段数据内容简述：
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api8.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api8.png)
 
 ## 私信API
 
@@ -1136,7 +1136,7 @@ bot.api.send_dm()
 
 -   用于撤回私信频道 `guild_id` 中 `message_id` 指定的私信消息。只能用于撤回机器人自己发送的私信
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.delete_dm_msg()
@@ -1554,7 +1554,7 @@ bot.api.delete_schedule()
 
 -   如使用emoji，可直接按照python输入emoji的方法（unicode转换方式）输入到文本中进行发送，如🥇的unicode为`U+1F947`，转换后为`\U0001F947`，具体unicode列表可参考<https://unicode.org/emoji/charts/full-emoji-list.html>
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api9.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api9.png)
 
 -   一个具体的简单实例如下：
 
@@ -1753,7 +1753,7 @@ bot.api.bot_off_mic()
 
 -   已解决分页获取问题，将直接获取全部数据
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.get_threads()
@@ -1804,7 +1804,7 @@ thread_info
 
 -   获取子频道下的帖子详情
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.get_thread_info()
@@ -1856,7 +1856,7 @@ thread_info
 
 -   创建帖子，创建成功后，返回创建成功的任务ID
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.create_thread()
@@ -1893,7 +1893,7 @@ bot.api.create_thread()
 
 -   删除指定子频道下的某个帖子
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api1.png)
 
 ```python
 bot.api.delete_thread()
@@ -1956,7 +1956,7 @@ bot.api.get_guild_permissions()
 
 -   每天只能在一个频道内发 `3` 条（默认值）频道权限授权链接
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api10.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/api10.png)
 
 ```python
 bot.api.create_permission_demand()

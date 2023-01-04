@@ -18,15 +18,15 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 
 当使用数据子项时，你使用的IDE理论上将会有相应的子数据结构提示：
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/model0.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/model0.png)
 
 而当输入错误的数据结构（正确的字段名为`channel_id`，而非`channelid`）时，你使用的IDE理论上将会提示错误：
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/model1.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/model1.png)
 
 需要注意的是，所有事件都会返回一个`event_id`的值，但只有以下事件的event_id可以用作发送被动消息的消息ID：
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/model2.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/model2.png)
 
 ## 数据结构
 
@@ -378,7 +378,7 @@ thread_info
 
 表态对象类型如下：
 
-![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/model3.png)
+![](https://github.com/GLGDLY/qg_botsdk/blob/master/image/model3.png)
 
 ### INTERACTION
 
