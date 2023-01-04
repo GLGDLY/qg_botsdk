@@ -9,7 +9,7 @@ from threading import Lock as TLock
 from time import sleep as t_sleep
 from typing import Any, Callable, List, Optional, Union
 
-from . import _api_model
+from ._api_model import robot_model
 from ._utils import check_func, exception_processor
 from .api import API
 from .async_api import AsyncAPI
@@ -134,7 +134,7 @@ class BOT:
         return f"<qg_botsdk.BOT object [id: {self.bot_id}, token: {self.bot_token}]>"
 
     @property
-    def robot(self) -> _api_model.robot():
+    def robot(self) -> robot_model():
         return self._bot_class.robot
 
     @property

@@ -12,7 +12,7 @@ class Queue:
     ):
         if self._MAX_RUNNING_SLOTS > 0:
             while not len(self._running_queue) < self._MAX_RUNNING_SLOTS:
-                await sleep(1)
+                await sleep(0.5)
         self._running_queue.append(0)
         result = await task(*args, **kwargs)
         self._running_queue.pop()

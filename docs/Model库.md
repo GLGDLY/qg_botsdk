@@ -18,15 +18,15 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 
 当使用数据子项时，你使用的IDE理论上将会有相应的子数据结构提示：
 
-![](https://tcs.teambition.net/storage/312h04079b9ba97c71d1ebf09cbb23a21251?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg4NSwiaWF0IjoxNjYwNTUwMDg1LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmgwNDA3OWI5YmE5N2M3MWQxZWJmMDljYmIyM2EyMTI1MSJ9.YwCmYQjsqIz29g-TwLcIWoHqNrqpjwKE3q-SMNg195M&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/model0.png)
 
 而当输入错误的数据结构（正确的字段名为`channel_id`，而非`channelid`）时，你使用的IDE理论上将会提示错误：
 
-![](https://tcs.teambition.net/storage/312h5bb110f07c23159dd1a92a10fdb5f305?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg4NSwiaWF0IjoxNjYwNTUwMDg1LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg1YmIxMTBmMDdjMjMxNTlkZDFhOTJhMTBmZGI1ZjMwNSJ9.IrLs5QF_UfURUYMarQ5PrHFHpl0QCJZv1lrwUqNfqv4&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/model1.png)
 
 需要注意的是，所有事件都会返回一个`event_id`的值，但只有以下事件的event_id可以用作发送被动消息的消息ID：
 
-![](https://tcs.teambition.net/storage/312h85dc7551e587b7a8b9015e2c71b604ed?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg4NSwiaWF0IjoxNjYwNTUwMDg1LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg4NWRjNzU1MWU1ODdiN2E4YjkwMTVlMmM3MWI2MDRlZCJ9.qdWoNdJHYVXEEk1-CCXBncziSHnVjikrODe2y9J-e9c&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/model2.png)
 
 ## 数据结构
 
@@ -378,7 +378,7 @@ thread_info
 
 表态对象类型如下：
 
-![](https://tcs.teambition.net/storage/312hc77d82b9a9db29ac7ee3266c18a8bf4d?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg4NSwiaWF0IjoxNjYwNTUwMDg1LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmhjNzdkODJiOWE5ZGIyOWFjN2VlMzI2NmMxOGE4YmY0ZCJ9.VHAY7tNfajcJDqLaDXq-0-28etBOPqA4H5n27qDIGEk&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/model3.png)
 
 ### INTERACTION
 

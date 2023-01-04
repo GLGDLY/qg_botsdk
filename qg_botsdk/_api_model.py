@@ -146,7 +146,7 @@ class _EmptyReturnTemplate:
     message: str
 
 
-def robot():
+def robot_model():
     class Robot:
         id: str
         username: str

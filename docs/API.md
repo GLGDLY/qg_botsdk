@@ -61,7 +61,7 @@ except AttributeError:
 
 而当需要使用一个API，但不清楚其会返回数据内容时，SDK也提供了基于model库的数据返回类型提示，方便大家了解具体数据结构，例子如下：
 
-![](https://tcs.teambition.net/storage/312h7358b428dad001d05b076043fe75af0d?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MzU4YjQyOGRhZDAwMWQwNWIwNzYwNDNmZTc1YWYwZCJ9.S2JHJ9UjBMUxeA1ELw4G_4OpJzJu7yzCjbD_04uQI8k&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api0.png)
 
 另外，大家也可以使用python的魔法函数`__doc__`直接获取实际的字段数据，此魔法函数返回的会是一个json格式的string文本，如下：
 
@@ -232,7 +232,7 @@ bot.api.get_channels_info()
 
 -   e.g. <https://github.com/GLGDLY/qg_botsdk/blob/master/example/example_6(%E5%88%9B%E5%BB%BA%E5%AD%90%E9%A2%91%E9%81%93).py>
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.create_channels()
@@ -269,7 +269,7 @@ bot.api.create_channels()
 
 -   修改成功后，会触发**子频道更新事件**
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.patch_channels()
@@ -304,7 +304,7 @@ bot.api.patch_channels()
 
 -   **子频道的删除是无法撤回的，一旦删除，将无法恢复**
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.delete_channels()
@@ -358,7 +358,7 @@ bot.api.get_guild_members()
 
 -   已解决分页获取问题，将直接获取全部数据
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.get_role_members()
@@ -412,7 +412,7 @@ bot.api.get_member_info()
 
 -   无法移除身份为管理员的成员
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.delete_member()
@@ -827,7 +827,7 @@ bot.api.send_msg()
 
 -   发送限制与普通消息相同
 
-![](https://tcs.teambition.net/storage/312hd7b6936119f0bfa6419e7b7a994cdb7a?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmhkN2I2OTM2MTE5ZjBiZmE2NDE5ZTdiN2E5OTRjZGI3YSJ9.gJIy1dcf6hiwzJWYhiAiG57CJmkyszITy6ndol9MRg4&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api2.png)
 
 ```python
 bot.api.send_embed()
@@ -861,7 +861,7 @@ bot.api.send_embed()
 
 -   发送限制与普通消息相同
 
-![](https://tcs.teambition.net/storage/312hed45ac6f7dc0b22b6262a8af7951eadc?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmhlZDQ1YWM2ZjdkYzBiMjJiNjI2MmE4YWY3OTUxZWFkYyJ9.RAA0BC_04eZFWJnG2TQ2X_5VQCXetMz0GlG2QcDVCEE&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api3.png)
 
 ```python
 bot.api.send_ark_23()
@@ -895,7 +895,7 @@ bot.api.send_ark_23()
 
 -   发送限制与普通消息相同
 
-![](https://tcs.teambition.net/storage/312h50d4f06fb28cbee4e059888d6afa5393?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg1MGQ0ZjA2ZmIyOGNiZWU0ZTA1OTg4OGQ2YWZhNTM5MyJ9.cP419s5xOvY_1AJntcKipXfT682wHY-cxpI2E5vOxqw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api4.png)
 
 ```python
 bot.api.send_ark_24()
@@ -932,7 +932,7 @@ bot.api.send_ark_24()
 
 -   发送限制与普通消息相同
 
-![](https://tcs.teambition.net/storage/312h65f813e35b5f1fd1923a2841e2a11d02?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg2NWY4MTNlMzViNWYxZmQxOTIzYTI4NDFlMmExMWQwMiJ9.C50jVdxXymK7B0bvRjpKM5P1izZFaDqZr0szEIWw7Ew&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api5.png)
 
 ```python
 bot.api.send_ark_37()
@@ -971,7 +971,7 @@ bot.api.send_ark_37()
 
 -   具体例子请参考[此处](https://github.com/GLGDLY/qg_botsdk/blob/master/example/example_12(markdown).py)
 
-![](https://tcs.teambition.net/storage/312k9d66edb29c624a84f3f4298acb19f67d?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTI2MjY3MywiaWF0IjoxNjYwNjU3ODczLCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMms5ZDY2ZWRiMjljNjI0YTg0ZjNmNDI5OGFjYjE5ZjY3ZCJ9.IxsxcnTwfyaEWku-pXW5IPWBGMxavmvYiA8pu05t70w)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api6.png)
 
 ```python
 bot.api.send_markdown()
@@ -1006,7 +1006,7 @@ bot.api.send_markdown()
 
 -   机器人需为管理员，可撤回普通成员的消息
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.delete_msg()
@@ -1034,7 +1034,7 @@ bot.api.delete_msg()
 
 -   内嵌格式仅在普通消息中会生效，在 `Ark` 和 `Embed` 中不生效，而会原样输出
 
-![](https://tcs.teambition.net/storage/312h05bff598c89b29309c6bedaa9d57a41f?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmgwNWJmZjU5OGM4OWIyOTMwOWM2YmVkYWE5ZDU3YTQxZiJ9.xlPBqJyblvRBQz4zb2L6o_My099U7a4Tnoag6aM8gAE&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api7.png)
 
 ## 消息频率API
 
@@ -1062,7 +1062,7 @@ bot.api.get_guild_setting()
 
 `data`字段数据内容简述：
 
-![](https://tcs.teambition.net/storage/312hd561ea9debba316d5edb3375a3597210?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmhkNTYxZWE5ZGViYmEzMTZkNWVkYjMzNzVhMzU5NzIxMCJ9.I2Woexi6rl5GthggaCpcA3_k8jfemxATaN8s-iP-bu8&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api8.png)
 
 ## 私信API
 
@@ -1136,7 +1136,7 @@ bot.api.send_dm()
 
 -   用于撤回私信频道 `guild_id` 中 `message_id` 指定的私信消息。只能用于撤回机器人自己发送的私信
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.delete_dm_msg()
@@ -1554,7 +1554,7 @@ bot.api.delete_schedule()
 
 -   如使用emoji，可直接按照python输入emoji的方法（unicode转换方式）输入到文本中进行发送，如🥇的unicode为`U+1F947`，转换后为`\U0001F947`，具体unicode列表可参考<https://unicode.org/emoji/charts/full-emoji-list.html>
 
-![](https://tcs.teambition.net/storage/312hf9143b73bd38960e92c4e2e485ad22e5?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmhmOTE0M2I3M2JkMzg5NjBlOTJjNGUyZTQ4NWFkMjJlNSJ9.hj_LLAQ7Y0tPz5kIyuqxNGlaTIaFc4xhm2NYw_wjrso&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api9.png)
 
 -   一个具体的简单实例如下：
 
@@ -1753,7 +1753,7 @@ bot.api.bot_off_mic()
 
 -   已解决分页获取问题，将直接获取全部数据
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.get_threads()
@@ -1804,7 +1804,7 @@ thread_info
 
 -   获取子频道下的帖子详情
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.get_thread_info()
@@ -1856,7 +1856,7 @@ thread_info
 
 -   创建帖子，创建成功后，返回创建成功的任务ID
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.create_thread()
@@ -1893,7 +1893,7 @@ bot.api.create_thread()
 
 -   删除指定子频道下的某个帖子
 
-![](https://tcs.teambition.net/storage/312h71dbea3cb11bd35e8b1bab8c1b6ebe68?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmg3MWRiZWEzY2IxMWJkMzVlOGIxYmFiOGMxYjZlYmU2OCJ9.7Dv9kAiSmDrBD5Hqp2eJvV86BxsB7ESd61Tszxec5Uw&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api1.png)
 
 ```python
 bot.api.delete_thread()
@@ -1956,7 +1956,7 @@ bot.api.get_guild_permissions()
 
 -   每天只能在一个频道内发 `3` 条（默认值）频道权限授权链接
 
-![](https://tcs.teambition.net/storage/312hd4cf9565bc78dd3731a7fb1dc761ebfb?Signature=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcHBJRCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9hcHBJZCI6IjU5Mzc3MGZmODM5NjMyMDAyZTAzNThmMSIsIl9vcmdhbml6YXRpb25JZCI6IiIsImV4cCI6MTY2MTE1NDg3NiwiaWF0IjoxNjYwNTUwMDc2LCJyZXNvdXJjZSI6Ii9zdG9yYWdlLzMxMmhkNGNmOTU2NWJjNzhkZDM3MzFhN2ZiMWRjNzYxZWJmYiJ9.8dWGyywSTLtjTB1qEf9sbOOqdF9vLEKpceNiZSQUsZo&download=image.png)
+![](https://github.com/GLGDLY/qg_botsdk/tree/master/image/api10.png)
 
 ```python
 bot.api.create_permission_demand()

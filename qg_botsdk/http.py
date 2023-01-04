@@ -83,7 +83,7 @@ class Session:
         self._kwargs = kwargs
         if kwargs.get("connector") is None:
             kwargs["connector"] = TCPConnector(
-                limit=500, ssl=create_default_context(), force_close=True
+                limit=0, ssl=create_default_context(), force_close=True
             )
         self._session: Optional[ClientSession] = None
         self._timeout = ClientTimeout(total=20)
@@ -96,7 +96,7 @@ class Session:
 
     async def _check_session(self):
         if not self._session or self._session.closed:
-            self._session = ClientSession(**self._kwargs)
+            self._session = ClientSession(timeout=self._timeout, **self._kwargs)
 
     async def _warning(self, url, resp):
         self._logger.warning(
@@ -120,7 +120,7 @@ class Session:
     async def _request(self, method, url, retry=False, **kwargs):
         await self._check_session()
         kwargs["headers"] = kwargs.get("headers", general_header)
-        resp = await self._session.request(method, url, timeout=self._timeout, **kwargs)
+        resp = await self._session.request(method, url, **kwargs)
         if resp.ok:
             return resp
         if self._is_log_error and (not self._is_retry or retry):
