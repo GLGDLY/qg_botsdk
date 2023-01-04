@@ -111,7 +111,7 @@ def c_0(data: Model.MESSAGE):
 | is_short_circuit  | bool           | False| 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和command先regex后排序指令的短路机制）   |
 | is_require_admin  | bool           | False| 是否要求频道主或或管理才可触发指令                                   |
 
-> （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/blob/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
+> （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
 
 ## 绑定组件（SDK版本>=2.5.0支持装饰器）
 
