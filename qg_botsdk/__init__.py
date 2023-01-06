@@ -16,7 +16,7 @@ qg_botsdk Library
 """
 
 from .logger import Logger
-from .model import Model
+from .model import EmojiID, EmojiString, Model
 from .plugins import Plugins
 from .qg_bot import BOT
 from .version import __version__
@@ -31,4 +31,4 @@ __copyright__ = "Copyright (c) 2022 GLGDLY"
 
 
 name = "qg_botsdk"
-__all__ = ("BOT", "Model", "Logger", "Plugins")
+__all__ = ("BOT", "Model", "EmojiID", "EmojiString", "Logger", "Plugins")

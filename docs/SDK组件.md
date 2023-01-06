@@ -43,6 +43,7 @@ BOT(bot_id='xxx', bot_token='xxx')
 | shard_no              | int    | 0      | 当前分片数，如不熟悉相关配置请不要轻易改动此项（需求SDK版本>=2.3.1）            |
 | total_shard           | int    | 1      | 最大分片数，如不熟悉相关配置请不要轻易改动此项（需求SDK版本>=2.3.1）            |
 | max_workers           | int    | None   | 在同步模式下，允许同时运行的最大线程数（需求SDK版本>=2.3.5）                |
+| api_max_concurrency   | int    | 0      | API允许的最大并发数，超过此并发数将进入队列，如此数值&lt;=0代表不开启任何队列        |
 
 ### 开始机器人
 
@@ -102,14 +103,14 @@ def c_0(data: Model.MESSAGE):
 # 路径：qg_botsdk.qg_bot.BOT().on_command
 ```
 
-| 参数                    |        |        |                                                    |
-| --------------------- | ------ | ------ | -------------------------------------------------- |
-| 字段名                   | 类型     | 默认值    | 说明                                                 |
-| command           | List[str], str | None | 可触发事件的指令列表，与正则regex互斥，优先使用此项                   |
-| regex             | Pattern, str   | None | 可触发指令的正则compile实例或正则表达式，与指令表互斥                 |
-| is_require_at     | bool           | False| 是否要求必须艾特机器人才能触发指令                                   |
-| is_short_circuit  | bool           | False| 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和command先regex后排序指令的短路机制）   |
-| is_require_admin  | bool           | False| 是否要求频道主或或管理才可触发指令                                   |
+| 参数               |                |       |                                                      |
+| ---------------- | -------------- | ----- | ---------------------------------------------------- |
+| 字段名              | 类型             | 默认值   | 说明                                                   |
+| command          | List[str], str | None  | 可触发事件的指令列表，与正则regex互斥，优先使用此项                         |
+| regex            | Pattern, str   | None  | 可触发指令的正则compile实例或正则表达式，与指令表互斥                       |
+| is_require_at    | bool           | False | 是否要求必须艾特机器人才能触发指令                                    |
+| is_short_circuit | bool           | False | 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和command先regex后排序指令的短路机制） |
+| is_require_admin | bool           | False | 是否要求频道主或或管理才可触发指令                                    |
 
 > （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
 

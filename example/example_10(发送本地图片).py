@@ -1,13 +1,16 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 发送本地图片、使用emoji的一个实例（本地图片要求SDK版本>=2.1.3，当前仅普通消息可直接上传图片，embed和ark暂无相关能力）
-from qg_botsdk import BOT, Model
+from qg_botsdk import BOT, EmojiString, Model
 
 
 def deliver(data: Model.MESSAGE):
     # SDK版本 >= v2.4.0 可直接使用reply()
     if "你好" in data.treated_msg:
-        data.reply("你好，世界 <emoji:106>")  # 发送QQ系统表情emoji
+        data.reply("你好，世界 <emoji:106>")  # 发送QQ系统表情emoji（106:委屈）
+        data.reply(
+            f"你好，世界{EmojiString.委屈}"
+        )  # 如上，发送QQ系统表情emoji（106:委屈）-> EmojiString.委屈 = <emoji:106>
         data.reply("你好，世界 \U0001F600")  # 发送unicode格式的emoji
     elif "图片" in data.treated_msg:
         # 方法1（阅读档案后传入bytes类型图片数据）：

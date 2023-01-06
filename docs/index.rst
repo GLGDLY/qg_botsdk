@@ -53,6 +53,7 @@ qg_botsdk
    SDK组件
    API
    Model库
+   Plugins插件开发
    常见问题Q&A
    联系与反馈
    qg_botsdk @Github <https://github.com/GLGDLY/qg_botsdk>

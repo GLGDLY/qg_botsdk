@@ -1552,6 +1552,10 @@ bot.api.delete_schedule()
 
 -   如使用官方表情，可按照格式`<emoji:{emoji_id}>`输入到文本中进行发送（注意当中的冒号为英文半形冒号，而非全形中文冒号）
 
+-   或可使用sdk预先构建EmojiString格式化QQ表情文本，如`f"你好，世界{EmojiString.委屈}"`
+
+-   SDK同时提供了QQ表情的ID转换类，具体位置为`from qg_botsdk EmojiID`
+
 -   如使用emoji，可直接按照python输入emoji的方法（unicode转换方式）输入到文本中进行发送，如🥇的unicode为`U+1F947`，转换后为`\U0001F947`，具体unicode列表可参考<https://unicode.org/emoji/charts/full-emoji-list.html>
 
 ![](image/api9.png)
@@ -1559,14 +1563,14 @@ bot.api.delete_schedule()
 -   一个具体的简单实例如下：
 
 ```python
-from qg_botsdk.model import Model
-from qg_botsdk.qg_bot import BOT
+from qg_botsdk import BOT, Model, EmojiString
 
 
 def deliver(data: Model.MESSAGE):
     if '你好' in data.treated_msg:
-        bot.api.send_msg(data.channel_id, '你好，世界 <emoji:106>', message_id=data.id)   ## 发送QQ系统表情emoji
-        bot.api.send_msg(data.channel_id, '你好，世界 \U0001F600', message_id=data.id)    ## 发送unicode格式的emoji
+        data.reply("你好，世界 <emoji:106>")  # 发送QQ系统表情emoji（106:委屈）
+        data.reply(f"你好，世界{EmojiString.委屈}")  # 如上，发送QQ系统表情emoji（106:委屈）-> EmojiString.委屈 = <emoji:106>
+        data.reply("你好，世界 \U0001F600")  # 发送unicode格式的emoji
 
 if __name__ == '__main__':
     bot = BOT(bot_id='xxx', bot_token='xxx', is_private=True)

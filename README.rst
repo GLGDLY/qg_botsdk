@@ -15,6 +15,15 @@
 .. image:: https://readthedocs.org/projects/qg-botsdk/badge/?version=latest
    :target: https://qg-botsdk.readthedocs.io/zh_CN/latest/
 
+引言
+=====
+
+对于使用python进行频道官方机器人开发而言，市面上确实有不同的sdk可以选用，但其很多只提供异步asyncio+类继承的开发方式，对于不会相关技巧的朋友们，尤其新手，会有开发难度。
+
+为此，qg_botsdk相应提供了另一个选择，这一款sdk虽然同样使用asyncio编写sdk底层，但其同时提供了threading和asyncio封装下的应用层调用，以抽象化封装的库编写方式，极大地降低应用层的开发难度。
+
+
+
 亮点
 =====
 
@@ -22,7 +31,7 @@
 
 -   轻量，简洁，统一的代码结构，10行即可构建一个简单的程序
 
--   容易入门，无需学会asyncio也可使用，同时保留较高并发能力
+-   容易入门，无需学会asyncio、类继承等编程技巧也可使用，同时保留较高并发能力
 
 -   保留官方http API中Json数据的结构字段，带你学习官方结构，日后可自行开发适合自己的SDK
 

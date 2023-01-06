@@ -10,6 +10,7 @@ from typing import Any, Callable, Union
 
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 
+from ._statics import EVENTS
 from ._utils import (
     exception_handler,
     exception_processor,
@@ -96,33 +97,36 @@ class BotWs:
         self.heartbeat = None
         self.is_async = is_async
         self.events = {
-            "GUILD_CREATE": on_guild_event_function,
-            "GUILD_UPDATE": on_guild_event_function,
-            "GUILD_DELETE": on_guild_event_function,
-            "CHANNEL_CREATE": on_channel_event_function,
-            "CHANNEL_UPDATE": on_channel_event_function,
-            "CHANNEL_DELETE": on_channel_event_function,
-            "GUILD_MEMBER_ADD": on_guild_member_function,
-            "GUILD_MEMBER_UPDATE": on_guild_member_function,
-            "GUILD_MEMBER_REMOVE": on_guild_member_function,
-            "MESSAGE_REACTION_ADD": on_reaction_function,
-            "MESSAGE_REACTION_REMOVE": on_reaction_function,
-            "INTERACTION_CREATE": on_interaction_function,
-            "MESSAGE_AUDIT_PASS": on_audit_function,
-            "MESSAGE_AUDIT_REJECT": on_audit_function,
-            "OPEN_FORUM_THREAD_CREATE": on_open_forum_function,
-            "OPEN_FORUM_THREAD_UPDATE": on_open_forum_function,
-            "OPEN_FORUM_THREAD_DELETE": on_open_forum_function,
-            "OPEN_FORUM_POST_CREATE": on_open_forum_function,
-            "OPEN_FORUM_POST_DELETE": on_open_forum_function,
-            "OPEN_FORUM_REPLY_CREATE": on_open_forum_function,
-            "OPEN_FORUM_REPLY_DELETE": on_open_forum_function,
-            "AUDIO_START": on_audio_function,
-            "AUDIO_FINISH": on_audio_function,
-            "AUDIO_ON_MIC": on_audio_function,
-            "AUDIO_OFF_MIC": on_audio_function,
-            "AUDIO_OR_LIVE_CHANNEL_MEMBER_ENTER": on_live_channel_member_function,
-            "AUDIO_OR_LIVE_CHANNEL_MEMBER_EXIT": on_live_channel_member_function,
+            **dict(zip(EVENTS.GUILD, [on_guild_event_function] * len(EVENTS.GUILD))),
+            **dict(
+                zip(EVENTS.CHANNEL, [on_channel_event_function] * len(EVENTS.CHANNEL))
+            ),
+            **dict(
+                zip(
+                    EVENTS.GUILD_MEMBER,
+                    [on_guild_member_function] * len(EVENTS.GUILD_MEMBER),
+                )
+            ),
+            **dict(zip(EVENTS.REACTION, [on_reaction_function] * len(EVENTS.REACTION))),
+            **dict(
+                zip(
+                    EVENTS.INTERACTION,
+                    [on_interaction_function] * len(EVENTS.INTERACTION),
+                )
+            ),
+            **dict(zip(EVENTS.AUDIT, [on_audit_function] * len(EVENTS.AUDIT))),
+            **dict(
+                zip(
+                    EVENTS.OPEN_FORUM, [on_open_forum_function] * len(EVENTS.OPEN_FORUM)
+                )
+            ),
+            **dict(zip(EVENTS.AUDIO, [on_audio_function] * len(EVENTS.AUDIO))),
+            **dict(
+                zip(
+                    EVENTS.ALC_MEMBER,
+                    [on_live_channel_member_function] * len(EVENTS.ALC_MEMBER),
+                )
+            ),
         }
         self.threads = ThreadPoolExecutor(max_workers) if not self.is_async else None
         self.api = api
@@ -299,7 +303,7 @@ class BotWs:
         # process and distribute data
         if t in self.events:
             await self.distribute(self.events[t], data)
-        elif t in ("AT_MESSAGE_CREATE", "MESSAGE_CREATE"):
+        elif t in EVENTS.MESSAGE_CREATE:
             if self.msg_treat:
                 raw_msg = d.get("content", "").strip()
                 treated_msg = treat_msg(raw_msg, self.at)
@@ -309,34 +313,25 @@ class BotWs:
             # distribute_commands return True when short circuit
             if not await self.distribute_commands(data, treated_msg):
                 await self.distribute(self.on_msg_function, data)
-        elif t in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE", "DIRECT_MESSAGE_DELETE"):
+        elif t in EVENTS.MESSAGE_DELETE:
             if self.is_filter_self:
                 target = d.get("message", {}).get("author", {}).get("id")
                 op_user = d.get("op_user", {}).get("id")
                 if op_user == target:
                     return
             await self.distribute(self.on_delete_function, data)
-        elif t == "DIRECT_MESSAGE_CREATE":
+        elif t in EVENTS.DM_CREATE:
             if self.dm_treat:
                 raw_msg = d.get("content", "").strip()
                 data["d"]["treated_msg"] = treat_msg(raw_msg, self.at)
             await self.distribute(self.on_dm_function, data)
-        elif t in (
-            "FORUM_THREAD_CREATE",
-            "FORUM_THREAD_UPDATE",
-            "FORUM_THREAD_DELETE",
-            "FORUM_POST_CREATE",
-            "FORUM_POST_DELETE",
-            "FORUM_REPLY_CREATE",
-            "FORUM_REPLY_DELETE",
-            "FORUM_PUBLISH_AUDIT_RESULT",
-        ):
+        elif t in EVENTS.FORUM:
             treat_thread(data)
             await self.distribute(self.on_forum_function, data)
         else:
             self.logger.warning(f"unknown event type: [{t}]")
 
-    async def main(self, msg):
+    async def dispatch_events(self, msg):
         data = loads(msg)
         op = data.get("op")
         if "s" in data:
@@ -344,7 +339,7 @@ class BotWs:
         if op == 11:
             self.logger.debug("心跳发送成功")
         elif op == 9:
-            self.logger.error("[错误] 参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）")
+            self.logger.error("[错误] op9参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）")
             await sleep(3)
             if not self.is_reconnect:
                 await self.send_connect()
@@ -359,14 +354,15 @@ class BotWs:
             else:
                 await self.send_reconnect()
         elif op == 0:
-            if data.get("t") == "READY":
+            t = data.get("t")
+            if t == "READY":
                 self.session_id = data.get("d", {}).get("session_id")
                 self.reconnect_times = 0
                 self.start_heartbeat()
                 self.logger.info("连接成功，机器人开始运行")
                 if not self.is_first_run:
                     await self._start_event()
-            elif data.get("t") == "RESUMED":
+            elif t == "RESUMED":
                 self.reconnect_times = 0
                 self.start_heartbeat()
                 self.logger.info("重连成功，机器人继续运行")
@@ -390,7 +386,7 @@ class BotWs:
                             self.logger.info("WS链接已结束")
                             return
                         if message.type == WSMsgType.TEXT:
-                            self.loop.create_task(self.main(message.data))
+                            self.loop.create_task(self.dispatch_events(message.data))
                         elif message.type in (
                             WSMsgType.CLOSE,
                             WSMsgType.CLOSED,
