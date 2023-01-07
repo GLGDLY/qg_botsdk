@@ -3,7 +3,7 @@
 from asyncio import iscoroutinefunction
 from copy import deepcopy
 from functools import wraps
-from inspect import signature
+from inspect import signature, Signature
 from json import dumps, loads
 from json.decoder import JSONDecodeError
 from sys import exc_info
@@ -384,7 +384,8 @@ def check_func(func, *args, is_async: bool = False):
     if sig_keys_len != len(args):
         raise TypeError(f'函数{func.__name__}应包含以下类型的参数：{" ".join(args)}')
     for i in range(sig_keys_len):
-        if sig[sig_keys[i]].annotation != args[i]:
+        annotation = sig[sig_keys[i]].annotation
+        if annotation is not Signature.empty and annotation != args[i]:
             raise TypeError(f"函数{func.__name__}中{sig_keys[i]}参数应为类型：{args[i]}")
     if is_async:
         if not iscoroutinefunction(func):
