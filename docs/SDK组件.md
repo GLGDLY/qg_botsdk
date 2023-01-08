@@ -24,7 +24,7 @@ bot.start()
 
 ```python
 BOT(bot_id='xxx', bot_token='xxx')
-# 路径：qg_botsdk.qg_bot.BOT()
+# 路径：qg_botsdk.BOT()
 ```
 
 | 参数                    |        |        |                                                    |
@@ -47,11 +47,25 @@ BOT(bot_id='xxx', bot_token='xxx')
 
 ### 开始机器人
 
--   开始运行实例化后的机器人
+-   开始运行实例化后的机器人，在唤起此函数后的代码将不能运行，如需非阻塞性运行，请传入is_blocking=False
 
 ```python
 bot.start()
-# 路径：qg_botsdk.qg_bot.BOT().start()
+# 路径：qg_botsdk.BOT().start()
+```
+
+| 参数          |      |      |                                                                       |
+| ----------- | ---- | ---- | --------------------------------------------------------------------- |
+| 字段名         | 类型   | 默认值  | 说明                                                                    |
+| is_blocking | bool | True | 机器人是否阻塞运行，如选择False，机器人将以异步任务的方式非阻塞性运行，如不熟悉异步编程请不要使用此项（需求SDK版本>=2.6.0） |
+
+### 阻塞机器人进程（需求SDK版本>=2.6.0）
+
+-   当BOT.start()选择is_blocking=False的非阻塞性运行时，此函数能在后续阻塞主进程而继续运行机器人，具体用例可参考<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_14(%E9%9D%9E%E9%98%BB%E5%A1%9E%E6%80%A7%E8%BF%90%E8%A1%8C).py>
+
+```python
+bot.block()
+# 路径：qg_botsdk.BOT().block()
 ```
 
 > 无参数
@@ -62,7 +76,7 @@ bot.start()
 
 ```python
 bot.close()
-# 路径：qg_botsdk.qg_bot.BOT().close()
+# 路径：qg_botsdk.BOT().close()
 ```
 
 > 无参数
@@ -76,7 +90,7 @@ bot.robot:
   - bot.robot.id
   - bot.username
   - bot.avatar
-# 路径：qg_botsdk.qg_bot.BOT().robot.id/username/avatar
+# 路径：qg_botsdk.BOT().robot.id/username/avatar
 ```
 
 > 无参数
@@ -87,7 +101,7 @@ bot.robot:
 
 ```yaml
 bot.lock
-# 路径：qg_botsdk.qg_bot.BOT().robot.lock
+# 路径：qg_botsdk.BOT().lock
 ```
 
 > 无参数
@@ -100,7 +114,7 @@ bot.lock
 @bot.on_command(command='c_0')
 def c_0(data: Model.MESSAGE):
     data.reply('消息包含c_0可触发此函数')
-# 路径：qg_botsdk.qg_bot.BOT().on_command
+# 路径：qg_botsdk.BOT().on_command
 ```
 
 | 参数               |                |       |                                                      |
@@ -113,6 +127,17 @@ def c_0(data: Model.MESSAGE):
 | is_require_admin | bool           | False | 是否要求频道主或或管理才可触发指令                                    |
 
 > （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
+
+### 加载默认消息日志模块（需求SDK版本>=2.6.0）
+
+-   加载默认的消息日志模块，可以默认格式自动log记录接收到的用户消息
+
+```yaml
+bot.load_default_msg_logger()
+# 路径：qg_botsdk.BOT().load_default_msg_logger()
+```
+
+> 无参数
 
 ## 绑定组件（SDK版本>=2.5.0支持装饰器）
 

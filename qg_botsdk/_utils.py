@@ -3,7 +3,7 @@
 from asyncio import iscoroutinefunction
 from copy import deepcopy
 from functools import wraps
-from inspect import signature, Signature
+from inspect import Signature, signature
 from json import dumps, loads
 from json.decoder import JSONDecodeError
 from sys import exc_info

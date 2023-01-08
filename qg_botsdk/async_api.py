@@ -741,6 +741,8 @@ class AsyncAPI:
                     with open(file_image, "rb") as img:
                         file_image = img.read()
                 else:
+                    if file_image.startswith("http"):
+                        return sdk_error_temp("发送网络图片请使用image参数，而非file_image")
                     return sdk_error_temp("目标图片路径不存在，无法发送")
             json_["file_image"] = file_image
             data_ = FormData_()
@@ -1116,6 +1118,8 @@ class AsyncAPI:
                     with open(file_image, "rb") as img:
                         file_image = img.read()
                 else:
+                    if file_image.startswith("http"):
+                        return sdk_error_temp("发送网络图片请使用image参数，而非file_image")
                     return sdk_error_temp("目标图片路径不存在，无法发送")
             json_["file_image"] = file_image
             data_ = FormData_()

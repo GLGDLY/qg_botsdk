@@ -1,11 +1,10 @@
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from asyncio import all_tasks, get_event_loop, sleep
+from asyncio import all_tasks, get_event_loop, new_event_loop, sleep
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy, deepcopy
 from json import dumps, loads
 from ssl import create_default_context
-from time import sleep as t_sleep
 from typing import Any, Callable, Union
 
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
@@ -87,7 +86,10 @@ class BotWs:
         self.dm_treat = dm_treat
         self.robot = None
         self.heartbeat_time = 0
-        self.loop = get_event_loop()
+        try:
+            self.loop = get_event_loop()
+        except RuntimeError:
+            self.loop = new_event_loop()
         self.s = None
         self.reconnect_times = 0
         self.is_reconnect = False
@@ -409,12 +411,12 @@ class BotWs:
             self.logger.debug(exception_handler(e))
             return
 
-    def starter(self):
-        self.loop.run_until_complete(self.connect())
+    async def starter(self):
+        await self.connect()
         while self.running:
             self.is_reconnect = self.reconnect_times < 20
             try:
-                self.loop.run_until_complete(self.connect())
+                await self.connect()
             except WSServerHandshakeError:
                 self.logger.warning("网络连线不稳定或已断开，请检查网络链接")
-            t_sleep(5)
+            await sleep(5)

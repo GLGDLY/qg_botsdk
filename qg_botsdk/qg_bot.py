@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 from asyncio import Lock as ALock
 from asyncio import get_event_loop, new_event_loop, sleep
+from importlib.machinery import SourceFileLoader
 from os import getpid
 from os.path import exists
+from os.path import split as path_split
 from re import Pattern
 from threading import Lock as TLock
 from time import sleep as t_sleep
@@ -103,6 +105,7 @@ class BOT:
         self.is_filter_self = True
         self.check_interval = 10
         self.__running = False
+        self.__await_closure = False
         self.auth = f"Bot {bot_id}.{bot_token}"
         self.bot_headers = {"Authorization": self.auth}
         self._session = Session(
@@ -144,6 +147,22 @@ class BOT:
     @property
     def loop(self):
         return self._loop
+
+    def load_default_msg_logger(self):
+        """
+        加载默认的消息日志模块，可以默认格式自动log记录接收到的用户消息
+        """
+        self.logger.info("加载默认消息日志模块成功")
+        if "__sdk_default_logger" in Plugins.get_preprocessor_names():
+            return
+
+        def __sdk_default_logger(data: Model.MESSAGE):
+            self.logger.info(
+                f"收到频道 {data.guild_id} 用户 {data.author.username}({data.author.id}) "
+                f"的消息：{data.treated_msg}"
+            )
+
+        Plugins.before_command()(__sdk_default_logger)
 
     @exception_processor
     def __time_event_run(self):
@@ -188,7 +207,11 @@ class BOT:
         """
         if not exists(path_to_plugins):
             raise ModuleNotFoundError(f"指向plugin的路径 [{path_to_plugins}] 并不存在")
+        if not path_to_plugins.endswith(".py"):
+            path_to_plugins += ".py"
+        _name = path_split(path_to_plugins)[1][:-3]
         try:
+            SourceFileLoader(_name, path_to_plugins).load_module()
             with open(path_to_plugins, "r", encoding="utf-8") as f:
                 exec(f.read())
         except Exception:
@@ -574,9 +597,9 @@ class BOT:
         if not self.is_private and self.no_permission_warning:
             self.logger.warning(f"请注意，一般公域机器人并不能使用{name}API，请检查自身是否拥有相关权限")
 
-    def start(self):
+    def start(self, is_blocking: bool = True):
         """
-        开始运行机器人的函数，在唤起此函数后的代码将不能运行，如需运行后续代码，请以多进程方式唤起此函数，以下是一个简单的唤起流程：
+        开始运行机器人的函数，在唤起此函数后的代码将不能运行，如需非阻塞性运行，请传入is_blocking=False，以下是一个简单的唤起流程：
 
         >>> from qg_botsdk import BOT
         >>> bot = BOT(bot_id='xxx', bot_token='xxx')
@@ -585,6 +608,8 @@ class BOT:
         .. seealso::
             更多教程和相关资讯可参阅：
             https://qg-botsdk.readthedocs.io/zh_CN/latest/index.html
+
+        :param is_blocking: 机器人是否阻塞运行，如选择False，机器人将以异步任务的方式非阻塞性运行，如不熟悉异步编程请不要使用此项
         """
         try:
             if not self.__running and not self._bot_class:
@@ -634,10 +659,25 @@ class BOT:
                     commands,
                     preprocessors,
                 )
-                self._bot_class.starter()
+                if is_blocking:
+                    self._loop.run_until_complete(self._bot_class.starter())
+                else:
+                    self._loop.create_task(self._bot_class.starter())
             else:
                 self.logger.error("当前机器人已在运行中！")
         except KeyboardInterrupt:
+            self.logger.info("结束运行机器人（KeyboardInterrupt）")
+            exit()
+
+    def block(self):
+        """
+        当BOT.start()选择is_blocking=False的非阻塞性运行时，此函数能在后续阻塞主进程而继续运行机器人
+        """
+        try:
+            while self.__running or self.__await_closure:
+                self._loop.run_until_complete(sleep(1))
+        except KeyboardInterrupt:
+            self.logger.info("结束运行机器人（KeyboardInterrupt）")
             exit()
 
     def close(self):
@@ -649,6 +689,7 @@ class BOT:
             https://qg-botsdk.readthedocs.io/zh_CN/latest/index.html
         """
         if self.__running:
+            self.__await_closure = True
             self.__running = False
             self.logger.info("WS链接已开始结束进程，请等待另一端完成握手并等待 TCP 连接终止")
             self._bot_class.running = False
@@ -656,8 +697,10 @@ class BOT:
             while self._loop.time() < timeout:
                 t_sleep(1)
                 if not self._bot_class or self._bot_class.ws.closed:
+                    self.__await_closure = False
                     return
             self._bot_class = None
             self.logger.info("判断超时，WS链接已强制结束")
+            self.__await_closure = False
         else:
             self.logger.error("当前机器人没有运行！")

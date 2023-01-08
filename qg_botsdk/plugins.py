@@ -14,6 +14,14 @@ class Plugins:
         return commands, preprocessors
 
     @classmethod
+    def get_preprocessor_names(cls):
+        return (func.__name__ for func in cls._preprocessors)
+
+    @classmethod
+    def get_commands_names(cls):
+        return (func.__name__ for func in cls._commands)
+
+    @classmethod
     def before_command(cls):
         """
         注册plugins预处理器，将在检查所有commands前执行
