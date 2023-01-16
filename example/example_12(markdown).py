@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 发送markdown消息的一个实例（markdown消息要求SDK版本>=2.3.6，需预先在平台后台申请）
 from qg_botsdk import BOT, Model

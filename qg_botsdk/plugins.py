@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 from re import compile as re_compile
 from typing import List, Optional, Pattern, Union
 

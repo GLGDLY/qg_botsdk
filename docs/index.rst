@@ -21,8 +21,6 @@ qg_botsdk
 
     ✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
 
-    <p><a href="https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51" rel="nofollow">文档</a>
-    ·
     <a href="https://github.com/GLGDLY/qg_botsdk/releases">下载</a>
     ·
     <a href="https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b52" rel="nofollow">快速入门</a></p>
@@ -30,8 +28,6 @@ qg_botsdk
     </div>
 
 - 这里是 qg_botsdk 的 readthedocs 托管文档
-
-- 注意另有 `thoughts 托管文档 <https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b51>`_ 可供查阅帮助文档内容
 
 下载方式
 ^^^^^^^^

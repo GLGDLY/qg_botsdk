@@ -80,11 +80,11 @@ class Session:
         self._is_log_error = is_log_error
         self._logger = logger
         self._queue = Queue(max_concurrency)
+        kwargs["connector"] = kwargs.get(
+            "connector",
+            TCPConnector(limit=0, ssl=create_default_context(), force_close=True),
+        )
         self._kwargs = kwargs
-        if kwargs.get("connector") is None:
-            kwargs["connector"] = TCPConnector(
-                limit=0, ssl=create_default_context(), force_close=True
-            )
         self._session: Optional[ClientSession] = None
         self._timeout = ClientTimeout(total=20)
         self._loop = loop
@@ -126,7 +126,7 @@ class Session:
         if self._is_log_error and (not self._is_retry or retry):
             await self._warning(url, resp)
         if self._is_retry and not retry:
-            if resp.headers["content-type"] == "application/json":
+            if resp.headers.get("content-type", "") == "application/json":
                 json_ = await resp.json()
                 if (
                     not isinstance(json_, dict)
@@ -134,5 +134,5 @@ class Session:
                 ):
                     await self._warning(url, resp)
                     return resp
-            return await self.request(method, url, True, **kwargs)
+            return await self._request(method, url, True, **kwargs)
         return resp

@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 编写plugins的一个实例（plugins要求SDK版本>=2.5.1）
 from qg_botsdk import Model, Plugins

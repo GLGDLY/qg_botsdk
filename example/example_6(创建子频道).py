@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 使用获取子频道信息、创建子频道API的一个简单实例
 from qg_botsdk import BOT, Model

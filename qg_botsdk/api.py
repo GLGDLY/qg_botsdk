@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from asyncio import AbstractEventLoop, run_coroutine_threadsafe
 from typing import BinaryIO, Dict, List, Optional, Tuple, Union

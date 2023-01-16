@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 最简单的工作流，使用logger的一个简单实例
 from qg_botsdk import BOT, Model

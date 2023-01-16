@@ -36,7 +36,7 @@ BOT(bot_id='xxx', bot_token='xxx')
 | is_private            | bool   | False  | 是否私域机器人，默认为公域（只订阅艾特消息，不订阅全部）                       |
 | is_sandbox            | bool   | False  | 是否开启沙箱环境测试                                         |
 | max_shard             | int    | 5      | 最大分片数限制（SDK版本2.3.1后已遗弃，转为自定义shard_no以及total_shard） |
-| no_permission_warning | bool   | True   | 否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启                      |
+| no_permission_warning | bool   | True   | 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启                     |
 | is_async              | bool   | False  | 使用同步api还是异步api，默认False（使用同步）                       |
 | is_retry              | bool   | True   | 使用api时，如遇可重试的错误码是否自动进行重试（需求SDK版本>=2.2.8）           |
 | is_log_error          | bool   | True   | 使用api时，如返回的结果为不成功，可自动log输出报错信息（需求SDK版本>=2.2.10）    |

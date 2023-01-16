@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from asyncio import all_tasks, get_event_loop, new_event_loop, sleep
 from concurrent.futures import ThreadPoolExecutor

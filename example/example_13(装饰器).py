@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 使用装饰器与plugins的一个实例（装饰器要求SDK版本>=2.5.0 & plugins要求SDK版本>=2.5.1）
 from qg_botsdk import BOT, Model

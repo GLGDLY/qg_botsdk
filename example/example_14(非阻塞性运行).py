@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 非阻塞性开始运行机器人一个实例（要求SDK版本>=2.6.0）
 from asyncio import sleep

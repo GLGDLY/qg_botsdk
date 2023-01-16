@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from asyncio import Lock as ALock
 from asyncio import get_event_loop, new_event_loop, sleep
@@ -69,11 +69,13 @@ class BOT:
                 "bot_secret已被废弃，如需使用安全接口，请通过security_setup()绑定小程序ID和secret"
             )
         self.is_private = is_private
-        self.bot_url = (
-            r"https://sandbox.api.sgroup.qq.com"
-            if is_sandbox
-            else r"https://api.sgroup.qq.com"
-        )
+        if is_sandbox:
+            self.logger.info(
+                "已开启沙箱环境，发送消息时将频道方将自动添加[sandbox]字样，如需关闭请传参is_sandbox=False"
+            )
+            self.bot_url = r"https://sandbox.api.sgroup.qq.com"
+        else:
+            self.bot_url = r"https://api.sgroup.qq.com"
         if not bot_id or not bot_token:
             raise type("IdTokenMissing", (Exception,), {})(
                 "你还没有输入 bot_id 和 bot_token，无法连接使用机器人\n如尚未有相关票据，"

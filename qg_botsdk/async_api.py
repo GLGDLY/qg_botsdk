@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from io import BufferedReader
 from json import loads
@@ -713,6 +713,8 @@ class AsyncAPI:
         :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
         :return: 返回的.data中为解析后的json数据
         """
+        if content is not None and not isinstance(content, str):
+            content = str(content)
         if message_reference_id is not None:
             if ignore_message_reference_error is None:
                 ignore_message_reference_error = False
@@ -792,7 +794,7 @@ class AsyncAPI:
         }
         if content is not None:
             for items in content:
-                json_["embed"]["fields"].append({"name": items})
+                json_["embed"]["fields"].append({"name": str(items)})
         return_ = await self._session.post(
             f"{self.bot_url}/channels/{channel_id}/messages", json=json_
         )
@@ -834,12 +836,16 @@ class AsyncAPI:
             "msg_id": message_id,
             "event_id": event_id,
         }
-        for i, items in enumerate(content):
+        for _link, _content in zip(link, content):
+            if _content is not None and not isinstance(_content, str):
+                _content = str(_content)
+            if _link is not None and not isinstance(_link, str):
+                _link = str(_link)
             json_["ark"]["kv"][2]["obj"].append(
                 {
                     "obj_kv": [
-                        {"key": "desc", "value": items},
-                        {"key": "link", "value": link[i]},
+                        {"key": "desc", "value": _content},
+                        {"key": "link", "value": _link},
                     ]
                 }
             )

@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from asyncio import iscoroutinefunction
 from copy import deepcopy

@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 使用register_start_event，机器人开始运行时，获取机器人所在的全部频道信息、全部成员信息、频道身份组列表的一个简单实例
 from qg_botsdk import BOT, Model

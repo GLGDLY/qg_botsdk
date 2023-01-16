@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 使用创建表情表态API、更改log格式的一个简单实例
 from random import choice

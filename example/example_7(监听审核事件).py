@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 使用主动消息、监听消息审核事件的一个简单实例
 from qg_botsdk import BOT, Model

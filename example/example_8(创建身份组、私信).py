@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 使用创建身份组API、使用私信API的一个简单实例
 from qg_botsdk import BOT, Model

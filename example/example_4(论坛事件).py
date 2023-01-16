@@ -1,4 +1,4 @@
-# !/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # 监听论坛事件并获取帖子内容，如有安全风险则自动删除的一个实例
 from qg_botsdk import BOT, Model
