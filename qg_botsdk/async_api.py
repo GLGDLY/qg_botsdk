@@ -86,6 +86,9 @@ class AsyncAPI:
             return True
         return False
 
+    async def get_bot_id(self):
+        raise DeprecationWarning("SDK版本>=2.3.2后已遗弃get_bot_id()的api，改为BOT.robot.id")
+
     async def get_bot_info(self) -> _api_model.get_bot_info():
         """
         获取机器人详情
@@ -706,7 +709,7 @@ class AsyncAPI:
         :param channel_id: 子频道id
         :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
         :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
-        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
+        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档，与image同时存在时优先使用此项
         :param message_id: 消息id（选填）
         :param event_id: 事件id（选填）
         :param message_reference_id: 引用消息的id（选填）
@@ -746,10 +749,12 @@ class AsyncAPI:
                     if file_image.startswith("http"):
                         return sdk_error_temp("发送网络图片请使用image参数，而非file_image")
                     return sdk_error_temp("目标图片路径不存在，无法发送")
+            elif not isinstance(file_image, bytes):
+                return sdk_error_temp(f"file_image不支持{type(file_image)}的内容")
             json_["file_image"] = file_image
             data_ = FormData_()
             for keys, values in json_.items():
-                if values is not None:
+                if values is not None and keys != "image":
                     data_.add_field(keys, values)
             return_ = await self._session.post(
                 f"{self.bot_url}/channels/{channel_id}/messages", data=data_
@@ -1089,7 +1094,7 @@ class AsyncAPI:
         :param guild_id: 虚拟频道id（非子频道id），从用户主动私信机器人的事件、或机器人主动创建私信的API中获取
         :param content: 消息内容文本
         :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
-        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
+        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档，与image同时存在时优先使用此项
         :param message_id: 消息id（选填）
         :param event_id: 事件id（选填）
         :param message_reference_id: 引用消息的id（选填）
@@ -1127,10 +1132,12 @@ class AsyncAPI:
                     if file_image.startswith("http"):
                         return sdk_error_temp("发送网络图片请使用image参数，而非file_image")
                     return sdk_error_temp("目标图片路径不存在，无法发送")
+            elif not isinstance(file_image, bytes):
+                return sdk_error_temp(f"file_image不支持{type(file_image)}的内容")
             json_["file_image"] = file_image
             data_ = FormData_()
             for keys, values in json_.items():
-                if values is not None:
+                if values is not None and keys != "image":
                     data_.add_field(keys, values)
             return_ = await self._session.post(
                 f"{self.bot_url}/dms/{guild_id}/messages", data=data_

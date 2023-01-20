@@ -6,6 +6,7 @@ from copy import copy, deepcopy
 from json import dumps, loads
 from ssl import create_default_context
 from typing import Any, Callable, Union
+from unittest.mock import PropertyMock, patch
 
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 
@@ -23,6 +24,7 @@ from .async_api import AsyncAPI
 from .http import Session
 from .logger import Logger
 from .model import Model
+from .plugins import Plugins
 
 
 class BotWs:
@@ -194,11 +196,15 @@ class BotWs:
 
     @exception_processor
     async def async_start_task(self, func, *args):
-        await func(*args)
+        with patch.object(Plugins, "api", new_callable=PropertyMock) as mock_api:
+            mock_api.return_value = self.api
+            await func(*args)
 
     @exception_processor
     def start_task(self, func, *args):
-        func(*args)
+        with patch.object(Plugins, "api", new_callable=PropertyMock) as mock_api:
+            mock_api.return_value = self.api
+            func(*args)
 
     @exception_processor
     async def distribute(
@@ -259,13 +265,13 @@ class BotWs:
                 return False
         if items["treat"] and self.msg_treat:
             objectized_data = self.treat_command(objectized_data, treated_msg, **kwargs)
-        task = await self.distribute(items["func"], objectized_data=objectized_data)
-        if not items["is_custom_short_circuit"]:
-            return items["short_circuit"]  # True or False
-        else:
-            while not task.done():
-                await sleep(0.5)
-            return task.result()  # True or False
+            task = await self.distribute(items["func"], objectized_data=objectized_data)
+            if not items["is_custom_short_circuit"]:
+                return items["short_circuit"]  # True or False
+            else:
+                while not task.done():
+                    await sleep(0.5)
+                return task.result()  # True or False
 
     @exception_processor
     async def distribute_commands(self, data, treated_msg):

@@ -3,12 +3,15 @@
 from re import compile as re_compile
 from typing import List, Optional, Pattern, Union
 
+from .api import API
+from .async_api import AsyncAPI
 from .model import Model
 
 
 class Plugins:
     _commands = []
     _preprocessors = []
+    api: Union[API, AsyncAPI] = None
 
     def __new__(cls) -> tuple:
         commands, preprocessors = cls._commands, cls._preprocessors

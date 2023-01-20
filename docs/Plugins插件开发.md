@@ -44,6 +44,18 @@ def p_0(data: Model.MESSAGE):
 | is_require_admin        | bool                           | False | 是否要求频道主或或管理才可触发指令，默认否                                         |
 | admin_error_msg         | string                         | None  | 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路 |
 
+### 使用API
+
+在Plugins分割时编写时使用BOT.api，当实例化的BOT加载Plugins后，将会自动替换该Plugins里的api为该实例的api（仍支持同程序运行多个机器人）
+
+```python
+@Plugins.on_command("p_0", is_short_circuit=True)
+def p_0(data: Model.MESSAGE):
+    print(Plugins.api.get_bot_info())  # Plugins.api相当于BOT.api，使用时会自动将其替换成当前机器人实例里的api模块
+```
+
+> Plugins.api等同BOT.api，会根据实例的api切换多线程和异步版本
+
 ## 使用
 
 > 假设Plugins编写的文件为my_plugins.py

@@ -11,6 +11,8 @@ from time import localtime, strftime
 from traceback import extract_tb
 from typing import BinaryIO, Callable, Optional, Union
 
+from aiohttp import ContentTypeError
+
 from .version import __version__
 
 general_header = {"User-Agent": f"qg-botsdk v{__version__}"}
@@ -59,10 +61,11 @@ event_t = (
 
 def template_wrapper(func):
     @wraps(func)
-    def wrap(*args):
+    async def wrap(*args):
         try:
-            return func(*args)
-        except (JSONDecodeError, AttributeError, KeyError):
+            result = await func(*args)
+            return result
+        except (JSONDecodeError, ContentTypeError, AttributeError, KeyError):
             return_ = args[0]
             code = (
                 return_.status_code

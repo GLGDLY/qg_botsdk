@@ -30,6 +30,9 @@ class API:
         )
         return future_.result()
 
+    def get_bot_id(self):
+        raise DeprecationWarning("SDK版本>=2.3.2后已遗弃get_bot_id()的api，改为BOT.robot.id")
+
     def get_bot_info(self) -> _api_model.get_bot_info():
         """
         获取机器人详情
