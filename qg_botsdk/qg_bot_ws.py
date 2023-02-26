@@ -244,30 +244,42 @@ class BotWs:
 
     @exception_processor
     async def check_command(
-        self, objectized_data: Model.MESSAGE, treated_msg, items, **kwargs
+        self, objectized_data: Model.MESSAGE, treated_msg, command_obj, **kwargs
     ):
-        if items["admin"]:
-            roles = objectized_data.member.roles
+        # command: {command or regex, func, treat, at, short_circuit, admin, admin_error_msg}
+        if command_obj["admin"]:
+            try:
+                roles = objectized_data.member.roles
+            except Exception:
+                command_str = kwargs.get("command") or getattr(
+                    kwargs.get("regex"), "pattern", None
+                )
+                self.logger.error(
+                    f"cannot check roles of member for admin command: {command_str}"
+                )
+                return False
             if "2" not in roles and "4" not in roles:  # if not admin
-                if items["admin_error_msg"]:
+                if command_obj["admin_error_msg"]:
                     if self.is_async:
                         self.loop.create_task(
                             objectized_data.reply(
-                                items["admin_error_msg"],
+                                command_obj["admin_error_msg"],
                             )
                         )
                     else:
                         self.threads.submit(
                             objectized_data.reply,
-                            items["admin_error_msg"],
+                            command_obj["admin_error_msg"],
                         )
                     return True
                 return False
-        if items["treat"] and self.msg_treat:
+        if command_obj["treat"] and self.msg_treat:
             objectized_data = self.treat_command(objectized_data, treated_msg, **kwargs)
-            task = await self.distribute(items["func"], objectized_data=objectized_data)
-            if not items["is_custom_short_circuit"]:
-                return items["short_circuit"]  # True or False
+            task = await self.distribute(
+                command_obj["func"], objectized_data=objectized_data
+            )
+            if not command_obj["is_custom_short_circuit"]:
+                return command_obj["short_circuit"]  # True or False
             else:
                 while not task.done():
                     await sleep(0.5)

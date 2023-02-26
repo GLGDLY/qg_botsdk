@@ -27,23 +27,24 @@ BOT(bot_id='xxx', bot_token='xxx')
 # 路径：qg_botsdk.BOT()
 ```
 
-| 参数                    |        |        |                                                    |
-| --------------------- | ------ | ------ | -------------------------------------------------- |
-| 字段名                   | 类型     | 默认值    | 说明                                                 |
-| bot_id                | string | 无，必选参数 | 机器人平台BotAppID                                      |
-| bot_token             | string | 无，必选参数 | 机器人平台机器人令牌                                         |
-| bot_secret            | string | None   | 机器人平台机器人密钥                                         |
-| is_private            | bool   | False  | 是否私域机器人，默认为公域（只订阅艾特消息，不订阅全部）                       |
-| is_sandbox            | bool   | False  | 是否开启沙箱环境测试                                         |
-| max_shard             | int    | 5      | 最大分片数限制（SDK版本2.3.1后已遗弃，转为自定义shard_no以及total_shard） |
-| no_permission_warning | bool   | True   | 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启                     |
-| is_async              | bool   | False  | 使用同步api还是异步api，默认False（使用同步）                       |
-| is_retry              | bool   | True   | 使用api时，如遇可重试的错误码是否自动进行重试（需求SDK版本>=2.2.8）           |
-| is_log_error          | bool   | True   | 使用api时，如返回的结果为不成功，可自动log输出报错信息（需求SDK版本>=2.2.10）    |
-| shard_no              | int    | 0      | 当前分片数，如不熟悉相关配置请不要轻易改动此项（需求SDK版本>=2.3.1）            |
-| total_shard           | int    | 1      | 最大分片数，如不熟悉相关配置请不要轻易改动此项（需求SDK版本>=2.3.1）            |
-| max_workers           | int    | None   | 在同步模式下，允许同时运行的最大线程数（需求SDK版本>=2.3.5）                |
-| api_max_concurrency   | int    | 0      | API允许的最大并发数，超过此并发数将进入队列，如此数值&lt;=0代表不开启任何队列        |
+| 参数                    |        |        |                                                             |
+| --------------------- | ------ | ------ | ----------------------------------------------------------- |
+| 字段名                   | 类型     | 默认值    | 说明                                                          |
+| bot_id                | string | 无，必选参数 | 机器人平台BotAppID                                               |
+| bot_token             | string | 无，必选参数 | 机器人平台机器人令牌                                                  |
+| bot_secret            | string | None   | 机器人平台机器人密钥                                                  |
+| is_private            | bool   | False  | 是否私域机器人，默认为公域（只订阅艾特消息，不订阅全部）                                |
+| is_sandbox            | bool   | False  | 是否开启沙箱环境测试                                                  |
+| max_shard             | int    | 5      | 最大分片数限制（SDK版本2.3.1后已遗弃，转为自定义shard_no以及total_shard）          |
+| no_permission_warning | bool   | True   | 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启                              |
+| is_async              | bool   | False  | 使用同步api还是异步api，默认False（使用同步）                                |
+| is_retry              | bool   | True   | 使用api时，如遇可重试的错误码是否自动进行重试（需求SDK版本>=2.2.8）                    |
+| is_log_error          | bool   | True   | 使用api时，如返回的结果为不成功，可自动log输出报错信息（需求SDK版本>=2.2.10）             |
+| shard_no              | int    | 0      | 当前分片数，如不熟悉相关配置请不要轻易改动此项（需求SDK版本>=2.3.1）                     |
+| total_shard           | int    | 1      | 最大分片数，如不熟悉相关配置请不要轻易改动此项（需求SDK版本>=2.3.1）                     |
+| max_workers           | int    | None   | 在同步模式下，允许同时运行的最大线程数（需求SDK版本>=2.3.5）                         |
+| api_max_concurrency   | int    | 0      | API允许的最大并发数，超过此并发数将进入队列，如此数值&lt;=0代表不开启任何队列（需求SDK版本>=2.5.6） |
+| api_timeout           | int    | 20     | API请求的超时设置（需求SDK版本>=2.6.3）                                  |
 
 ### 开始机器人
 

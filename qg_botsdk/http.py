@@ -75,7 +75,9 @@ class FormData_(FormData):
 
 
 class Session:
-    def __init__(self, loop, is_retry, is_log_error, logger, max_concurrency, **kwargs):
+    def __init__(
+        self, loop, is_retry, is_log_error, logger, max_concurrency, timeout, **kwargs
+    ):
         self._is_retry = is_retry
         self._is_log_error = is_log_error
         self._logger = logger
@@ -86,7 +88,7 @@ class Session:
         )
         self._kwargs = kwargs
         self._session: Optional[ClientSession] = None
-        self._timeout = ClientTimeout(total=20)
+        self._timeout = ClientTimeout(total=timeout)
         self._loop = loop
         loop.run_until_complete(self._check_session())
 

@@ -86,7 +86,8 @@ class AsyncAPI:
             return True
         return False
 
-    async def get_bot_id(self):
+    @staticmethod
+    async def get_bot_id():
         raise DeprecationWarning("SDK版本>=2.3.2后已遗弃get_bot_id()的api，改为BOT.robot.id")
 
     async def get_bot_info(self) -> _api_model.get_bot_info():

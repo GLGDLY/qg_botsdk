@@ -43,6 +43,7 @@ class BOT:
         total_shard: int = 1,
         max_workers: int = 32,
         api_max_concurrency: int = 0,
+        api_timeout: int = 20,
     ):
         """
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
@@ -59,7 +60,8 @@ class BOT:
         :param shard_no: 当前分片数，如不熟悉相关配置请不要轻易改动此项，默认0
         :param total_shard: 最大分片数，如不熟悉相关配置请不要轻易改动此项，默认1
         :param max_workers: 在同步模式下，允许同时运行的最大线程数，默认32
-        :param api_max_concurrency: API允许的最大并发数，超过此并发数将进入队列，如此数值<=0代表不开启任何队列
+        :param api_max_concurrency: API允许的最大并发数，超过此并发数将进入队列，如此数值<=0代表不开启任何队列，默认0
+        :param api_timeout: API请求的超时设置。默认20
         """
         self.logger = Logger(bot_id)
         self.bot_id = bot_id
@@ -116,6 +118,7 @@ class BOT:
             is_log_error,
             self.logger,
             api_max_concurrency,
+            api_timeout,
             headers=self.bot_headers,
         )
         self.msg_treat = True

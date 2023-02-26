@@ -124,7 +124,7 @@ def exception_processor(func):
     return wrap
 
 
-class object_class(object):
+class object_class:
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             self.__setattr__(k, v)
