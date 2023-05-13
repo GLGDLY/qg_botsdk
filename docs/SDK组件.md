@@ -149,13 +149,13 @@ bot = BOT(bot_id='xxx', bot_token='xxx')
 
 @bot.bind_msg()
 def msg_function(data):   # 可使用 def msg_function(data: Model.MESSAGE): 调用模型数据
-	"""
-	这是接收消息的函数，包含了一个data的参数以接收Object类型数据；
-	处理后的消息数据treated_msg为：data.treated_msg
-	处理前的消息数据为：data.content
-	:param data: 可从model取用模型数据，方法 —— data: Model.MESSAGE
-	"""
-	print('收到了消息： %s ！' % data.treated_msg)
+ """
+ 这是接收消息的函数，包含了一个data的参数以接收Object类型数据；
+ 处理后的消息数据treated_msg为：data.treated_msg
+ 处理前的消息数据为：data.content
+ :param data: 可从model取用模型数据，方法 —— data: Model.MESSAGE
+ """
+ print('收到了消息： %s ！' % data.treated_msg)
 ```
 
 ### 绑定接收消息事件
@@ -166,30 +166,30 @@ def msg_function(data):   # 可使用 def msg_function(data: Model.MESSAGE): 调
 
 ```python
 def msg_function(data):   # 可使用 def msg_function(data: Model.MESSAGE): 调用模型数据
-	"""
-	这是接收消息的函数，包含了一个data的参数以接收Object类型数据；
-	处理后的消息数据treated_msg为：data.treated_msg
-	处理前的消息数据为：data.content
-	:param data: 可从model取用模型数据，方法 —— data: Model.MESSAGE
-	"""
-	print('收到了消息： %s ！' % data.treated_msg)
+ """
+ 这是接收消息的函数，包含了一个data的参数以接收Object类型数据；
+ 处理后的消息数据treated_msg为：data.treated_msg
+ 处理前的消息数据为：data.content
+ :param data: 可从model取用模型数据，方法 —— data: Model.MESSAGE
+ """
+ print('收到了消息： %s ！' % data.treated_msg)
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_msg(on_msg_function=msg_function)
+bot.bind_msg(callback=msg_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_msg()
 ```
 
 | 参数            |               |              |                                                                                 |
 | --------------- | ------------- | ------------ | ------------------------------------------------------------------------------- |
 | 字段名          | 类型          | 默认值       | 说明                                                                            |
-| on_msg_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理                              |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理                              |
 | treated_data    | bool          | True         | 是否返回经转义处理的文本，如是则会在返回的 Object 中添加一个 treated_msg 的子类 |
 
-> - 公域机器人只能收到@机器人的消息（AT_MESSAGE_CREATE）；私域机器人能收到频道内所有消息（MESSAGE_CREATE）
+> * 公域机器人只能收到@机器人的消息（AT_MESSAGE_CREATE）；私域机器人能收到频道内所有消息（MESSAGE_CREATE）
 
-> - 此绑定组件通过注册机器人时 is_private 判断公域私域，再自动判断订阅哪一种消息类型。
+> * 此绑定组件通过注册机器人时 is_private 判断公域私域，再自动判断订阅哪一种消息类型。
 
-> - treated_msg 会自动去除开头@机器人的字段、/ 的字段等，如不想使用此功能，可直接使用 `data.content` 获取未经处理的数据
+> * treated_msg 会自动去除开头@机器人的字段、/ 的字段等，如不想使用此功能，可直接使用 `data.content` 获取未经处理的数据
 
 ### 绑定接收私信消息事件
 
@@ -199,24 +199,24 @@ bot.bind_msg(on_msg_function=msg_function)
 
 ```python
 def dm_function(data):   # 可使用 def msg_function(data: Model.DIRECT_MESSAGE): 调用模型数据
-	"""
-	这是接收私信的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 可从model取用模型数据，方法 —— data: Model.DIRECT_MESSAGE
-	"""
-	print('收到了消息： %s ！' % data.treated_msg)
+ """
+ 这是接收私信的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 可从model取用模型数据，方法 —— data: Model.DIRECT_MESSAGE
+ """
+ print('收到了消息： %s ！' % data.treated_msg)
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_dm(on_dm_function=dm_function)
+bot.bind_dm(callback=dm_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_dm()
 ```
 
 | 参数           |               |              |                                                                                 |
 | -------------- | ------------- | ------------ | ------------------------------------------------------------------------------- |
 | 字段名         | 类型          | 默认值       | 说明                                                                            |
-| on_dm_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理                              |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理                              |
 | treated_data   | bool          | True         | 是否返回经转义处理的文本，如是则会在返回的 Object 中添加一个 treated_msg 的子类 |
 
-> - treated_msg 会自动去除开头@机器人的字段、/ 的字段等，如不想使用此功能，可直接使用 `data.content` 获取未经处理的数据
+> * treated_msg 会自动去除开头@机器人的字段、/ 的字段等，如不想使用此功能，可直接使用 `data.content` 获取未经处理的数据
 
 ### 绑定撤回消息事件
 
@@ -226,22 +226,22 @@ bot.bind_dm(on_dm_function=dm_function)
 
 ```python
 def delete_function(data):   # 可使用 def msg_function(data: Model.MESSAGE_DELETE): 调用模型数据
-	"""
-	这是接收撤回事件的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 可从model取用模型数据，方法 —— data: Model.MESSAGE_DELETE
-	"""
-	print('ID：%s 的用户撤回了用户 %s(ID：%s)的消息【%s】' % (
+ """
+ 这是接收撤回事件的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 可从model取用模型数据，方法 —— data: Model.MESSAGE_DELETE
+ """
+ print('ID：%s 的用户撤回了用户 %s(ID：%s)的消息【%s】' % (
         data.op_user.id, data.message.author.username, data.message.author.id, data.message.channel_id))
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_msg_delete(on_delete_function=delete_function)
+bot.bind_msg_delete(callback=delete_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_msg_delete()
 ```
 
 | 参数               |               |              |                                                                                 |
 | ------------------ | ------------- | ------------ | ------------------------------------------------------------------------------- |
 | 字段名             | 类型          | 默认值       | 说明                                                                            |
-| on_delete_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理                              |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理                              |
 | treated_data       | bool          | True         | 是否返回经转义处理的文本，如是则会在返回的 Object 中添加一个 treated_msg 的子类 |
 
 > 如绑定了私信事件，撤回消息事件则将包含私信的撤回消息（DIRECT_MESSAGE_DELETE）
@@ -256,22 +256,22 @@ bot.bind_msg_delete(on_delete_function=delete_function)
 
 ```python
 def guild_function(data):   # 可使用 def msg_function(data: GUILDS): 调用模型数据
-	"""
-	这是接收频道事件的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 可从model取用模型数据，方法 —— data: Model.GUILDS
-	"""
-	print('收到了来自频道 %s（ID:%s） 的数据更新：%s' % (
+ """
+ 这是接收频道事件的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 可从model取用模型数据，方法 —— data: Model.GUILDS
+ """
+ print('收到了来自频道 %s（ID:%s） 的数据更新：%s' % (
 data.name, data.id, data.t))  # data.t代表接收的事件名，如GUILD_CREATE
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_guild_event(on_guild_event_function=guild_function)
+bot.bind_guild_event(callback=guild_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_guild_event()
 ```
 
 | 参数                    |               |              |                                                    |
 | ----------------------- | ------------- | ------------ | -------------------------------------------------- |
 | 字段名                  | 类型          | 默认值       | 说明                                               |
-| on_guild_event_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
 
 ### 绑定子频道事件（需求 sdk 版本 ≥v2.2.4）
 
@@ -281,22 +281,22 @@ bot.bind_guild_event(on_guild_event_function=guild_function)
 
 ```python
 def channel_function(data):   # 可使用 def msg_function(data: Model.CHANNELS): 调用模型数据
-	"""
-	这是接收频道事件的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 可从model取用模型数据，方法 —— data: Model.CHANNELS
-	"""
-	print('收到了来自子频道 %s（ID:%s） 的数据更新：%s' % (
+ """
+ 这是接收频道事件的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 可从model取用模型数据，方法 —— data: Model.CHANNELS
+ """
+ print('收到了来自子频道 %s（ID:%s） 的数据更新：%s' % (
 data.name, data.id, data.t))  # data.t代表接收的事件名，如CHANNEL_CREATE
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_channel_event(on_channel_event_function=channel_function)
+bot.bind_channel_event(callback=channel_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_channel_event()
 ```
 
 | 参数                      |               |              |                                                    |
 | ------------------------- | ------------- | ------------ | -------------------------------------------------- |
 | 字段名                    | 类型          | 默认值       | 说明                                               |
-| on_channel_event_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
 
 ### 绑定频道成员
 
@@ -306,22 +306,22 @@ bot.bind_channel_event(on_channel_event_function=channel_function)
 
 ```python
 def guild_member_function(data):   # 可使用 def msg_function(data: Model.GUILD_MEMBERS): 调用模型数据
-	"""
-	这是接收频道成员事件的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 可从model取用模型数据，方法 —— data: Model.GUILD_MEMBERS
-	"""
-	print('收到了来自频道ID:%s 的成员 %s 的数据更新：%s' % (
+ """
+ 这是接收频道成员事件的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 可从model取用模型数据，方法 —— data: Model.GUILD_MEMBERS
+ """
+ print('收到了来自频道ID:%s 的成员 %s 的数据更新：%s' % (
 data.id, data.user.username, data.t))
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_guild_event(on_guild_member_function=guild_member_function)
-# 路径：qg_botsdk.qg_bot.BOT().on_guild_member_function()
+bot.bind_guild_event(callback=guild_member_function)
+# 路径：qg_botsdk.qg_bot.BOT().bind_guild_event()
 ```
 
 | 参数                     |               |              |                                                    |
 | ------------------------ | ------------- | ------------ | -------------------------------------------------- |
 | 字段名                   | 类型          | 默认值       | 说明                                               |
-| on_guild_member_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
 
 ### 绑定表情表态事件
 
@@ -331,22 +331,22 @@ bot.bind_guild_event(on_guild_member_function=guild_member_function)
 
 ```python
 def reaction_function(data):   # 可使用 def msg_function(data: Model.REACTION): 调用模型数据
-	"""
-	这是接收表情表态事件的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 可从model取用模型数据，方法 —— data: Model.REACTION
-	"""
-	if data.t == 'MESSAGE_REACTION_ADD':
-		bot.api.send_msg('%s 在频道 %s 子频道 %s 新增了新的表情动态！' % (data.user_id, data.guild_id, data.channel_id))
+ """
+ 这是接收表情表态事件的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 可从model取用模型数据，方法 —— data: Model.REACTION
+ """
+ if data.t == 'MESSAGE_REACTION_ADD':
+  bot.api.send_msg('%s 在频道 %s 子频道 %s 新增了新的表情动态！' % (data.user_id, data.guild_id, data.channel_id))
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_reaction(on_reaction_function=reaction_function)
+bot.bind_reaction(callback=reaction_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_reaction()
 ```
 
 | 参数                 |               |              |                                                    |
 | -------------------- | ------------- | ------------ | -------------------------------------------------- |
 | 字段名               | 类型          | 默认值       | 说明                                               |
-| on_reaction_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
 
 ### 绑定互动事件
 
@@ -356,21 +356,21 @@ bot.bind_reaction(on_reaction_function=reaction_function)
 
 ```python
 def interaction_function(data):
-	"""
-	这是接收互动事件的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 当前未有录入数据结构
-	"""
-	print('暂时未有数据结构记录')
+ """
+ 这是接收互动事件的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 当前未有录入数据结构
+ """
+ print('暂时未有数据结构记录')
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_interaction(on_interaction_function=interaction_function)
+bot.bind_interaction(callback=interaction_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_interaction()
 ```
 
 | 参数                    |               |              |                                                    |
 | ----------------------- | ------------- | ------------ | -------------------------------------------------- |
 | 字段名                  | 类型          | 默认值       | 说明                                               |
-| on_interaction_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
 
 ### 绑定审核事件
 
@@ -380,22 +380,22 @@ bot.bind_interaction(on_interaction_function=interaction_function)
 
 ```python
 def audit_function(data):   # 可使用 def msg_function(data: Model.MESSAGE_AUDIT): 调用模型数据
-	"""
-	这是接收审核事件的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 可从model取用模型数据，方法 —— data: Model.MESSAGE_AUDIT
-	"""
-	if data.t == 'MESSAGE_AUDIT_PASS':
-		bot.logger.info('主动消息审核通过啦，已自动发往子频道%s了！' % data.channel_id)
+ """
+ 这是接收审核事件的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 可从model取用模型数据，方法 —— data: Model.MESSAGE_AUDIT
+ """
+ if data.t == 'MESSAGE_AUDIT_PASS':
+  bot.logger.info('主动消息审核通过啦，已自动发往子频道%s了！' % data.channel_id)
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_audit(on_audit_function=audit_function)
+bot.bind_audit(callback=audit_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_audit()
 ```
 
 | 参数              |               |              |                                                    |
 | ----------------- | ------------- | ------------ | -------------------------------------------------- |
 | 字段名            | 类型          | 默认值       | 说明                                               |
-| on_audit_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
 
 ### 绑定论坛事件
 
@@ -407,12 +407,12 @@ bot.bind_audit(on_audit_function=audit_function)
 
 ```python
 def forum_function(data):   # 可使用 def msg_function(data: Model.FORUMS_EVENT): 调用模型数据
-	"""
-	这是接收论坛事件的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 可从model取用模型数据，方法 —— data: Model.FORUMS_EVENT
-	"""
-	if data.t == 'FORUM_THREAD_CREATE':
-		title = data.thread_info.title.paragraphs[0].elems[0].text.text
+ """
+ 这是接收论坛事件的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 可从model取用模型数据，方法 —— data: Model.FORUMS_EVENT
+ """
+ if data.t == 'FORUM_THREAD_CREATE':
+  title = data.thread_info.title.paragraphs[0].elems[0].text.text
         content = ''
         for items in data.thread_info.content.paragraphs:
             d = items.elems[0]
@@ -424,14 +424,14 @@ def forum_function(data):   # 可使用 def msg_function(data: Model.FORUMS_EVEN
         bot.logger.info(f'收到了一条新帖子！\n标题：{title}\n内容：{content}')
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_forum(on_forum_function=forum_function)
+bot.bind_forum(callback=forum_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_forum()
 ```
 
 | 参数              |               |              |                                                    |
 | ----------------- | ------------- | ------------ | -------------------------------------------------- |
 | 字段名            | 类型          | 默认值       | 说明                                               |
-| on_forum_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
 
 ### 绑定公域论坛事件
 
@@ -443,23 +443,23 @@ bot.bind_forum(on_forum_function=forum_function)
 
 ```python
 def open_forum_function(data):   # 可使用 def msg_function(data: Model.OPEN_FORUMS): 调用模型数据
-	"""
-	这是接收公域论坛事件的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 可从model取用模型数据，方法 —— data: Model.OPEN_FORUMS
-	"""
-	if data.t == 'OPEN_FORUM_THREAD_CREATE':
-		author_id = data.author_id
+ """
+ 这是接收公域论坛事件的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 可从model取用模型数据，方法 —— data: Model.OPEN_FORUMS
+ """
+ if data.t == 'OPEN_FORUM_THREAD_CREATE':
+  author_id = data.author_id
         bot.logger.info(f'收到了一条新帖子！\n作者：<@{author_id}>')
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_open_forum(on_open_forum_function=forum_function)
+bot.bind_open_forum(callback=forum_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_open_forum()
 ```
 
 | 参数                   |               |              |                                                    |
 | ---------------------- | ------------- | ------------ | -------------------------------------------------- |
 | 字段名                 | 类型          | 默认值       | 说明                                               |
-| on_open_forum_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
 
 ### 绑定音频事件
 
@@ -469,22 +469,22 @@ bot.bind_open_forum(on_open_forum_function=forum_function)
 
 ```python
 def audio_function(data):   # 可使用 def msg_function(data: Model.AUDIO_ACTION): 调用模型数据
-	"""
-	这是接收音频事件的函数，包含了一个data的参数以接收Object类型数据
-	:param data: 可从model取用模型数据，方法 —— data: Model.AUDIO_ACTION
-	"""
-	if data.t == 'AUDIO_ON_MIC ':
-		bot.logger.info('频道ID：%s 子频道ID：%s 已上麦' % (data.guild_id, data.channel_id))
+ """
+ 这是接收音频事件的函数，包含了一个data的参数以接收Object类型数据
+ :param data: 可从model取用模型数据，方法 —— data: Model.AUDIO_ACTION
+ """
+ if data.t == 'AUDIO_ON_MIC ':
+  bot.logger.info('频道ID：%s 子频道ID：%s 已上麦' % (data.guild_id, data.channel_id))
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_audio(on_audio_function=audio_function)
+bot.bind_audio(callback=audio_function)
 # 路径：qg_botsdk.qg_bot.BOT().bind_audio()
 ```
 
 | 参数              |               |              |                                                    |
 | ----------------- | ------------- | ------------ | -------------------------------------------------- |
 | 字段名            | 类型          | 默认值       | 说明                                               |
-| on_audio_function | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
+| callback | function 函数 | 无，必选参数 | 该函数应包含一个参数以接收 Object 消息数据进行处理 |
 
 > 音频事件疑似需要先申请相关权限，或尚未开放相关事件推送
 
@@ -498,10 +498,10 @@ bot.bind_audio(on_audio_function=audio_function)
 
 ```python
 def start_event():
-	"""
-	这是一个在机器人开始运行后（成功连接后）马上执行的函数
-	"""
-	all_guilds = bot.get_me_guilds()
+ """
+ 这是一个在机器人开始运行后（成功连接后）马上执行的函数
+ """
+ all_guilds = bot.get_me_guilds()
     bot.logger.info('全部频道：' + str([items['name'] + '(' + items['id'] + ')' for items in all_guilds]))
     bot.logger.info('全部频道数量：' + str(len(all_guilds)))
     for items in all_guilds:
@@ -554,28 +554,26 @@ bot.register_repeat_event(time_function=loop_event, check_interval=60)
 ```python
 # 同步sync版调用方法
 def msg_function(data: MESSAGE):
-	if bot.api.security_check(data.content):
-		print('检测通过，内容并无违规')
-	else:
-		print('检测不通过，内容有违规'
-)
+ if bot.api.security_check(data.content):
+  print('检测通过，内容并无违规')
+ else:
+  print('检测不通过，内容有违规')
 
 bot = BOT(bot_id='xxx', bot_token='xxx', bot_secret='xxx')
 bot.security_setup(mini_id='xxx', mini_secret='xxx')
-bot.bind_msg(on_msg_function=msg_function)
+bot.bind_msg(callback=msg_function)
 
 # 异步async版调用方法
 async def msg_function(data: MESSAGE):
-	checking = await bot.api.security_check(data.content)
-	if checking:
-		print('检测通过，内容并无违规')
-	else:
-		print('检测不通过，内容有违规'
-)
+ checking = await bot.api.security_check(data.content)
+ if checking:
+  print('检测通过，内容并无违规')
+ else:
+  print('检测不通过，内容有违规')
 
 bot = BOT(bot_id='xxx', bot_token='xxx', bot_secret='xxx')
 bot.security_setup(mini_id='xxx', mini_secret='xxx')
-bot.bind_msg(on_msg_function=msg_function)
+bot.bind_msg(callback=msg_function)
 
 # 路径（v2.2.0后）：qg_botsdk.qg_bot.BOT().api.security_check()
 # 路径（v2.2.0前）：qg_botsdk.qg_bot.BOT().security_check()
@@ -601,14 +599,14 @@ bot.bind_msg(on_msg_function=msg_function)
 
 ```python
 def msg_function(data: MESSAGE):
-	if bot.security_check(data.content):
-		bot.logger.info('检测通过，内容并无违规')   # bot.logger
-	else:
-		bot.logger.warning('检测不通过，内容有违规'
+ if bot.security_check(data.content):
+  bot.logger.info('检测通过，内容并无违规')   # bot.logger
+ else:
+  bot.logger.warning('检测不通过，内容有违规'
 )   # bot.logger
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_msg(on_msg_function=msg_function)
+bot.bind_msg(msg_function)
 # 路径：qg_botsdk.qg_bot.BOT().logger()
 ```
 
@@ -638,10 +636,10 @@ bot.bind_msg(on_msg_function=msg_function)
 
 ```python
 def test():
-	bot.logger.debug('这是debug级别的日志')   # 路径：qg_botsdk.qg_bot.BOT().logger().debug()
-	bot.logger.info('这是info级别的日志')   # 路径：qg_botsdk.qg_bot.BOT().logger().info()
-	bot.logger.warning('这是warning级别的日志')   # 路径：qg_botsdk.qg_bot.BOT().logger().warning()
-	bot.logger.error('这是error级别的日志')   # 路径：qg_botsdk.qg_bot.BOT().logger().error()
+ bot.logger.debug('这是debug级别的日志')   # 路径：qg_botsdk.qg_bot.BOT().logger().debug()
+ bot.logger.info('这是info级别的日志')   # 路径：qg_botsdk.qg_bot.BOT().logger().info()
+ bot.logger.warning('这是warning级别的日志')   # 路径：qg_botsdk.qg_bot.BOT().logger().warning()
+ bot.logger.error('这是error级别的日志')   # 路径：qg_botsdk.qg_bot.BOT().logger().error()
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
 test()
@@ -660,7 +658,7 @@ bot.logger.set_formatter(info_format='\033[1;34m[%(asctime)s] [%(levelname)s]\03
 # sdk版本v2.1.1 - v2.2.0
 bot.logger.set_formatter(str_format: str, date_format: str)
 # 格式具体例子：
-bot.logger.set_formatter(str_format='[%(asctime)s] [%(levelname)s](%(name)s): %(message)s', date_format='%m-%d %H:%M:%S'）
+bot.logger.set_formatter(str_format='[%(asctime)s] [%(levelname)s](%(name)s): %(message)s', date_format='%m-%d %H:%M:%S')
 
 # 具体路径：qg_botsdk.qg_bot.BOT().logger().set_formatter()
 ```
