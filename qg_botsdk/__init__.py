@@ -21,7 +21,7 @@ from .plugins import Plugins
 from .qg_bot import BOT
 from .version import __version__
 
-__title__ = "requests"
+__title__ = "qg_botsdk"
 __description__ = "easy-to-use SDK for Tencent QQ guild robot"
 __url__ = "https://github.com/GLGDLY/qg_botsdk"
 __author__ = "GDLY"

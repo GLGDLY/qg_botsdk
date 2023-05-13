@@ -1,8 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import List, Optional
+from re import Pattern
+from typing import List, Optional, TypedDict
 
 from ._utils import object_class
+from .model import Model
+
+
+class Bot_Command_Obj(TypedDict, total=False):
+    command: list[str]
+    regex: Pattern
+    func: Model.MESSAGE
+    treat: bool
+    at: bool
+    short_circuit: bool
+    is_custom_short_circuit: bool
+    admin: bool
+    admin_error_msg: Optional[str]
+
 
 apis = {
     ("获取用户ID", "get_bot_id"): [False, "此API不需要请求权限"],

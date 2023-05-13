@@ -3,17 +3,18 @@
 from re import compile as re_compile
 from typing import List, Optional, Pattern, Union
 
+from ._api_model import Bot_Command_Obj
 from .api import API
 from .async_api import AsyncAPI
 from .model import Model
 
 
 class Plugins:
-    _commands = []
-    _preprocessors = []
+    _commands: list[Bot_Command_Obj] = []
+    _preprocessors: list[Model.MESSAGE] = []
     api: Union[API, AsyncAPI] = None
 
-    def __new__(cls) -> tuple:
+    def __new__(cls) -> tuple[list, list]:
         commands, preprocessors = cls._commands, cls._preprocessors
         cls._commands, cls._preprocessors = [], []
         return commands, preprocessors
@@ -70,62 +71,55 @@ class Plugins:
                 )
             if command:
                 if isinstance(command, str):
-                    cls._commands.append(
-                        {
-                            "command": [command],
-                            "func": func,
-                            "treat": is_treat,
-                            "at": is_require_at,
-                            "short_circuit": is_short_circuit,
-                            "is_custom_short_circuit": is_custom_short_circuit,
-                            "admin": is_require_admin,
-                            "admin_error_msg": admin_error_msg,
-                        }
-                    )
+                    command_obj: Bot_Command_Obj = {
+                        "command": [command],
+                        "func": func,
+                        "treat": is_treat,
+                        "at": is_require_at,
+                        "short_circuit": is_short_circuit,
+                        "is_custom_short_circuit": is_custom_short_circuit,
+                        "admin": is_require_admin,
+                        "admin_error_msg": admin_error_msg,
+                    }
                 elif isinstance(command, list):
-                    cls._commands.append(
-                        {
-                            "command": command,
-                            "func": func,
-                            "treat": is_treat,
-                            "at": is_require_at,
-                            "short_circuit": is_short_circuit,
-                            "is_custom_short_circuit": is_custom_short_circuit,
-                            "admin": is_require_admin,
-                            "admin_error_msg": admin_error_msg,
-                        }
-                    )
+                    command_obj: Bot_Command_Obj = {
+                        "command": command,
+                        "func": func,
+                        "treat": is_treat,
+                        "at": is_require_at,
+                        "short_circuit": is_short_circuit,
+                        "is_custom_short_circuit": is_custom_short_circuit,
+                        "admin": is_require_admin,
+                        "admin_error_msg": admin_error_msg,
+                    }
                 else:
                     raise TypeError("command参数仅接受str或list类型的指令内容")
             else:
                 if isinstance(regex, str):
-                    cls._commands.append(
-                        {
-                            "regex": re_compile(regex),
-                            "func": func,
-                            "treat": is_treat,
-                            "at": is_require_at,
-                            "short_circuit": is_short_circuit,
-                            "is_custom_short_circuit": is_custom_short_circuit,
-                            "admin": is_require_admin,
-                            "admin_error_msg": admin_error_msg,
-                        }
-                    )
+                    command_obj: Bot_Command_Obj = {
+                        "regex": re_compile(regex),
+                        "func": func,
+                        "treat": is_treat,
+                        "at": is_require_at,
+                        "short_circuit": is_short_circuit,
+                        "is_custom_short_circuit": is_custom_short_circuit,
+                        "admin": is_require_admin,
+                        "admin_error_msg": admin_error_msg,
+                    }
                 elif isinstance(regex, Pattern):
-                    cls._commands.append(
-                        {
-                            "regex": regex,
-                            "func": func,
-                            "treat": is_treat,
-                            "at": is_require_at,
-                            "short_circuit": is_short_circuit,
-                            "is_custom_short_circuit": is_custom_short_circuit,
-                            "admin": is_require_admin,
-                            "admin_error_msg": admin_error_msg,
-                        }
-                    )
+                    command_obj: Bot_Command_Obj = {
+                        "regex": regex,
+                        "func": func,
+                        "treat": is_treat,
+                        "at": is_require_at,
+                        "short_circuit": is_short_circuit,
+                        "is_custom_short_circuit": is_custom_short_circuit,
+                        "admin": is_require_admin,
+                        "admin_error_msg": admin_error_msg,
+                    }
                 else:
                     raise TypeError("regex参数仅接受re.compile返回的实例或str类型的正则表达式")
+            cls._commands.append(command_obj)
             return func
 
         return wrap

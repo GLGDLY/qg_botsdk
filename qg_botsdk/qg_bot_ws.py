@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from asyncio import all_tasks, get_event_loop, new_event_loop, sleep
+from asyncio import AbstractEventLoop, all_tasks, sleep
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy, deepcopy
 from json import dumps, loads
@@ -10,6 +10,7 @@ from unittest.mock import PropertyMock, patch
 
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 
+from ._api_model import Bot_Command_Obj
 from ._statics import EVENTS
 from ._utils import (
     exception_handler,
@@ -30,35 +31,25 @@ from .plugins import Plugins
 class BotWs:
     def __init__(
         self,
+        loop: AbstractEventLoop,
         session: Session,
         logger: Logger,
         total_shard: int,
         shard_no: int,
         ws_url: str,
         auth: str,
-        on_msg_function: Callable[[Any], Any],
-        on_dm_function: Callable[[Any], Any],
-        on_delete_function: Callable[[Any], Any],
-        is_filter_self: bool,
-        on_guild_event_function: Callable[[Any], Any],
-        on_channel_event_function: Callable[[Any], Any],
-        on_guild_member_function: Callable[[Any], Any],
-        on_reaction_function: Callable[[Any], Any],
-        on_interaction_function: Callable[[Any], Any],
-        on_audit_function: Callable[[Any], Any],
-        on_forum_function: Callable[[Any], Any],
-        on_open_forum_function: Callable[[Any], Any],
-        on_audio_function: Callable[[Any], Any],
-        on_live_channel_member_function: Callable[[Any], Any],
+        func_registers: dict,
         intents: int,
         msg_treat: bool,
         dm_treat: bool,
         on_start_function: Callable[[], Any],
+        check_interval: int,
+        repeat_function: Callable[[], Any],
         is_async: bool,
         max_workers: int,
         api: Union[AsyncAPI, API],
-        commands,
-        preprocessors,
+        commands: list[Bot_Command_Obj],
+        preprocessors: list[Model.MESSAGE],
     ):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
@@ -75,11 +66,9 @@ class BotWs:
         self.ws_url = ws_url
         self.auth = auth
         self.on_start_function = on_start_function
-        self.on_msg_function = on_msg_function
-        self.on_dm_function = on_dm_function
-        self.on_delete_function = on_delete_function
-        self.is_filter_self = is_filter_self
-        self.on_forum_function = on_forum_function
+        self.check_interval = check_interval
+        self.repeat_function = repeat_function
+        self.func_registers = func_registers
         if not intents:
             self.logger.warning("当前未订阅任何事件，将无法接收任何消息，只能使用主动消息功能")
             intents = 1
@@ -88,10 +77,7 @@ class BotWs:
         self.dm_treat = dm_treat
         self.robot = None
         self.heartbeat_time = 0
-        try:
-            self.loop = get_event_loop()
-        except RuntimeError:
-            self.loop = new_event_loop()
+        self.loop = loop
         self.s = None
         self.reconnect_times = 0
         self.is_reconnect = False
@@ -101,34 +87,28 @@ class BotWs:
         self.heartbeat = None
         self.is_async = is_async
         self.events = {
-            **dict(zip(EVENTS.GUILD, [on_guild_event_function] * len(EVENTS.GUILD))),
-            **dict(
-                zip(EVENTS.CHANNEL, [on_channel_event_function] * len(EVENTS.CHANNEL))
-            ),
+            **dict(zip(EVENTS.GUILD, ["on_guild_event"] * len(EVENTS.GUILD))),
+            **dict(zip(EVENTS.CHANNEL, ["on_channel_event"] * len(EVENTS.CHANNEL))),
             **dict(
                 zip(
                     EVENTS.GUILD_MEMBER,
-                    [on_guild_member_function] * len(EVENTS.GUILD_MEMBER),
+                    ["on_guild_member"] * len(EVENTS.GUILD_MEMBER),
                 )
             ),
-            **dict(zip(EVENTS.REACTION, [on_reaction_function] * len(EVENTS.REACTION))),
+            **dict(zip(EVENTS.REACTION, ["on_reaction"] * len(EVENTS.REACTION))),
             **dict(
                 zip(
                     EVENTS.INTERACTION,
-                    [on_interaction_function] * len(EVENTS.INTERACTION),
+                    ["on_interaction"] * len(EVENTS.INTERACTION),
                 )
             ),
-            **dict(zip(EVENTS.AUDIT, [on_audit_function] * len(EVENTS.AUDIT))),
-            **dict(
-                zip(
-                    EVENTS.OPEN_FORUM, [on_open_forum_function] * len(EVENTS.OPEN_FORUM)
-                )
-            ),
-            **dict(zip(EVENTS.AUDIO, [on_audio_function] * len(EVENTS.AUDIO))),
+            **dict(zip(EVENTS.AUDIT, ["on_audit"] * len(EVENTS.AUDIT))),
+            **dict(zip(EVENTS.OPEN_FORUM, ["on_open_forum"] * len(EVENTS.OPEN_FORUM))),
+            **dict(zip(EVENTS.AUDIO, ["on_audio"] * len(EVENTS.AUDIO))),
             **dict(
                 zip(
                     EVENTS.ALC_MEMBER,
-                    [on_live_channel_member_function] * len(EVENTS.ALC_MEMBER),
+                    ["on_live_channel_member"] * len(EVENTS.ALC_MEMBER),
                 )
             ),
         }
@@ -137,6 +117,18 @@ class BotWs:
         self.commands = commands
         self.preprocessors = preprocessors
         self.at = "<@!%s>"
+
+    @exception_processor
+    async def _time_event_run(self):
+        if self.is_async:
+            self.loop.create_task(self.repeat_function())
+        else:
+            self.threads.submit(self.repeat_function)
+
+    async def _time_event_check(self):
+        while self.running:
+            await sleep(self.check_interval)
+            await self._time_event_run()
 
     async def _start_event(self):
         self.is_first_run = True
@@ -148,6 +140,8 @@ class BotWs:
                 self.loop.create_task(self.on_start_function())
             else:
                 self.threads.submit(self.start_task, self.on_start_function)
+        if self.repeat_function is not None:
+            self.loop.create_task(self._time_event_check())
 
     async def send_connect(self):
         connect_paras = {
@@ -229,7 +223,7 @@ class BotWs:
             # deepcopy treated_msg with just shallow copy others
             # resulting that changing of treated msg will not affect other commands
             memo = {}
-            for x in objectized_data.__dict__.keys():
+            for x in objectized_data.__dict__:
                 if x != "treated_msg":
                     memo[id(getattr(objectized_data, x))] = copy(
                         getattr(objectized_data, x)
@@ -244,7 +238,11 @@ class BotWs:
 
     @exception_processor
     async def check_command(
-        self, objectized_data: Model.MESSAGE, treated_msg, command_obj, **kwargs
+        self,
+        objectized_data: Model.MESSAGE,
+        treated_msg: str,
+        command_obj: Bot_Command_Obj,
+        **kwargs,
     ):
         # command: {command or regex, func, treat, at, short_circuit, admin, admin_error_msg}
         if command_obj["admin"]:
@@ -286,7 +284,7 @@ class BotWs:
                 return task.result()  # True or False
 
     @exception_processor
-    async def distribute_commands(self, data, treated_msg):
+    async def distribute_commands(self, data: dict, treated_msg: str):
         objectized_data = objectize(data.get("d", {}), self.api, self.is_async)
         # run preprocessors
         for func in self.preprocessors:
@@ -312,7 +310,7 @@ class BotWs:
                         return True
 
     @exception_processor
-    async def data_process(self, data):
+    async def data_process(self, data: dict):
         # initialize values
         t = data.get("t")
         d = data.get("d", {})
@@ -322,7 +320,8 @@ class BotWs:
         data["d"]["event_id"] = data.get("id")
         # process and distribute data
         if t in self.events:
-            await self.distribute(self.events[t], data)
+            _key = self.events[t]
+            await self.distribute(self.func_registers[_key], data)
         elif t in EVENTS.MESSAGE_CREATE:
             if self.msg_treat:
                 raw_msg = d.get("content", "").strip()
@@ -332,26 +331,26 @@ class BotWs:
                 treated_msg = ""
             # distribute_commands return True when short circuit
             if not await self.distribute_commands(data, treated_msg):
-                await self.distribute(self.on_msg_function, data)
+                await self.distribute(self.func_registers["on_msg"], data)
         elif t in EVENTS.MESSAGE_DELETE:
-            if self.is_filter_self:
+            if self.func_registers["del_is_filter_self"]:
                 target = d.get("message", {}).get("author", {}).get("id")
                 op_user = d.get("op_user", {}).get("id")
                 if op_user == target:
                     return
-            await self.distribute(self.on_delete_function, data)
+            await self.distribute(self.func_registers["on_delete"], data)
         elif t in EVENTS.DM_CREATE:
             if self.dm_treat:
                 raw_msg = d.get("content", "").strip()
                 data["d"]["treated_msg"] = treat_msg(raw_msg, self.at)
-            await self.distribute(self.on_dm_function, data)
+            await self.distribute(self.func_registers["on_dm"], data)
         elif t in EVENTS.FORUM:
             treat_thread(data)
-            await self.distribute(self.on_forum_function, data)
+            await self.distribute(self.func_registers["on_forum"], data)
         else:
             self.logger.warning(f"unknown event type: [{t}]")
 
-    async def dispatch_events(self, msg):
+    async def dispatch_events(self, msg: str):
         data = loads(msg)
         op = data.get("op")
         if "s" in data:

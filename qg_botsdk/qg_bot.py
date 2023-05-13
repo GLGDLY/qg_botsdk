@@ -12,7 +12,7 @@ from time import sleep as t_sleep
 from typing import Any, Callable, List, Optional, Union
 
 from ._api_model import robot_model
-from ._utils import check_func, exception_processor
+from ._utils import check_func
 from .api import API
 from .async_api import AsyncAPI
 from .http import Session
@@ -91,22 +91,10 @@ class BOT:
         self._shard_no = shard_no
         self._total_shard = total_shard
         self._bot_class = None
-        self._on_delete_function = None
-        self._on_msg_function = None
-        self._on_dm_function = None
-        self._on_guild_event_function = None
-        self._on_channel_event_function = None
-        self._on_guild_member_function = None
-        self._on_reaction_function = None
-        self._on_interaction_function = None
-        self._on_audit_function = None
-        self._on_forum_function = None
-        self._on_open_forum_function = None
-        self._on_audio_function = None
-        self._on_live_channel_member_function = None
+        self._func_registers = {}
         self._repeat_function = None
         self._on_start_function = None
-        self.is_filter_self = True
+        self.del_is_filter_self = True
         self.check_interval = 10
         self.__running = False
         self.__await_closure = False
@@ -168,18 +156,6 @@ class BOT:
             )
 
         Plugins.before_command()(__sdk_default_logger)
-
-    @exception_processor
-    def __time_event_run(self):
-        if self.is_async:
-            self._loop.create_task(self._repeat_function())
-        else:
-            self._repeat_function()
-
-    async def __time_event_check(self):
-        while self.__running:
-            await sleep(self.check_interval)
-            self.__time_event_run()
 
     def __register_msg_intents(self, is_log=True):
         if not self._intents >> 9 & 1 and not self._intents >> 30 & 1:
@@ -258,7 +234,7 @@ class BOT:
         :param admin_error_msg: 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
         """
 
-        def wrap(func: Model.MESSAGE):
+        def wrap(callback: Model.MESSAGE):
             Plugins.on_command(
                 command,
                 regex,
@@ -268,28 +244,28 @@ class BOT:
                 is_custom_short_circuit,
                 is_require_admin,
                 admin_error_msg,
-            )(func)
-            return func
+            )(callback)
+            return callback
 
         return wrap
 
     def bind_msg(
         self,
-        on_msg_function: Callable[[Model.MESSAGE], Any] = None,
+        callback: Callable[[Model.MESSAGE], Any] = None,
         treated_data: bool = True,
         all_msg: bool = None,
     ):
         """
         用作绑定接收消息的函数，将根据机器人是否公域自动判断接收艾特或所有消息
 
-        :param on_msg_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         :param treated_data: 是否返回经转义处理的文本，如是则会在返回的Object中添加一个treated_msg的子类，默认True
         :param all_msg: 是否无视公私域限制，强制开启全部消息接收，默认None（不判断此项参数）
         """
 
         def wraps(func):
             check_func(func, Model.MESSAGE, is_async=self.is_async)
-            self._on_msg_function = func
+            self._func_registers["on_msg"] = func
             if not treated_data:
                 self.msg_treat = False
             if all_msg is None:
@@ -301,255 +277,239 @@ class BOT:
                 self._intents = self._intents | 1 << 30
                 self.logger.info("消息（艾特消息）接收函数订阅成功")
 
-        if not on_msg_function:
+        if not callback:
             return wraps
-        wraps(on_msg_function)
+        wraps(callback)
 
     def bind_dm(
         self,
-        on_dm_function: Callable[[Model.DIRECT_MESSAGE], Any] = None,
+        callback: Callable[[Model.DIRECT_MESSAGE], Any] = None,
         treated_data: bool = True,
     ):
         """
         用作绑定接收私信消息的函数
 
-        :param on_dm_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         :param treated_data: 是否返回经转义处理的文本，如是则会在返回的Object中添加一个treated_msg的子类，默认True
         """
 
         def wraps(func):
             check_func(func, Model.DIRECT_MESSAGE, is_async=self.is_async)
-            self._on_dm_function = func
+            self._func_registers["on_dm"] = func
             self._intents = self._intents | 1 << 12
             if treated_data:
                 self.dm_treat = True
             self.logger.info("私信接收函数订阅成功")
 
-        if not on_dm_function:
+        if not callback:
             return wraps
-        wraps(on_dm_function)
+        wraps(callback)
 
     def bind_msg_delete(
         self,
-        on_delete_function: Callable[[Model.MESSAGE_DELETE], Any] = None,
+        callback: Callable[[Model.MESSAGE_DELETE], Any] = None,
         is_filter_self: bool = True,
     ):
         """
-        用作绑定接收消息撤回事件的函数，注册时将自动根据公域私域注册艾特或全部消息，但不会主动注册私信事件
+        用作绑定接收消息撤回事件的回调函数，注册时将自动根据公域私域注册艾特或全部消息，但不会主动注册私信事件
 
-        :param on_delete_function:类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback:类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         :param is_filter_self: 是否过滤用户自行撤回的消息，只接受管理撤回事件
         """
 
         def wraps(func):
             check_func(func, Model.MESSAGE_DELETE, is_async=self.is_async)
-            self._on_delete_function = func
-            self.is_filter_self = is_filter_self
+            self._func_registers["on_delete"] = func
+            self._func_registers["del_is_filter_self"] = is_filter_self
             self.__register_msg_intents(False)
             self.logger.info("撤回事件订阅成功")
 
-        if not on_delete_function:
+        if not callback:
             return wraps
-        wraps(on_delete_function)
+        wraps(callback)
 
-    def bind_guild_event(
-        self, on_guild_event_function: Callable[[Model.GUILDS], Any] = None
-    ):
+    def bind_guild_event(self, callback: Callable[[Model.GUILDS], Any] = None):
         """
         用作绑定接收频道信息的函数
 
-        :param on_guild_event_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
 
         def wraps(func):
             check_func(func, Model.GUILDS, is_async=self.is_async)
-            self._on_guild_event_function = func
+            self._func_registers["on_guild_event"] = func
             self._intents = self._intents | 1
             self.logger.info("频道事件订阅成功")
 
-        if not on_guild_event_function:
+        if not callback:
             return wraps
-        wraps(on_guild_event_function)
+        wraps(callback)
 
-    def bind_channel_event(
-        self, on_channel_event_function: Callable[[Model.CHANNELS], Any] = None
-    ):
+    def bind_channel_event(self, callback: Callable[[Model.CHANNELS], Any] = None):
         """
         用作绑定接收子频道信息的函数
 
-        :param on_channel_event_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
 
         def wraps(func):
             check_func(func, Model.CHANNELS, is_async=self.is_async)
-            self._on_channel_event_function = func
+            self._func_registers["on_channel_event"] = func
             self._intents = self._intents | 1
             self.logger.info("子频道事件订阅成功")
 
-        if not on_channel_event_function:
+        if not callback:
             return wraps
-        wraps(on_channel_event_function)
+        wraps(callback)
 
-    def bind_guild_member(
-        self, on_guild_member_function: Callable[[Model.GUILD_MEMBERS], Any] = None
-    ):
+    def bind_guild_member(self, callback: Callable[[Model.GUILD_MEMBERS], Any] = None):
         """
         用作绑定接收频道成员信息的函数
 
-        :param on_guild_member_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
 
         def wraps(func):
             check_func(func, Model.GUILD_MEMBERS, is_async=self.is_async)
-            self._on_guild_member_function = func
+            self._func_registers["on_guild_member"] = func
             self._intents = self._intents | 1 << 1
             self.logger.info("频道成员事件订阅成功")
 
-        if not on_guild_member_function:
+        if not callback:
             return wraps
-        wraps(on_guild_member_function)
+        wraps(callback)
 
-    def bind_reaction(
-        self, on_reaction_function: Callable[[Model.REACTION], Any] = None
-    ):
+    def bind_reaction(self, callback: Callable[[Model.REACTION], Any] = None):
         """
         用作绑定接收表情表态信息的函数
 
-        :param on_reaction_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
 
         def wraps(func):
             check_func(func, Model.REACTION, is_async=self.is_async)
-            self._on_reaction_function = func
+            self._func_registers["on_reaction"] = func
             self._intents = self._intents | 1 << 10
             self.logger.info("表情表态事件订阅成功")
 
-        if not on_reaction_function:
+        if not callback:
             return wraps
-        wraps(on_reaction_function)
+        wraps(callback)
 
-    def bind_interaction(
-        self, on_interaction_function: Callable[[Model.INTERACTION], Any] = None
-    ):
+    def bind_interaction(self, callback: Callable[[Model.INTERACTION], Any] = None):
         """
-        用作绑定接收互动事件的函数
+        用作绑定接收互动事件的回调函数
 
-        :param on_interaction_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
 
         def wraps(func):
             check_func(func, Model.INTERACTION, is_async=self.is_async)
-            self._on_interaction_function = func
+            self._func_registers["on_interaction"] = func
             self._intents = self._intents | 1 << 26
             self.logger.info("互动事件订阅成功")
 
-        if not on_interaction_function:
+        if not callback:
             return wraps
-        wraps(on_interaction_function)
+        wraps(callback)
 
-    def bind_audit(
-        self, on_audit_function: Callable[[Model.MESSAGE_AUDIT], Any] = None
-    ):
+    def bind_audit(self, callback: Callable[[Model.MESSAGE_AUDIT], Any] = None):
         """
-        用作绑定接收审核事件的函数
+        用作绑定接收审核事件的回调函数
 
-        :param on_audit_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
 
         def wraps(func):
             check_func(func, Model.MESSAGE_AUDIT, is_async=self.is_async)
-            self._on_audit_function = func
+            self._func_registers["on_audit"] = func
             self._intents = self._intents | 1 << 27
             self.logger.info("审核事件订阅成功")
 
-        if not on_audit_function:
+        if not callback:
             return wraps
-        wraps(on_audit_function)
+        wraps(callback)
 
-    def bind_forum(self, on_forum_function: Callable[[Model.FORUMS_EVENT], Any] = None):
+    def bind_forum(self, callback: Callable[[Model.FORUMS_EVENT], Any] = None):
         """
-        用作绑定接收论坛事件的函数，一般仅私域机器人能注册此事件
+        用作绑定接收论坛事件的回调函数，一般仅私域机器人能注册此事件
 
         .. note::
             当前仅可以接收FORUM_THREAD_CREATE、FORUM_THREAD_UPDATE、FORUM_THREAD_DELETE三个事件
 
-        :param on_forum_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
 
         def wraps(func):
             check_func(func, Model.FORUMS_EVENT, is_async=self.is_async)
-            self._on_forum_function = func
+            self._func_registers["on_forum"] = func
             self._intents = self._intents | 1 << 28
             self.logger.info("论坛事件订阅成功")
             if not self.is_private and self.no_permission_warning:
                 self.logger.warning("请注意，一般公域机器人并不能注册论坛事件，请检查自身是否拥有相关权限")
 
-        if not on_forum_function:
+        if not callback:
             return wraps
-        wraps(on_forum_function)
+        wraps(callback)
 
-    def bind_open_forum(
-        self, on_open_forum_function: Callable[[Model.OPEN_FORUMS], Any] = None
-    ):
+    def bind_open_forum(self, callback: Callable[[Model.OPEN_FORUMS], Any] = None):
         """
-        用作绑定接收公域论坛事件的函数
+        用作绑定接收公域论坛事件的回调函数
 
         .. note::
-            当前仅可以接收FORUM_THREAD_CREATE、FORUM_THREAD_UPDATE、FORUM_THREAD_DELETE三个事件
+            当前仅可以接收OPEN_FORUM_THREAD_CREATE、OPEN_FORUM_THREAD_UPDATE、OPEN_FORUM_THREAD_DELETE三个事件
 
-        :param on_open_forum_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
 
         def wraps(func):
             check_func(func, Model.OPEN_FORUMS, is_async=self.is_async)
-            self._on_open_forum_function = func
+            self._func_registers["on_open_forum"] = func
             self._intents = self._intents | 1 << 18
             self.logger.info("论坛事件订阅成功")
 
-        if not on_open_forum_function:
+        if not callback:
             return wraps
-        wraps(on_open_forum_function)
+        wraps(callback)
 
-    def bind_audio(self, on_audio_function: Callable[[Model.AUDIO_ACTION], Any] = None):
+    def bind_audio(self, callback: Callable[[Model.AUDIO_ACTION], Any] = None):
         """
-        用作绑定接收论坛事件的函数
+        用作绑定接收论坛事件的回调函数
 
-        :param on_audio_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
 
         def wraps(func):
             check_func(func, Model.AUDIO_ACTION, is_async=self.is_async)
-            self._on_audio_function = func
+            self._func_registers["on_audio"] = func
             self._intents = self._intents | 1 << 29
             self.logger.info("音频事件订阅成功")
             if self.no_permission_warning:
                 self.logger.warning("请注意，一般机器人并不能注册音频事件（需先进行申请），请检查自身是否拥有相关权限")
 
-        if not on_audio_function:
+        if not callback:
             return wraps
-        wraps(on_audio_function)
+        wraps(callback)
 
     def bind_live_channel_member(
         self,
-        on_live_channel_member_function: Callable[
-            [Model.LIVE_CHANNEL_MEMBER], Any
-        ] = None,
+        callback: Callable[[Model.LIVE_CHANNEL_MEMBER], Any] = None,
     ):
         """
-        用作绑定接收音视频/直播子频道成员进出事件的函数
+        用作绑定接收音视频/直播子频道成员进出事件的回调函数
 
-        :param on_live_channel_member_function: 类型为function，该函数应包含一个参数以接收Object消息数据进行处理
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
 
         def wraps(func):
             check_func(func, Model.LIVE_CHANNEL_MEMBER, is_async=self.is_async)
-            self._on_live_channel_member_function = func
+            self._func_registers["on_live_channel_member"] = func
             self._intents = self._intents | 1 << 19
             self.logger.info("音视频/直播子频道成员进出事件订阅成功")
 
-        if not on_live_channel_member_function:
+        if not callback:
             return wraps
-        wraps(on_live_channel_member_function)
+        wraps(callback)
 
     def register_repeat_event(
         self,
@@ -557,7 +517,7 @@ class BOT:
         check_interval: Union[float, int] = 10,
     ):
         """
-        用作注册重复事件的函数，注册并开始机器人后，会根据间隔时间不断调用注册的函数
+        用作注册重复事件的回调函数，注册并开始机器人后，会根据间隔时间不断调用该回调函数
 
         :param time_function: 类型为function，该函数不应包含任何参数
         :param check_interval: 每多少秒检查调用一次时间事件函数，默认10
@@ -575,7 +535,7 @@ class BOT:
 
     def register_start_event(self, on_start_function: Callable[[], Any] = None):
         """
-        用作注册机器人开始时运行的函数，此函数不应有无限重复的内容
+        用作注册机器人开始时运行的函数，此函数不应有无限重复的内容，会在机器人完成登录后调用该回调函数
 
         :param on_start_function: 类型为function，该函数不应包含任何参数
         """
@@ -631,43 +591,31 @@ class BOT:
                     )
                 self.logger.debug("[机器人ws地址] " + url)
                 commands, preprocessors = self._get_plugins()
-                if self._repeat_function is not None:
-                    self._loop.create_task(self.__time_event_check())
                 self._bot_class = _BotWs(
+                    self._loop,
                     self._session,
                     self.logger,
                     self._total_shard,
                     self._shard_no,
                     url,
                     self.auth,
-                    self._on_msg_function,
-                    self._on_dm_function,
-                    self._on_delete_function,
-                    self.is_filter_self,
-                    self._on_guild_event_function,
-                    self._on_channel_event_function,
-                    self._on_guild_member_function,
-                    self._on_reaction_function,
-                    self._on_interaction_function,
-                    self._on_audit_function,
-                    self._on_forum_function,
-                    self._on_open_forum_function,
-                    self._on_audio_function,
-                    self._on_live_channel_member_function,
+                    self._func_registers,
                     self._intents,
                     self.msg_treat,
                     self.dm_treat,
                     self._on_start_function,
+                    self.check_interval,
+                    self._repeat_function,
                     self.is_async,
                     self.max_workers,
                     self.api,
                     commands,
                     preprocessors,
                 )
+                self._loop.create_task(self._bot_class.starter())
                 if is_blocking:
-                    self._loop.run_until_complete(self._bot_class.starter())
-                else:
-                    self._loop.create_task(self._bot_class.starter())
+
+                    self._loop.run_forever()
             else:
                 self.logger.error("当前机器人已在运行中！")
         except KeyboardInterrupt:
@@ -679,8 +627,8 @@ class BOT:
         当BOT.start()选择is_blocking=False的非阻塞性运行时，此函数能在后续阻塞主进程而继续运行机器人
         """
         try:
-            while self.__running or self.__await_closure:
-                self._loop.run_until_complete(sleep(1))
+            if self.__running or self.__await_closure:
+                self._loop.run_forever()
         except KeyboardInterrupt:
             self.logger.info("结束运行机器人（KeyboardInterrupt）")
             exit()

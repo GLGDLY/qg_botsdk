@@ -12,6 +12,12 @@ class API:
         self._api = api
         self._loop = loop
 
+    def __check_ready(self):
+        if not self._loop.is_running():
+            raise RuntimeError(
+                "Event loop is not running，请先通过BOT()实例的start()或block()方法启动bot并运行事件循环"
+            )
+
     def security_setup(self, mini_id: str, mini_secret: str):
         self._api._mini_id = mini_id
         self._api._mini_secret = mini_secret
@@ -25,6 +31,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.security_check(**_args), self._loop
         )
@@ -40,6 +47,7 @@ class API:
 
         :return:返回的.data中为解析后的json数据
         """
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_bot_info(), self._loop)
         return future_.result()
 
@@ -49,6 +57,8 @@ class API:
 
         :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
         """
+        self.__check_ready()
+        print(self._loop.is_running())
         future_ = run_coroutine_threadsafe(self._api.get_bot_guilds(), self._loop)
         return future_.result()
 
@@ -61,6 +71,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_info(**_args), self._loop
         )
@@ -75,6 +86,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_channels(**_args), self._loop
         )
@@ -89,6 +101,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_channels_info(**_args), self._loop
         )
@@ -124,6 +137,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.create_channels(**_args), self._loop
         )
@@ -151,6 +165,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.patch_channels(**_args), self._loop
         )
@@ -165,6 +180,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.delete_channels(**_args), self._loop
         )
@@ -179,6 +195,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_members(**_args), self._loop
         )
@@ -196,6 +213,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_role_members(**_args), self._loop
         )
@@ -213,6 +231,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_member_info(**_args), self._loop
         )
@@ -236,6 +255,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_member(**_args), self._loop)
         return future_.result()
 
@@ -248,6 +268,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_roles(**_args), self._loop
         )
@@ -271,6 +292,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.create_role(**_args), self._loop)
         return future_.result()
 
@@ -294,6 +316,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.patch_role(**_args), self._loop)
         return future_.result()
 
@@ -307,6 +330,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_role(**_args), self._loop)
         return future_.result()
 
@@ -328,6 +352,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.create_role_member(**_args), self._loop
         )
@@ -351,6 +376,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.delete_role_member(**_args), self._loop
         )
@@ -368,6 +394,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_channel_member_permission(**_args), self._loop
         )
@@ -391,6 +418,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.put_channel_member_permission(**_args), self._loop
         )
@@ -408,6 +436,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_channel_role_permission(**_args), self._loop
         )
@@ -431,6 +460,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.put_channel_role_permission(**_args), self._loop
         )
@@ -448,6 +478,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_message_info(**_args), self._loop
         )
@@ -479,6 +510,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_msg(**_args), self._loop)
         return future_.result()
 
@@ -506,6 +538,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_embed(**_args), self._loop)
         return future_.result()
 
@@ -533,6 +566,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_ark_23(**_args), self._loop)
         return future_.result()
 
@@ -566,6 +600,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_ark_24(**_args), self._loop)
         return future_.result()
 
@@ -595,6 +630,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_ark_37(**_args), self._loop)
         return future_.result()
 
@@ -628,6 +664,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_markdown(**_args), self._loop)
         return future_.result()
 
@@ -644,6 +681,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_msg(**_args), self._loop)
         return future_.result()
 
@@ -656,6 +694,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_setting(**_args), self._loop
         )
@@ -673,6 +712,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.create_dm_guild(**_args), self._loop
         )
@@ -704,6 +744,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_dm(**_args), self._loop)
         return future_.result()
 
@@ -720,6 +761,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_dm_msg(**_args), self._loop)
         return future_.result()
 
@@ -739,6 +781,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.mute_all_member(**_args), self._loop
         )
@@ -762,6 +805,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.mute_member(**_args), self._loop)
         return future_.result()
 
@@ -783,6 +827,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.mute_members(**_args), self._loop)
         return future_.result()
 
@@ -808,6 +853,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.create_announce(**_args), self._loop
         )
@@ -825,6 +871,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.delete_announce(**_args), self._loop
         )
@@ -840,6 +887,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.create_pinmsg(**_args), self._loop)
         return future_.result()
 
@@ -855,6 +903,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_pinmsg(**_args), self._loop)
         return future_.result()
 
@@ -867,6 +916,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_pinmsg(**_args), self._loop)
         return future_.result()
 
@@ -882,6 +932,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_schedules(**_args), self._loop)
         return future_.result()
 
@@ -897,6 +948,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_schedule_info(**_args), self._loop
         )
@@ -924,6 +976,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.create_schedule(**_args), self._loop
         )
@@ -953,6 +1006,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.patch_schedule(**_args), self._loop
         )
@@ -970,6 +1024,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.delete_schedule(**_args), self._loop
         )
@@ -989,6 +1044,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.create_reaction(**_args), self._loop
         )
@@ -1008,6 +1064,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.delete_reaction(**_args), self._loop
         )
@@ -1027,6 +1084,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_reaction_users(**_args), self._loop
         )
@@ -1050,6 +1108,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.control_audio(**_args), self._loop)
         return future_.result()
 
@@ -1062,6 +1121,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.bot_on_mic(**_args), self._loop)
         return future_.result()
 
@@ -1074,6 +1134,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.bot_off_mic(**_args), self._loop)
         return future_.result()
 
@@ -1086,6 +1147,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_threads(**_args), self._loop)
         return future_.result()
 
@@ -1101,13 +1163,14 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_thread_info(**_args), self._loop
         )
         return future_.result()
 
     def create_thread(
-        self, channel_id: str, title: str, content: str, format_: int
+        self, channel_id: str, title: str, content: Union[str, dict], format_: int
     ) -> _api_model.create_thread():
         """
         创建帖子，创建成功后，返回创建成功的任务ID
@@ -1120,6 +1183,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.create_thread(**_args), self._loop)
         return future_.result()
 
@@ -1135,6 +1199,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_thread(**_args), self._loop)
         return future_.result()
 
@@ -1149,6 +1214,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_permissions(**_args), self._loop
         )
@@ -1168,6 +1234,7 @@ class API:
         """
         _args = locals()
         _args.pop("self")
+        self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.create_permission_demand(**_args), self._loop
         )

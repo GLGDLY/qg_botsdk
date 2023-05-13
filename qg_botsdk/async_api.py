@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from io import BufferedReader
-from json import loads
+from json import dumps, loads
 from json.decoder import JSONDecodeError
 from os.path import exists
 from time import time
@@ -1717,7 +1717,7 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def create_thread(
-        self, channel_id: str, title: str, content: str, format_: int
+        self, channel_id: str, title: str, content: Union[str, dict], format_: int
     ) -> _api_model.create_thread():
         """
         创建帖子，创建成功后，返回创建成功的任务ID
@@ -1729,7 +1729,12 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         self.check_warning("发表帖子")
-        json_ = {"title": title, "content": content, "format": format_}
+        if isinstance(content, dict):
+            json_ = {"title": title, "content": dumps(content), "format": format_}
+        elif isinstance(content, str):
+            json_ = {"title": title, "content": content, "format": format_}
+        else:
+            return sdk_error_temp("content参数类型错误，应为str或dict")
         return_ = await self._session.put(
             f"{self.bot_url}/channels/{channel_id}/threads", json=json_
         )
