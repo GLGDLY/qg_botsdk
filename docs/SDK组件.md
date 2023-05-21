@@ -129,7 +129,7 @@ def c_0(data: Model.MESSAGE):
  | is_custom_short_circuit | bool                                                                                   | False | 如果触发指令成功而回调函数返回True则不运行后续指令，存在时优先于is_short_circuit            |
 | is_require_admin        | bool                                                                                   | False | 是否要求频道主或或管理才可触发指令                                             |
  | admin_error_msg         | str                                                                                    | None  | 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路 |
-| required_session        | [SessionObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#id4) | None  | 触发指令所需的session，校验是否存在session以及session中是否存在特定数据                |
+| required_session        | [SessionObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#sessionobject) | None  | 触发指令所需的session，校验是否存在session以及session中是否存在特定数据                |
 
 > （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
 
@@ -144,7 +144,7 @@ bot.get_current_commands()
 | 返回                                                                                               |                            |
 |--------------------------------------------------------------------------------------------------|----------------------------|
 | 类型                                                                                               | 说明                         |
-| list[[BotCommandObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#id5)]  | 包含机器人指令BotCommandObject的列表 |
+| list[[BotCommandObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#botcommandobject)]  | 包含机器人指令BotCommandObject的列表 |
 
 > 无参数
 
@@ -169,7 +169,7 @@ bot.remove_command(command_obj=xxx)
 | 参数                   |                                                                                              |       |                     |
 |----------------------|----------------------------------------------------------------------------------------------|-------|---------------------|
 | 字段名                  | 类型                                                                                           | 默认值   | 说明                  |
-| command_obj          | [BotCommandObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#id5)    | None  | 指令对象                |
+| command_obj          | [BotCommandObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#botcommandobject)    | None  | 指令对象                |
 
 ### 删除预处理器（需求 SDK 版本>=3.0.0）
 

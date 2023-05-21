@@ -16,6 +16,8 @@ from ._base_context import (
     plugin_path,
 )
 
+pytest_plugins = ("pytest_asyncio",)
+
 MockMsg = (
     '{"op":0,"s":2,"t":"MESSAGE_CREATE","id":"MESSAGE_CREATE:xxx",'
     '"d":{"author":{"avatar":"xxx","bot":false,"id":"xxx","username":"xxx"},'
@@ -40,7 +42,7 @@ class TestRunning:
     bot: qg_botsdk.BOT
     _called_counter: int = 0
     _last_called: float = 0
-
+    
     async def _start_assertions(self, is_stop=True):
         await asyncio.sleep(1)
         while self.bot._bot_class.disable_reconnect:
@@ -59,7 +61,8 @@ class TestRunning:
         if is_stop:
             self.bot.loop.stop()
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_start(self, bot):
         self.bot = bot
         assert not self.bot.running
@@ -69,7 +72,8 @@ class TestRunning:
         except RuntimeError:
             pass
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_start_async(self, bot_async):
         self.bot = bot_async
         assert not self.bot.running
@@ -90,7 +94,8 @@ class TestRunning:
         assert not self.bot._bot_class.auth
         assert not self.bot.robot
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_close(self, bot):
         self.bot = bot
         assert not self.bot.running
@@ -105,7 +110,8 @@ class TestRunning:
         await self._start_assertions(is_stop=False)
         self.bot.close()
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_non_blocking_start(self, bot):
         self.bot = bot
         self.bot.start(is_blocking=False)
@@ -113,7 +119,8 @@ class TestRunning:
         self.bot.loop.create_task(self._start_assertions_with_proper_close())
         self.bot.block()
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_start_more_than_once(self, bot):
         self.bot = bot
 
@@ -132,7 +139,8 @@ class TestRunning:
 
         self.bot.close()
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_reconnect(self, bot):
         self.bot = bot
         self.bot.start(is_blocking=False)
@@ -152,7 +160,8 @@ class TestRunning:
             assert mock_ws_send.call_count == 2
             assert '"op": 6' in mock_ws_send.call_args.args[0]
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_exception_on_ws(self, bot):
         self.bot = bot
         self.bot.start(is_blocking=False)
@@ -173,7 +182,8 @@ class TestRunning:
                     in mock_logger.call_args_list
                 )
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_bind_callback_and_plugins(self, bot):
         self.bot = bot
         self.bot._retrieve_new_plugins()
@@ -226,7 +236,8 @@ class TestRunning:
                     in call_hist
                 )
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_async_bind_callback_and_plugins(self, bot_async):
         self.bot = bot_async
         self.bot._retrieve_new_plugins()
@@ -253,7 +264,8 @@ class TestRunning:
                 channel_id="channel_id",
             )
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_regex_with_admin(self, bot):
         self.bot = bot
         self.bot._retrieve_new_plugins()
@@ -290,7 +302,8 @@ class TestRunning:
         )(_callback)
         return True
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_dynamic_created_command_on_runtime(self, bot):
         self.bot = bot
         self.bot._retrieve_new_plugins()
@@ -336,7 +349,8 @@ class TestRunning:
                 self.bot.loop.run_until_complete(asyncio.sleep(0.1))
             self._called_counter = 0
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_wait_for(self, bot_async):
         self.bot = bot_async
         self.bot.bind_msg(self._test_wait_for_msg_binder)
@@ -353,7 +367,8 @@ class TestRunning:
         assert time_now - self._last_called >= 1
         self._last_called = time_now
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_loop_event(self, bot):
         self.bot = bot
         bot.register_repeat_event(self._loop_event, 1)
@@ -378,7 +393,8 @@ class TestRunning:
         self._called_counter += 1
         assert self.bot.api.get_bot_info().result
 
-    @pytest.mark.rtimeout(20)
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
     def test_start_event(self, bot):
         self.bot = bot
         bot.register_start_event(self._start_event)
