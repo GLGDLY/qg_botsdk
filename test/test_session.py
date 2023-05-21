@@ -43,7 +43,8 @@ class TestSession:
     @pytest.mark.timeout(10)
     def test_session_base(self, session):
         session.remove()
-        for _scope in (_all_data := session.get_all()):
+        _all_data = session.get_all()
+        for _scope in _all_data:
             assert _all_data[_scope] == {}
         assert session.get(MockObj, Scope.USER, "test") is None
         session.new(MockObj, Scope.USER, "test", data={"test": "test"})
@@ -77,7 +78,8 @@ class TestSession:
         print(_all_data[Scope.USER.value])
         assert len(session.get_all()[Scope.USER.value]) == 0
         session.remove()
-        for _scope in (_all_data := session.get_all()):
+        _all_data = session.get_all()
+        for _scope in _all_data:
             assert _all_data[_scope] == {}
 
     @pytest.mark.timeout(10)

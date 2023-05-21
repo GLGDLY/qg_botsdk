@@ -379,7 +379,7 @@ class TestBase:
         assert len(command_list) == 1
         assert len(before_command_list) == 1
         if regex:
-            assert command_list[0].regex == [re_compile("command_(\s)")]
+            assert command_list[0].regex == [re_compile(r"command_(\s)")]
         else:
             assert command_list[0].command == ["abc"]
 
@@ -399,13 +399,13 @@ class TestBase:
 
         assert bot._retrieve_new_plugins() == ([], [])
 
-        bot.on_command(regex="command_(\s)")(_callback)
+        bot.on_command(regex=r"command_(\s)")(_callback)
         bot.before_command()(lambda x: x)
         self.direct_plugin_assert(bot, regex=True)
 
         assert bot._retrieve_new_plugins() == ([], [])
 
-        bot.on_command(regex=re_compile("command_(\s)"))(_callback)
+        bot.on_command(regex=re_compile(r"command_(\s)"))(_callback)
         bot.before_command()(lambda x: x)
         self.direct_plugin_assert(bot, regex=True)
 

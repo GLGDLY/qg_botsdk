@@ -17,7 +17,8 @@ else:
 
 try:
     config: dict
-    if raw_config := getenv("TEST_CONFIG", None):
+    raw_config = getenv("TEST_CONFIG", None)
+    if raw_config:
         config = qg_botsdk.utils.read_yaml(StringIO(raw_config))
     else:
         config = qg_botsdk.utils.read_yaml(read_path)

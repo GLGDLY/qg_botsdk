@@ -95,7 +95,7 @@ class SessionManager:
                 self.__logger.info("Session Manager结束中，正在保存数据...")
             except Exception:
                 print("Session Manager结束中，正在保存数据...")
-            self.commit_data(is_info=False)
+            self.commit_data(is_info=False
 
     # -*- class internal methods -*-
     @staticmethod
