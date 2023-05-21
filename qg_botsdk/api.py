@@ -1,17 +1,62 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from asyncio import AbstractEventLoop, run_coroutine_threadsafe
-from typing import BinaryIO, Dict, List, Optional, Tuple, Union
+from time import sleep, time
+from typing import BinaryIO, Dict, Iterable, List, Optional, Tuple, Union
 
-from . import _api_model
+from . import _api_model, model
+from ._exception import WaitError, WaitTimeoutError
+from ._statics import TraceNames
+from ._utils import TraceCallerData
 from .async_api import AsyncAPI
 
 
 class API:
-    def __init__(self, api: AsyncAPI, loop: AbstractEventLoop):
+    def __init__(
+        self, api: AsyncAPI, loop: AbstractEventLoop, timeout: int, session_manager
+    ):
         self._api = api
         self._loop = loop
+        self._timeout = timeout
+        self.__session_manager = session_manager
+        self.__session_manager.api = self
 
+    # sdk internal api
+    def wait_for(
+        self,
+        scope: Union[model.Scope, Iterable[model.Scope]],
+        command_obj: model.BotCommandObject,
+        timeout: int = None,
+    ) -> model.Model.MESSAGE:
+        """
+        等待指定的command被触发
+
+        :param scope: 指定的校验作用域或作用域列表(USER, GUILD, CHANNEL, GLOBAL)，用作谁和在哪可以触发此wait_for
+        :param command_obj: 指定的Command，仅生效以下BotCommandObject的参数（command, regex, treat, at, short_circuit）
+        :param timeout: 超时时间，单位秒，None为永远等待
+        :return: Model.MESSAGE
+        """
+        self.__check_ready()
+        data = TraceCallerData(TraceNames, ("args",))[0]
+        command_obj.func = None
+        scope_key = self.__session_manager.register_wait_for(data, scope, command_obj)
+        _timeout_stamp = time() + timeout if timeout else None
+        while True:
+            check, result = self.__session_manager.check_wait_for(
+                scope_key, command_obj
+            )
+            if not check:
+                self.__session_manager.del_wait_for(data, command_obj)
+                raise WaitError("找不到对应的wait_for()等待任务")
+            if result is not None:
+                break
+            if _timeout_stamp and time() > _timeout_stamp:
+                self.__session_manager.del_wait_for(data, command_obj)
+                raise WaitTimeoutError(f"wait_for()等待超时： {command_obj}")
+            sleep(0.5)
+        return result
+
+    # bot api
     def __check_ready(self):
         if not self._loop.is_running():
             raise RuntimeError(
@@ -35,7 +80,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.security_check(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     @staticmethod
     def get_bot_id():
@@ -49,7 +94,7 @@ class API:
         """
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_bot_info(), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_bot_guilds(self) -> _api_model.get_bot_guilds():
         """
@@ -58,9 +103,8 @@ class API:
         :return: 返回的.data中为包含所有数据的一个list，列表每个项均为object数据
         """
         self.__check_ready()
-        print(self._loop.is_running())
         future_ = run_coroutine_threadsafe(self._api.get_bot_guilds(), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_guild_info(self, guild_id: str) -> _api_model.get_guild_info():
         """
@@ -75,7 +119,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_info(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_guild_channels(self, guild_id: str) -> _api_model.get_guild_channels():
         """
@@ -90,7 +134,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_channels(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_channels_info(self, channel_id: str) -> _api_model.get_channels_info():
         """
@@ -105,7 +149,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_channels_info(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def create_channels(
         self,
@@ -113,11 +157,11 @@ class API:
         name: str,
         type_: int,
         position: int,
-        parent_id: str,
-        sub_type: int,
-        private_type: int,
-        private_user_ids: List[str],
-        speak_permission: int,
+        parent_id: str = None,
+        sub_type: int = None,
+        private_type: int = None,
+        private_user_ids: List[str] = None,
+        speak_permission: int = None,
         application_id: Optional[str] = None,
     ) -> _api_model.create_channels():
         """
@@ -141,7 +185,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_channels(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def patch_channels(
         self,
@@ -169,7 +213,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.patch_channels(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_channels(self, channel_id) -> _api_model.delete_channels():
         """
@@ -184,7 +228,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.delete_channels(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_guild_members(self, guild_id: str) -> _api_model.get_guild_members():
         """
@@ -199,7 +243,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_members(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_role_members(
         self, guild_id: str, role_id: str
@@ -217,7 +261,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_role_members(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_member_info(
         self, guild_id: str, user_id: str
@@ -235,7 +279,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_member_info(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_member(
         self,
@@ -257,7 +301,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_member(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_guild_roles(self, guild_id: str) -> _api_model.get_guild_roles():
         """
@@ -272,7 +316,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_roles(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def create_role(
         self,
@@ -294,7 +338,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.create_role(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def patch_role(
         self,
@@ -318,7 +362,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.patch_role(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_role(self, guild_id: str, role_id: str) -> _api_model.delete_role():
         """
@@ -332,7 +376,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_role(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def create_role_member(
         self,
@@ -356,7 +400,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_role_member(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_role_member(
         self,
@@ -380,7 +424,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.delete_role_member(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_channel_member_permission(
         self, channel_id: str, user_id: str
@@ -398,7 +442,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_channel_member_permission(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def put_channel_member_permission(
         self,
@@ -412,8 +456,8 @@ class API:
 
         :param channel_id: 子频道id
         :param user_id: 用户id
-        :param add: 需要添加的权限，string格式，可选：1，2，4，8
-        :param remove:需要删除的权限，string格式，可选：1，2，4，8
+        :param add: 需要添加的权限，string格式，1，2，4，8按需进行位运算后的结果
+        :param remove:需要删除的权限，string格式，1，2，4，8按需进行位运算后的结果
         :return: 返回的.result显示是否成功
         """
         _args = locals()
@@ -422,7 +466,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.put_channel_member_permission(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_channel_role_permission(
         self, channel_id: str, role_id: str
@@ -440,7 +484,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_channel_role_permission(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def put_channel_role_permission(
         self,
@@ -454,8 +498,8 @@ class API:
 
         :param channel_id: 子频道id
         :param role_id: 身份组id
-        :param add: 需要添加的权限，string格式，可选：1，2，4，8
-        :param remove:需要删除的权限，string格式，可选：1，2，4，8
+        :param add: 需要添加的权限，string格式，1，2，4，8按需进行位运算后的结果
+        :param remove:需要删除的权限，string格式，1，2，4，8按需进行位运算后的结果
         :return: 返回的.result显示是否成功
         """
         _args = locals()
@@ -464,7 +508,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.put_channel_role_permission(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_message_info(
         self, channel_id: str, message_id: str
@@ -482,7 +526,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_message_info(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def send_msg(
         self,
@@ -512,7 +556,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_msg(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def send_embed(
         self,
@@ -540,7 +584,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_embed(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def send_ark_23(
         self,
@@ -568,7 +612,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_ark_23(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def send_ark_24(
         self,
@@ -602,7 +646,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_ark_24(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def send_ark_37(
         self,
@@ -632,7 +676,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_ark_37(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def send_markdown(
         self,
@@ -666,7 +710,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_markdown(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_msg(
         self, channel_id: str, message_id: str, hidetip: bool = False
@@ -683,7 +727,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_msg(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_guild_setting(self, guild_id: str) -> _api_model.get_guild_setting():
         """
@@ -698,7 +742,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_setting(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def create_dm_guild(
         self, target_id: str, guild_id: str
@@ -716,7 +760,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_dm_guild(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def send_dm(
         self,
@@ -746,7 +790,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_dm(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_dm_msg(
         self, guild_id: str, message_id: str, hidetip: bool = False
@@ -763,7 +807,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_dm_msg(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def mute_all_member(
         self,
@@ -785,7 +829,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.mute_all_member(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def mute_member(
         self,
@@ -807,7 +851,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.mute_member(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def mute_members(
         self,
@@ -829,14 +873,15 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.mute_members(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def create_announce(
         self,
-        guild_id,
+        guild_id: str,
         channel_id: Optional[str] = None,
         message_id: Optional[str] = None,
         announces_type: Optional[int] = None,
+        recommend_channels: Optional[List[model.AnnounceRecommendChannels]] = None,
         recommend_channels_id: Optional[List[str]] = None,
         recommend_channels_introduce: Optional[List[str]] = None,
     ) -> _api_model.create_announce():
@@ -847,8 +892,9 @@ class API:
         :param channel_id: 子频道id，message_id 有值则为必填
         :param message_id: 消息id，此项有值则优选将某条消息设置为成员公告
         :param announces_type: 公告类别 0：成员公告，1：欢迎公告，默认为成员公告
-        :param recommend_channels_id: 推荐子频道id列表，会一次全部替换推荐子频道列表
-        :param recommend_channels_introduce: 推荐子频道推荐语列表，列表长度应与recommend_channels_id一致
+        :param recommend_channels: 推荐子频道id与推荐语的dict列表，会一次全部替换推荐子频道列表
+        :param recommend_channels_id: deprecated
+        :param recommend_channels_introduce: deprecated
         :return: 返回的.data中为解析后的json数据
         """
         _args = locals()
@@ -857,7 +903,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_announce(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_announce(
         self, guild_id: str, message_id: str = "all"
@@ -875,7 +921,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.delete_announce(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def create_pinmsg(self, channel_id: str, message_id: str) -> _api_model.pinmsg():
         """
@@ -889,7 +935,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.create_pinmsg(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_pinmsg(
         self, channel_id: str, message_id: str
@@ -905,7 +951,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_pinmsg(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_pinmsg(self, channel_id: str) -> _api_model.pinmsg():
         """
@@ -918,7 +964,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_pinmsg(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_schedules(
         self, channel_id: str, since: Optional[int] = None
@@ -934,7 +980,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_schedules(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_schedule_info(
         self, channel_id: str, schedule_id: str
@@ -952,7 +998,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_schedule_info(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def create_schedule(
         self,
@@ -980,7 +1026,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_schedule(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def patch_schedule(
         self,
@@ -1010,7 +1056,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.patch_schedule(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_schedule(
         self, channel_id: str, schedule_id: str
@@ -1028,7 +1074,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.delete_schedule(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def create_reaction(
         self, channel_id: str, message_id: str, type_: str, id_: str
@@ -1048,7 +1094,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_reaction(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_reaction(
         self, channel_id: str, message_id: str, type_: str, id_: str
@@ -1068,7 +1114,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.delete_reaction(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_reaction_users(
         self, channel_id: str, message_id: str, type_: str, id_: str
@@ -1088,7 +1134,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_reaction_users(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def control_audio(
         self,
@@ -1110,7 +1156,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.control_audio(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def bot_on_mic(self, channel_id: str) -> _api_model.audio():
         """
@@ -1123,7 +1169,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.bot_on_mic(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def bot_off_mic(self, channel_id: str) -> _api_model.audio():
         """
@@ -1136,7 +1182,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.bot_off_mic(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_threads(self, channel_id: str) -> _api_model.get_threads():
         """
@@ -1149,7 +1195,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_threads(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_thread_info(
         self, channel_id: str, thread_id: str
@@ -1167,7 +1213,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_thread_info(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def create_thread(
         self, channel_id: str, title: str, content: Union[str, dict], format_: int
@@ -1185,7 +1231,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.create_thread(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def delete_thread(
         self, channel_id: str, thread_id: str
@@ -1201,7 +1247,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_thread(**_args), self._loop)
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def get_guild_permissions(
         self, guild_id: str
@@ -1218,7 +1264,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_permissions(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)
 
     def create_permission_demand(
         self, guild_id: str, channel_id: str, api: str, desc: Optional[str]
@@ -1238,4 +1284,4 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_permission_demand(**_args), self._loop
         )
-        return future_.result()
+        return future_.result(timeout=self._timeout)

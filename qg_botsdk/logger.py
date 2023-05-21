@@ -34,6 +34,18 @@ def _log_wrapper(func):
 
 
 class Logger:
+    __instances = {}
+
+    def __new__(cls, *args, **kwargs):
+        bot_app_id = kwargs.get("bot_app_id", None) or args[0]
+        instance = cls.__instances.get(bot_app_id, None)
+        if instance:
+            return instance
+        else:
+            instance = super().__new__(cls)
+            cls.__instances[bot_app_id] = instance
+            return instance
+
     def __init__(
         self,
         bot_app_id: str,
@@ -51,8 +63,9 @@ class Logger:
         if disable_logger:
             for items in disable_logger:
                 getLogger(items).disabled = True
-        self._bot_app_id = bot_app_id
-        self._logger = getLogger(__name__)
+        self.bot_app_id = str(bot_app_id)
+        self._logger = getLogger(self.bot_app_id)
+        self._logger.handlers.clear()
         self._logger.setLevel("DEBUG")
         self._format = "[%(asctime)s] [%(levelname)s] %(message)s"
         self._date_format = "%m-%d %H:%M:%S"
@@ -68,7 +81,7 @@ class Logger:
                 file_path[0] += sep
                 self.file_path = join(sep, *file_path)
         else:
-            self.file_path = join(getcwd(), "log", self._bot_app_id)
+            self.file_path = join(getcwd(), "log", self.bot_app_id)
         if not exists(self.file_path):
             makedirs(self.file_path)
         assert isdir(self.file_path), "自定义Log输出路径必须为一个directory资料夹"
@@ -157,16 +170,16 @@ class Logger:
 
     @_log_wrapper
     def debug(self, msg):
-        self._logger.debug(msg)
+        self._logger.debug(str(msg))
 
     @_log_wrapper
     def info(self, msg):
-        self._logger.info(msg)
+        self._logger.info(str(msg))
 
     @_log_wrapper
     def warning(self, msg):
-        self._logger.warning(msg)
+        self._logger.warning(str(msg))
 
     @_log_wrapper
     def error(self, msg):
-        self._logger.error(msg)
+        self._logger.error(str(msg))

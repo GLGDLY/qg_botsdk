@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from asyncio import sleep
 from io import BufferedReader
 from json import dumps, loads
 from json.decoder import JSONDecodeError
 from os.path import exists
 from time import time
-from typing import BinaryIO, Dict, List, Optional, Tuple, Union
+from typing import BinaryIO, Dict, Iterable, List, Optional, Tuple, Union
 
-from . import _api_model
+from . import _api_model, model
+from ._exception import WaitError, WaitTimeoutError
+from ._statics import TraceNames
 from ._utils import (
+    TraceCallerData,
     empty_temp,
     http_temp,
     objectize,
@@ -22,16 +26,53 @@ from .utils import convert_color
 
 
 class AsyncAPI:
-    def __init__(self, bot_url, session, logger, check_warning):
-        self.bot_url = bot_url
+    def __init__(self, bot_url, session, logger, check_warning, session_manager):
+        self._bot_url = bot_url
         self._mini_id = None
         self._mini_secret = None
         self._session = session
-        self.logger = logger
-        self.check_warning = check_warning
-        self.security_code = ""
-        self.code_expire = 0
+        self._logger = logger
+        self._check_warning = check_warning
+        self._security_code = ""
+        self._code_expire = 0
+        self.__session_manager = session_manager
+        self.__session_manager.api = self
 
+    # sdk api
+    async def wait_for(
+        self,
+        scope: Union[model.Scope, Iterable[model.Scope]],
+        command_obj: model.BotCommandObject,
+        timeout: int = None,
+    ) -> model.Model.MESSAGE:
+        """
+        等待指定的command被触发
+
+        :param scope: 指定的校验作用域或作用域列表(USER, GUILD, CHANNEL, GLOBAL)，用作谁和在哪可以触发此wait_for
+        :param command_obj: 指定的Command，仅生效以下BotCommandObject的参数（command, regex, treat, at, short_circuit）
+        :param timeout: 超时时间，单位秒，None为永远等待
+        :return: Model.MESSAGE
+        """
+        data = TraceCallerData(TraceNames, ("args",))[0]
+        command_obj.func = None
+        scope_key = self.__session_manager.register_wait_for(data, scope, command_obj)
+        _timeout_stamp = time() + timeout if timeout else None
+        while True:
+            check, result = self.__session_manager.check_wait_for(
+                scope_key, command_obj
+            )
+            if not check:
+                self.__session_manager.del_wait_for(data, command_obj)
+                raise WaitError("找不到对应的wait_for()等待任务")
+            if result is not None:
+                break
+            if _timeout_stamp and time() > _timeout_stamp:
+                self.__session_manager.del_wait_for(data, command_obj)
+                raise WaitTimeoutError(f"wait_for()等待超时： {command_obj}")
+            await sleep(0.5)
+        return result
+
+    # bot open api
     def security_setup(self, mini_id: str, mini_secret: str):
         self._mini_id = mini_id
         self._mini_secret = mini_secret
@@ -39,7 +80,7 @@ class AsyncAPI:
     @security_wrapper
     async def __security_check_code(self):
         if self._mini_secret is None:
-            self.logger.error("无法调用内容安全检测接口（备注：没有填入小程序密钥）")
+            self._logger.error("无法调用内容安全检测接口（备注：没有填入小程序密钥）")
             return None
         return_ = await self._session.get(
             f"https://api.q.qq.com/api/getToken?grant_type=client_credential&"
@@ -48,13 +89,13 @@ class AsyncAPI:
         resp = await return_.json()
         code = resp.get("access_token")
         if not code:
-            self.logger.error(
+            self._logger.error(
                 f"无法调用内容安全检测接口（code: {return_.status}, content: {await return_.text()}）"
             )
             return None
-        self.security_code = code
-        self.code_expire = time() + 7000
-        return self.security_code
+        self._security_code = code
+        self._code_expire = time() + 7000
+        return self._security_code
 
     @security_wrapper
     async def security_check(self, content: str) -> bool:
@@ -64,24 +105,24 @@ class AsyncAPI:
         :param content: 需要检测的内容
         :return: True或False（bool），代表是否通过安全检测
         """
-        if not self.security_code or time() >= self.code_expire:
+        if not self._security_code or time() >= self._code_expire:
             await self.__security_check_code()
         return_ = await self._session.post(
-            f"https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self.security_code}",
+            f"https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self._security_code}",
             json={"content": content},
             headers=security_header,
         )
         check = await return_.json()
-        self.logger.debug(f"[安全接口] {check}")
+        self._logger.debug(f"[安全接口] {check}")
         if check.get("errCode") in (-1800110107, -1800110108, -1800110109):
             await self.__security_check_code()
             return_ = await self._session.post(
-                f"https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self.security_code}",
+                f"https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self._security_code}",
                 json={"content": content},
                 headers=security_header,
             )
             check = await return_.json()
-            self.logger.debug(f"[安全接口] {check}")
+            self._logger.debug(f"[安全接口] {check}")
         if check["errCode"] == 0:
             return True
         return False
@@ -96,7 +137,7 @@ class AsyncAPI:
 
         :return:返回的.data中为解析后的json数据
         """
-        return_ = await self._session.get(f"{self.bot_url}/users/@me")
+        return_ = await self._session.get(f"{self._bot_url}/users/@me")
         return await regular_temp(return_)
 
     async def get_bot_guilds(self) -> _api_model.get_bot_guilds():
@@ -114,11 +155,11 @@ class AsyncAPI:
             while True:
                 if return_dict is None:
                     return_ = await self._session.get(
-                        f"{self.bot_url}/users/@me/guilds"
+                        f"{self._bot_url}/users/@me/guilds"
                     )
                 elif len(return_dict) == 100:
                     return_ = await self._session.get(
-                        f'{self.bot_url}/users/@me/guilds?after={return_dict[-1]["id"]}'
+                        f'{self._bot_url}/users/@me/guilds?after={return_dict[-1]["id"]}'
                     )
                 else:
                     break
@@ -148,7 +189,7 @@ class AsyncAPI:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = await self._session.get(f"{self.bot_url}/guilds/{guild_id}")
+        return_ = await self._session.get(f"{self._bot_url}/guilds/{guild_id}")
         return await regular_temp(return_)
 
     async def get_guild_channels(
@@ -160,7 +201,7 @@ class AsyncAPI:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = await self._session.get(f"{self.bot_url}/guilds/{guild_id}/channels")
+        return_ = await self._session.get(f"{self._bot_url}/guilds/{guild_id}/channels")
         return await regular_temp(return_)
 
     async def get_channels_info(
@@ -172,7 +213,7 @@ class AsyncAPI:
         :param channel_id: 子频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = await self._session.get(f"{self.bot_url}/channels/{channel_id}")
+        return_ = await self._session.get(f"{self._bot_url}/channels/{channel_id}")
         return await regular_temp(return_)
 
     async def create_channels(
@@ -181,11 +222,11 @@ class AsyncAPI:
         name: str,
         type_: int,
         position: int,
-        parent_id: str,
-        sub_type: int,
-        private_type: int,
-        private_user_ids: List[str],
-        speak_permission: int,
+        parent_id: str = None,
+        sub_type: int = None,
+        private_type: int = None,
+        private_user_ids: List[str] = None,
+        speak_permission: int = None,
         application_id: Optional[str] = None,
     ) -> _api_model.create_channels():
         """
@@ -203,7 +244,7 @@ class AsyncAPI:
         :param application_id: 需要创建的应用类型子频道应用 AppID，仅应用子频道需要该字段
         :return: 返回的.data中为解析后的json数据
         """
-        self.check_warning("创建子频道")
+        self._check_warning("创建子频道")
         json_ = {
             "name": name,
             "type": type_,
@@ -216,7 +257,7 @@ class AsyncAPI:
             "application_id": application_id,
         }
         return_ = await self._session.post(
-            f"{self.bot_url}/guilds/{guild_id}/channels", json=json_
+            f"{self._bot_url}/guilds/{guild_id}/channels", json=json_
         )
         return await regular_temp(return_)
 
@@ -240,16 +281,20 @@ class AsyncAPI:
         :param speak_permission: 子频道发言权限
         :return: 返回的.data中为解析后的json数据
         """
-        self.check_warning("修改子频道")
-        json_ = {
-            "name": name,
-            "position": position,
-            "parent_id": parent_id,
-            "private_type": private_type,
-            "speak_permission": speak_permission,
-        }
+        self._check_warning("修改子频道")
+        json_ = {}
+        if name is not None:
+            json_["name"] = name
+        if position is not None:
+            json_["position"] = position
+        if parent_id is not None:
+            json_["parent_id"] = parent_id
+        if private_type is not None:
+            json_["private_type"] = private_type
+        if speak_permission is not None:
+            json_["speak_permission"] = speak_permission
         return_ = await self._session.patch(
-            f"{self.bot_url}/channels/{channel_id}", json=json_
+            f"{self._bot_url}/channels/{channel_id}", json=json_
         )
         return await regular_temp(return_)
 
@@ -260,8 +305,8 @@ class AsyncAPI:
         :param channel_id: 子频道id
         :return: 返回的.result显示是否成功
         """
-        self.check_warning("删除子频道")
-        return_ = await self._session.delete(f"{self.bot_url}/channels/{channel_id}")
+        self._check_warning("删除子频道")
+        return_ = await self._session.delete(f"{self._bot_url}/channels/{channel_id}")
         return await http_temp(return_, 200)
 
     async def get_guild_members(self, guild_id: str) -> _api_model.get_guild_members():
@@ -280,13 +325,13 @@ class AsyncAPI:
             while True:
                 if return_dict is None:
                     return_ = await self._session.get(
-                        f"{self.bot_url}/guilds/{guild_id}/members?limit=400"
+                        f"{self._bot_url}/guilds/{guild_id}/members?limit=400"
                     )
                 elif not return_dict:
                     break
                 else:
                     return_ = await self._session.get(
-                        f"{self.bot_url}/guilds/{guild_id}/members?limit=400&after="
+                        f"{self._bot_url}/guilds/{guild_id}/members?limit=400&after="
                         + return_dict[-1]["user"]["id"]
                     )
                 trace_ids.append(return_.headers["X-Tps-Trace-Id"])
@@ -350,7 +395,7 @@ class AsyncAPI:
                 if return_dict is not None and not return_dict.get("data"):
                     break
                 return_ = await self._session.get(
-                    f"{self.bot_url}/guilds/{guild_id}/roles/{role_id}/members?"
+                    f"{self._bot_url}/guilds/{guild_id}/roles/{role_id}/members?"
                     f"limit=400&start_index={start_index}"
                 )
                 trace_ids.append(return_.headers["X-Tps-Trace-Id"])
@@ -407,7 +452,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(
-            f"{self.bot_url}/guilds/{guild_id}/members/{user_id}"
+            f"{self._bot_url}/guilds/{guild_id}/members/{user_id}"
         )
         return await regular_temp(return_)
 
@@ -427,7 +472,7 @@ class AsyncAPI:
         :param delete_history_msg_days: 用于撤回该成员的消息，可以指定撤回消息的时间范围
         :return: 返回的.result显示是否成功
         """
-        self.check_warning("删除频道成员")
+        self._check_warning("删除频道成员")
         if delete_history_msg_days not in (3, 7, 15, 30, 0, -1):
             return sdk_error_temp("注意delete_history_msg_days的数值只能是3，7，15，30，0，-1")
         json_ = {
@@ -435,7 +480,7 @@ class AsyncAPI:
             "delete_history_msg_days": delete_history_msg_days,
         }
         return_ = await self._session.delete(
-            f"{self.bot_url}/guilds/{guild_id}/members/{user_id}", json=json_
+            f"{self._bot_url}/guilds/{guild_id}/members/{user_id}", json=json_
         )
         return await http_temp(return_, 204)
 
@@ -446,7 +491,7 @@ class AsyncAPI:
         :param guild_id: 频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = await self._session.get(f"{self.bot_url}/guilds/{guild_id}/roles")
+        return_ = await self._session.get(f"{self._bot_url}/guilds/{guild_id}/roles")
         return await regular_temp(return_)
 
     async def create_role(
@@ -478,7 +523,7 @@ class AsyncAPI:
             color_ = None
         json_ = {"name": name, "color": color_, "hoist": hoist_}
         return_ = await self._session.post(
-            f"{self.bot_url}/guilds/{guild_id}/roles", json=json_
+            f"{self._bot_url}/guilds/{guild_id}/roles", json=json_
         )
         return await regular_temp(return_)
 
@@ -513,7 +558,7 @@ class AsyncAPI:
             color_ = None
         json_ = {"name": name, "color": color_, "hoist": hoist_}
         return_ = await self._session.patch(
-            f"{self.bot_url}/guilds/{guild_id}/roles/{role_id}", json=json_
+            f"{self._bot_url}/guilds/{guild_id}/roles/{role_id}", json=json_
         )
         return await regular_temp(return_)
 
@@ -528,7 +573,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(
-            f"{self.bot_url}/guilds/{guild_id}/roles/{role_id}"
+            f"{self._bot_url}/guilds/{guild_id}/roles/{role_id}"
         )
         return await http_temp(return_, 204)
 
@@ -551,7 +596,7 @@ class AsyncAPI:
         if role_id == "5":
             if channel_id is not None:
                 return_ = await self._session.put(
-                    f"{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/"
+                    f"{self._bot_url}/guilds/{guild_id}/members/{user_id}/roles/"
                     f"{role_id}",
                     json={"channel": {"id": channel_id}},
                 )
@@ -561,7 +606,7 @@ class AsyncAPI:
                 )
         else:
             return_ = await self._session.put(
-                f"{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}"
+                f"{self._bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}"
             )
         return await http_temp(return_, 204)
 
@@ -584,7 +629,7 @@ class AsyncAPI:
         if role_id == "5":
             if channel_id is not None:
                 return_ = await self._session.delete(
-                    f"{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/"
+                    f"{self._bot_url}/guilds/{guild_id}/members/{user_id}/roles/"
                     f"{role_id}",
                     json={"channel": {"id": channel_id}},
                 )
@@ -594,7 +639,7 @@ class AsyncAPI:
                 )
         else:
             return_ = await self._session.delete(
-                f"{self.bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}"
+                f"{self._bot_url}/guilds/{guild_id}/members/{user_id}/roles/{role_id}"
             )
         return await http_temp(return_, 204)
 
@@ -609,7 +654,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(
-            f"{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions"
+            f"{self._bot_url}/channels/{channel_id}/members/{user_id}/permissions"
         )
         return await regular_temp(return_)
 
@@ -625,15 +670,18 @@ class AsyncAPI:
 
         :param channel_id: 子频道id
         :param user_id: 用户id
-        :param add: 需要添加的权限，string格式，可选：1，2，4，8
-        :param remove:需要删除的权限，string格式，可选：1，2，4，8
+        :param add: 需要添加的权限，string格式，1，2，4，8按需进行位运算后的结果
+        :param remove:需要删除的权限，string格式，1，2，4，8按需进行位运算后的结果
         :return: 返回的.result显示是否成功
         """
-        if not all([items in ("1", "2", "4", "8", None) for items in (add, remove)]):
-            return sdk_error_temp("注意add或remove的值只能为为1、2、4或8的文本格式内容")
-        json_ = {"add": add, "remove": remove}
+        try:
+            if not all([int(items) < 16 for items in (add, remove)]):  # 16 == 1 << 4
+                return sdk_error_temp("注意add或remove的值只能为为1、2、4或8的位或运算内容")
+        except ValueError:
+            return sdk_error_temp("注意add或remove的值只能为为1、2、4或8的位或运算内容")
+        json_ = {"add": str(add), "remove": str(remove)}
         return_ = await self._session.put(
-            f"{self.bot_url}/channels/{channel_id}/members/{user_id}/permissions",
+            f"{self._bot_url}/channels/{channel_id}/members/{user_id}/permissions",
             json=json_,
         )
         return await http_temp(return_, 204)
@@ -649,7 +697,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(
-            f"{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions"
+            f"{self._bot_url}/channels/{channel_id}/roles/{role_id}/permissions"
         )
         return await regular_temp(return_)
 
@@ -665,15 +713,18 @@ class AsyncAPI:
 
         :param channel_id: 子频道id
         :param role_id: 身份组id
-        :param add: 需要添加的权限，string格式，可选：1，2，4，8
-        :param remove:需要删除的权限，string格式，可选：1，2，4，8
+        :param add: 需要添加的权限，string格式，1，2，4，8按需进行位运算后的结果
+        :param remove:需要删除的权限，string格式，1，2，4，8按需进行位运算后的结果
         :return: 返回的.result显示是否成功
         """
-        if not all([items in ("1", "2", "4", "8", None) for items in (add, remove)]):
-            return sdk_error_temp("注意add或remove的值只能为为1、2、4或8的文本格式内容")
-        json_ = {"add": add, "remove": remove}
+        try:
+            if not all([int(items) < 16 for items in (add, remove)]):  # 16 == 1 << 4
+                return sdk_error_temp("注意add或remove的值只能为为1、2、4或8的位或运算内容")
+        except ValueError:
+            return sdk_error_temp("注意add或remove的值只能为为1、2、4或8的位或运算内容")
+        json_ = {"add": str(add), "remove": str(remove)}
         return_ = await self._session.put(
-            f"{self.bot_url}/channels/{channel_id}/roles/{role_id}/permissions",
+            f"{self._bot_url}/channels/{channel_id}/roles/{role_id}/permissions",
             json=json_,
         )
         return await http_temp(return_, 204)
@@ -689,7 +740,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(
-            f"{self.bot_url}/channels/{channel_id}/messages/{message_id}"
+            f"{self._bot_url}/channels/{channel_id}/messages/{message_id}"
         )
         return await regular_temp(return_)
 
@@ -758,11 +809,11 @@ class AsyncAPI:
                 if values is not None and keys != "image":
                     data_.add_field(keys, values)
             return_ = await self._session.post(
-                f"{self.bot_url}/channels/{channel_id}/messages", data=data_
+                f"{self._bot_url}/channels/{channel_id}/messages", data=data_
             )
         else:
             return_ = await self._session.post(
-                f"{self.bot_url}/channels/{channel_id}/messages", json=json_
+                f"{self._bot_url}/channels/{channel_id}/messages", json=json_
             )
         return await regular_temp(return_)
 
@@ -802,7 +853,7 @@ class AsyncAPI:
             for items in content:
                 json_["embed"]["fields"].append({"name": str(items)})
         return_ = await self._session.post(
-            f"{self.bot_url}/channels/{channel_id}/messages", json=json_
+            f"{self._bot_url}/channels/{channel_id}/messages", json=json_
         )
         return await regular_temp(return_)
 
@@ -856,7 +907,7 @@ class AsyncAPI:
                 }
             )
         return_ = await self._session.post(
-            f"{self.bot_url}/channels/{channel_id}/messages", json=json_
+            f"{self._bot_url}/channels/{channel_id}/messages", json=json_
         )
         return await regular_temp(return_)
 
@@ -905,7 +956,7 @@ class AsyncAPI:
             "event_id": event_id,
         }
         return_ = await self._session.post(
-            f"{self.bot_url}/channels/{channel_id}/messages", json=json_
+            f"{self._bot_url}/channels/{channel_id}/messages", json=json_
         )
         return await regular_temp(return_)
 
@@ -948,7 +999,7 @@ class AsyncAPI:
             "event_id": event_id,
         }
         return_ = await self._session.post(
-            f"{self.bot_url}/channels/{channel_id}/messages", json=json_
+            f"{self._bot_url}/channels/{channel_id}/messages", json=json_
         )
         return await regular_temp(return_)
 
@@ -982,7 +1033,7 @@ class AsyncAPI:
         """
         if keyboard_content:
             if keyboard_id:
-                self.logger.warning(
+                self._logger.warning(
                     "注意keyboard_id与keyboard_content不可同时存在，注意系统已根据优先级仅保留keyboard_content"
                 )
             keyboard = {"content": keyboard_content}
@@ -992,7 +1043,7 @@ class AsyncAPI:
             keyboard = None
         if content:
             if template_id:
-                self.logger.warning("注意content与template_id不可同时存在，注意系统已根据优先级仅保留content")
+                self._logger.warning("注意content与template_id不可同时存在，注意系统已根据优先级仅保留content")
             json_ = {
                 "markdown": {"content": content},
                 "msg_id": message_id,
@@ -1030,7 +1081,7 @@ class AsyncAPI:
                 "keyboard": keyboard,
             }
         return_ = await self._session.post(
-            f"{self.bot_url}/channels/{channel_id}/messages", json=json_
+            f"{self._bot_url}/channels/{channel_id}/messages", json=json_
         )
         return await regular_temp(return_)
 
@@ -1045,9 +1096,9 @@ class AsyncAPI:
         :param hidetip: 是否隐藏提示小灰条，True为隐藏，False为显示（选填）
         :return: 返回的.result显示是否成功
         """
-        self.check_warning("撤回消息")
+        self._check_warning("撤回消息")
         return_ = await self._session.delete(
-            f"{self.bot_url}/channels/{channel_id}/messages/{message_id}"
+            f"{self._bot_url}/channels/{channel_id}/messages/{message_id}"
             f"?hidetip={str(hidetip).lower()}"
         )
         return await http_temp(return_, 200)
@@ -1060,7 +1111,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(
-            f"{self.bot_url}/guilds/{guild_id}/message/setting"
+            f"{self._bot_url}/guilds/{guild_id}/message/setting"
         )
         return await regular_temp(return_)
 
@@ -1074,8 +1125,8 @@ class AsyncAPI:
         :param guild_id: 机器人跟目标用户所在的频道id
         :return: 返回的.data中为解析后的json数据，注意发送私信仅需要使用guild_id这一项虚拟频道id的数据
         """
-        json_ = {"recipient_id": target_id, "source_guild_id": guild_id}
-        return_ = await self._session.post(f"{self.bot_url}/users/@me/dms", json=json_)
+        json_ = {"recipient_id": str(target_id), "source_guild_id": str(guild_id)}
+        return_ = await self._session.post(f"{self._bot_url}/users/@me/dms", json=json_)
         return await regular_temp(return_)
 
     async def send_dm(
@@ -1141,11 +1192,11 @@ class AsyncAPI:
                 if values is not None and keys != "image":
                     data_.add_field(keys, values)
             return_ = await self._session.post(
-                f"{self.bot_url}/dms/{guild_id}/messages", data=data_
+                f"{self._bot_url}/dms/{guild_id}/messages", data=data_
             )
         else:
             return_ = await self._session.post(
-                f"{self.bot_url}/dms/{guild_id}/messages", json=json_
+                f"{self._bot_url}/dms/{guild_id}/messages", json=json_
             )
         return await regular_temp(return_)
 
@@ -1160,9 +1211,9 @@ class AsyncAPI:
         :param hidetip: 是否隐藏提示小灰条，True为隐藏，False为显示（选填）
         :return: 返回的.result显示是否成功
         """
-        self.check_warning("撤回私信消息")
+        self._check_warning("撤回私信消息")
         return_ = await self._session.delete(
-            f"{self.bot_url}/dms/{guild_id}/messages/{message_id}?"
+            f"{self._bot_url}/dms/{guild_id}/messages/{message_id}?"
             f"hidetip={str(hidetip).lower()}"
         )
         return await http_temp(return_, 200)
@@ -1170,8 +1221,8 @@ class AsyncAPI:
     async def mute_all_member(
         self,
         guild_id: str,
-        mute_end_timestamp: Optional[str],
-        mute_seconds: Optional[str],
+        mute_end_timestamp: Optional[str] = None,
+        mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_member():
         """
         用于将频道的全体成员（非管理员）禁言
@@ -1181,9 +1232,14 @@ class AsyncAPI:
         :param mute_seconds: 禁言多少秒（两个字段二选一，默认以 mute_end_timestamp 为准）
         :return: 返回的.result显示是否成功
         """
-        json_ = {"mute_end_timestamp": mute_end_timestamp, "mute_seconds": mute_seconds}
+        json_ = {
+            "mute_end_timestamp": str(mute_end_timestamp)
+            if mute_end_timestamp is not None
+            else None,
+            "mute_seconds": str(mute_seconds) if mute_seconds is not None else None,
+        }
         return_ = await self._session.patch(
-            f"{self.bot_url}/guilds/{guild_id}/mute", json=json_
+            f"{self._bot_url}/guilds/{guild_id}/mute", json=json_
         )
         return await http_temp(return_, 204)
 
@@ -1191,8 +1247,8 @@ class AsyncAPI:
         self,
         guild_id: str,
         user_id: str,
-        mute_end_timestamp: Optional[str],
-        mute_seconds: Optional[str],
+        mute_end_timestamp: Optional[str] = None,
+        mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_member():
         """
         用于禁言频道 guild_id 下的成员 user_id
@@ -1203,9 +1259,14 @@ class AsyncAPI:
         :param mute_seconds: 禁言多少秒（两个字段二选一，默认以 mute_end_timestamp 为准）
         :return: 返回的.result显示是否成功
         """
-        json_ = {"mute_end_timestamp": mute_end_timestamp, "mute_seconds": mute_seconds}
+        json_ = {
+            "mute_end_timestamp": str(mute_end_timestamp)
+            if mute_end_timestamp is not None
+            else None,
+            "mute_seconds": str(mute_seconds) if mute_seconds is not None else None,
+        }
         return_ = await self._session.patch(
-            f"{self.bot_url}/guilds/{guild_id}/members/{user_id}/mute", json=json_
+            f"{self._bot_url}/guilds/{guild_id}/members/{user_id}/mute", json=json_
         )
         return await http_temp(return_, 204)
 
@@ -1213,8 +1274,8 @@ class AsyncAPI:
         self,
         guild_id: str,
         user_id: List[str],
-        mute_end_timestamp: Optional[str],
-        mute_seconds: Optional[str],
+        mute_end_timestamp: Optional[str] = None,
+        mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_members():
         """
         用于将频道的指定批量成员（非管理员）禁言
@@ -1226,12 +1287,14 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         json_ = {
-            "mute_end_timestamp": mute_end_timestamp,
-            "mute_seconds": mute_seconds,
+            "mute_end_timestamp": str(mute_end_timestamp)
+            if mute_end_timestamp is not None
+            else None,
+            "mute_seconds": str(mute_seconds) if mute_seconds is not None else None,
             "user_ids": user_id,
         }
         return_ = await self._session.patch(
-            f"{self.bot_url}/guilds/{guild_id}/mute", json=json_
+            f"{self._bot_url}/guilds/{guild_id}/mute", json=json_
         )
         trace_id = (
             return_.headers.get("X-Tps-Trace-Id", None)
@@ -1265,10 +1328,11 @@ class AsyncAPI:
 
     async def create_announce(
         self,
-        guild_id,
+        guild_id: str,
         channel_id: Optional[str] = None,
         message_id: Optional[str] = None,
         announces_type: Optional[int] = None,
+        recommend_channels: Optional[List[model.AnnounceRecommendChannels]] = None,
         recommend_channels_id: Optional[List[str]] = None,
         recommend_channels_introduce: Optional[List[str]] = None,
     ) -> _api_model.create_announce():
@@ -1279,29 +1343,35 @@ class AsyncAPI:
         :param channel_id: 子频道id，message_id 有值则为必填
         :param message_id: 消息id，此项有值则优选将某条消息设置为成员公告
         :param announces_type: 公告类别 0：成员公告，1：欢迎公告，默认为成员公告
-        :param recommend_channels_id: 推荐子频道id列表，会一次全部替换推荐子频道列表
-        :param recommend_channels_introduce: 推荐子频道推荐语列表，列表长度应与recommend_channels_id一致
+        :param recommend_channels: 推荐子频道id与推荐语的dict列表，会一次全部替换推荐子频道列表
+        :param recommend_channels_id: deprecated
+        :param recommend_channels_introduce: deprecated
         :return: 返回的.data中为解析后的json数据
         """
         json_ = {
-            "channel_id": channel_id,
+            "channel_id": str(channel_id) if channel_id is not None else None,
             "message_id": message_id,
             "announces_type": announces_type,
-            "recommend_channels": [],
+            "recommend_channels": recommend_channels,
         }
-        if recommend_channels_id is not None and recommend_channels_id:
-            if len(recommend_channels_id) == len(recommend_channels_introduce):
-                for i, items in enumerate(recommend_channels_id):
-                    json_["recommend_channels"].append(
-                        {
-                            "channel_id": items,
-                            "introduce": recommend_channels_introduce[i],
-                        }
-                    )
-            else:
-                return sdk_error_temp("注意推荐子频道ID列表长度，应与推荐子频道推荐语列表长度一致")
+        if (
+            recommend_channels_id
+            and recommend_channels_introduce
+            and not recommend_channels
+        ):
+            if recommend_channels_id is not None and recommend_channels_id:
+                if len(recommend_channels_id) == len(recommend_channels_introduce):
+                    for i, items in enumerate(recommend_channels_id):
+                        json_["recommend_channels"].append(
+                            model.AnnounceRecommendChannels(
+                                channel_id=items,
+                                introduce=recommend_channels_introduce[i],
+                            )
+                        )
+                else:
+                    return sdk_error_temp("注意推荐子频道ID列表长度，应与推荐子频道推荐语列表长度一致")
         return_ = await self._session.post(
-            f"{self.bot_url}/guilds/{guild_id}/announces", json=json_
+            f"{self._bot_url}/guilds/{guild_id}/announces", json=json_
         )
         return await regular_temp(return_)
 
@@ -1316,7 +1386,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(
-            f"{self.bot_url}/guilds/{guild_id}/announces/{message_id}"
+            f"{self._bot_url}/guilds/{guild_id}/announces/{message_id}"
         )
         return await http_temp(return_, 204)
 
@@ -1331,7 +1401,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.put(
-            f"{self.bot_url}/channels/{channel_id}/pins/{message_id}"
+            f"{self._bot_url}/channels/{channel_id}/pins/{message_id}"
         )
         return await regular_temp(return_)
 
@@ -1346,7 +1416,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(
-            f"{self.bot_url}/channels/{channel_id}/pins/{message_id}"
+            f"{self._bot_url}/channels/{channel_id}/pins/{message_id}"
         )
         return await http_temp(return_, 204)
 
@@ -1357,7 +1427,7 @@ class AsyncAPI:
         :param channel_id: 子频道id
         :return: 返回的.data中为解析后的json数据
         """
-        return_ = await self._session.get(f"{self.bot_url}/channels/{channel_id}/pins")
+        return_ = await self._session.get(f"{self._bot_url}/channels/{channel_id}/pins")
         return await regular_temp(return_)
 
     async def get_schedules(
@@ -1372,7 +1442,7 @@ class AsyncAPI:
         """
         json_ = {"since": since}
         return_ = await self._session.get(
-            f"{self.bot_url}/channels/{channel_id}/schedules", json=json_
+            f"{self._bot_url}/channels/{channel_id}/schedules", json=json_
         )
         return await regular_temp(return_)
 
@@ -1387,7 +1457,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(
-            f"{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}"
+            f"{self._bot_url}/channels/{channel_id}/schedules/{schedule_id}"
         )
         return await regular_temp(return_)
 
@@ -1421,7 +1491,7 @@ class AsyncAPI:
             }
         }
         return_ = await self._session.post(
-            f"{self.bot_url}/channels/{channel_id}/schedules", json=json_
+            f"{self._bot_url}/channels/{channel_id}/schedules", json=json_
         )
         return await regular_temp(return_)
 
@@ -1457,7 +1527,7 @@ class AsyncAPI:
             }
         }
         return_ = await self._session.patch(
-            f"{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}", json=json_
+            f"{self._bot_url}/channels/{channel_id}/schedules/{schedule_id}", json=json_
         )
         return await regular_temp(return_)
 
@@ -1472,7 +1542,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(
-            f"{self.bot_url}/channels/{channel_id}/schedules/{schedule_id}"
+            f"{self._bot_url}/channels/{channel_id}/schedules/{schedule_id}"
         )
         return await http_temp(return_, 204)
 
@@ -1489,7 +1559,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.put(
-            f"{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/"
+            f"{self._bot_url}/channels/{channel_id}/messages/{message_id}/reactions/"
             f"{type_}/{id_}"
         )
         return await http_temp(return_, 204)
@@ -1507,7 +1577,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(
-            f"{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/"
+            f"{self._bot_url}/channels/{channel_id}/messages/{message_id}/reactions/"
             f"{type_}/{id_}"
         )
         return await http_temp(return_, 204)
@@ -1525,7 +1595,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据列表
         """
         return_ = await self._session.get(
-            f"{self.bot_url}/channels/{channel_id}/messages/{message_id}/reactions/"
+            f"{self._bot_url}/channels/{channel_id}/messages/{message_id}/reactions/"
             f"{type_}/{id_}?cookie=&limit=50"
         )
         trace_ids = [
@@ -1548,7 +1618,7 @@ class AsyncAPI:
                     if return_dict["is_end"]:
                         break
                     return_ = await self._session.get(
-                        f"{self.bot_url}/channels/{channel_id}/messages/{message_id}/"
+                        f"{self._bot_url}/channels/{channel_id}/messages/{message_id}/"
                         f'reactions/{type_}/{id_}?cookies={return_dict["cookie"]}'
                     )
                     trace_ids.append(return_.headers["X-Tps-Trace-Id"])
@@ -1598,7 +1668,7 @@ class AsyncAPI:
         """
         json_ = {"audio_url": audio_url, "text": text, "status": status}
         return_ = await self._session.post(
-            f"{self.bot_url}/channels/{channel_id}/audio", json=json_
+            f"{self._bot_url}/channels/{channel_id}/audio", json=json_
         )
         return await empty_temp(return_)
 
@@ -1609,7 +1679,7 @@ class AsyncAPI:
         :param channel_id: 子频道id
         :return: 返回的.result显示是否成功
         """
-        return_ = await self._session.put(f"{self.bot_url}/channels/{channel_id}/mic")
+        return_ = await self._session.put(f"{self._bot_url}/channels/{channel_id}/mic")
         return await empty_temp(return_)
 
     async def bot_off_mic(self, channel_id: str) -> _api_model.audio():
@@ -1620,7 +1690,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         return_ = await self._session.delete(
-            f"{self.bot_url}/channels/{channel_id}/mic"
+            f"{self._bot_url}/channels/{channel_id}/mic"
         )
         return await empty_temp(return_)
 
@@ -1631,9 +1701,9 @@ class AsyncAPI:
         :param channel_id: 目标论坛子频道id
         :return: 返回的.data中为解析后的json数据列表
         """
-        self.check_warning("获取帖子列表")
+        self._check_warning("获取帖子列表")
         return_ = await self._session.get(
-            f"{self.bot_url}/channels/{channel_id}/threads"
+            f"{self._bot_url}/channels/{channel_id}/threads"
         )
         trace_ids = [
             return_.headers.get("X-Tps-Trace-Id", None)
@@ -1662,7 +1732,7 @@ class AsyncAPI:
                     if return_dict["is_finish"]:
                         break
                     return_ = await self._session.get(
-                        f"{self.bot_url}/channels/{channel_id}/threads"
+                        f"{self._bot_url}/channels/{channel_id}/threads"
                     )
                     trace_ids.append(return_.headers["X-Tps-Trace-Id"])
                     codes.append(return_.status)
@@ -1710,9 +1780,9 @@ class AsyncAPI:
         :param thread_id: 帖子id
         :return: 返回的.data中为解析后的json数据
         """
-        self.check_warning("获取帖子详情")
+        self._check_warning("获取帖子详情")
         return_ = await self._session.get(
-            f"{self.bot_url}/channels/{channel_id}/threads/{thread_id}"
+            f"{self._bot_url}/channels/{channel_id}/threads/{thread_id}"
         )
         return await regular_temp(return_)
 
@@ -1728,7 +1798,7 @@ class AsyncAPI:
         :param format_: 帖子文本格式（1：普通文本、2：HTML、3：Markdown、4：Json）
         :return: 返回的.data中为解析后的json数据
         """
-        self.check_warning("发表帖子")
+        self._check_warning("发表帖子")
         if isinstance(content, dict):
             json_ = {"title": title, "content": dumps(content), "format": format_}
         elif isinstance(content, str):
@@ -1736,7 +1806,7 @@ class AsyncAPI:
         else:
             return sdk_error_temp("content参数类型错误，应为str或dict")
         return_ = await self._session.put(
-            f"{self.bot_url}/channels/{channel_id}/threads", json=json_
+            f"{self._bot_url}/channels/{channel_id}/threads", json=json_
         )
         return await regular_temp(return_)
 
@@ -1750,9 +1820,9 @@ class AsyncAPI:
         :param thread_id: 帖子id
         :return: 返回的.result显示是否成功
         """
-        self.check_warning("删除帖子")
+        self._check_warning("删除帖子")
         return_ = await self._session.delete(
-            f"{self.bot_url}/channels/{channel_id}/threads/{thread_id}"
+            f"{self._bot_url}/channels/{channel_id}/threads/{thread_id}"
         )
         return await http_temp(return_, 204)
 
@@ -1766,7 +1836,7 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         return_ = await self._session.get(
-            f"{self.bot_url}/guilds/{guild_id}/api_permission"
+            f"{self._bot_url}/guilds/{guild_id}/api_permission"
         )
         trace_id = (
             return_.headers.get("X-Tps-Trace-Id", None)
@@ -1819,11 +1889,11 @@ class AsyncAPI:
         if not path:
             return sdk_error_temp("目标API不存在，请检查API名称是否正确")
         json_ = {
-            "channel_id": channel_id,
+            "channel_id": str(channel_id),
             "api_identify": {"path": path, "method": method.upper()},
             "desc": desc,
         }
         return_ = await self._session.post(
-            f"{self.bot_url}/guilds/{guild_id}/api_permission/demand", json=json_
+            f"{self._bot_url}/guilds/{guild_id}/api_permission/demand", json=json_
         )
         return await empty_temp(return_)

@@ -1,3 +1,4 @@
+from asyncio import get_event_loop
 from ssl import create_default_context
 from typing import Optional
 
@@ -74,27 +75,56 @@ class FormData_(FormData):
         return self._writer
 
 
+from asyncio import AbstractEventLoop
+
+
 class Session:
     def __init__(
-        self, loop, is_retry, is_log_error, logger, max_concurrency, timeout, **kwargs
+        self,
+        loop: AbstractEventLoop,
+        is_retry,
+        is_log_error,
+        logger,
+        max_concurrency,
+        timeout,
+        **kwargs,
     ):
         self._is_retry = is_retry
         self._is_log_error = is_log_error
         self._logger = logger
         self._queue = Queue(max_concurrency)
-        kwargs["connector"] = kwargs.get(
-            "connector",
-            TCPConnector(limit=0, ssl=create_default_context(), force_close=True),
-        )
+        if not kwargs.get("connector", None):
+            if not loop.is_running():
+                kwargs["connector"] = loop.run_until_complete(self._create_connector())
+            else:
+
+                def __callback(f):
+                    self._kwargs["connector"] = f.result()
+
+                loop.create_task(self._create_connector()).add_done_callback(__callback)
         self._kwargs = kwargs
         self._session: Optional[ClientSession] = None
         self._timeout = ClientTimeout(total=timeout)
         self._loop = loop
-        loop.run_until_complete(self._check_session())
+        if not loop.is_running():
+            loop.run_until_complete(self._check_session())
+        else:
+            loop.create_task(self._check_session())
 
     def __del__(self):
         if self._session and not self._session.closed:
-            self._loop.run_until_complete(self._session.close())
+            try:
+                loop = get_event_loop()
+                if loop.is_running():
+                    loop.create_task(self._session.close())
+                else:
+                    loop.run_until_complete(self._session.close())
+            except Exception:
+                pass
+
+    @staticmethod
+    async def _create_connector(*args, **kwargs):
+        return TCPConnector(*args, **kwargs)
 
     async def _check_session(self):
         if not self._session or self._session.closed:

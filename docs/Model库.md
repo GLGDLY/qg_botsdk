@@ -2,7 +2,7 @@
 
 qg_botsdk提供了数据的模型数据供大家验证结构准确性，更轻易避免出现bug而无法运行机器人的情况。本文将带领大家粗略认识一下model库的应用和相关的数据结构
 
-## 使用
+## Model
 
 ```python
 from qg_botsdk import Model   ## 导入数据模型
@@ -28,9 +28,9 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 
 ![](image/model2.png)
 
-## 数据结构
+### 数据结构
 
-### GUILDS
+#### GUILDS
 
 | 结构           |        |                                            |
 | ------------ | ------ | ------------------------------------------ |
@@ -47,7 +47,7 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 | t            | string | 事件类型字段，如GUILD_CREATE                       |
 | event_id     | sring  | 事件ID                                       |
 
-### CHANNELS（需求sdk版本≥v2.2.4）
+#### CHANNELS（需求sdk版本≥v2.2.4）
 
 | 结构               |        |                                           |
 | ---------------- | ------ | ----------------------------------------- |
@@ -68,7 +68,7 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 | t                | string | 事件类型字段，如GUILD_CREATE                      |
 | event_id         | sring  | 事件ID                                      |
 
-### GUILD_MEMBERS
+#### GUILD_MEMBERS
 
 | 结构         |        |                                            |
 | ---------- | ------ | ------------------------------------------ |
@@ -90,7 +90,7 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 | id       | string | 该成员的ID      |
 | username | list   | 该成员在频道全局的昵称 |
 
-### MESSAGE
+#### MESSAGE
 
 | 结构                |        |                                                         |
 | ----------------- | ------ | ------------------------------------------------------- |
@@ -146,7 +146,7 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 | id             | string | 附件ID                       |
 | url            | string | 附件url                      |
 
-### DIRECT_MESSAGE
+#### DIRECT_MESSAGE
 
 | 结构                |        |                                                         |
 | ----------------- | ------ | ------------------------------------------------------- |
@@ -190,7 +190,7 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 | id             | string | 附件ID                       |
 | url            | string | 附件url                      |
 
-### MESSAGE_DELETE
+#### MESSAGE_DELETE
 
 | 结构       |        |                                 |
 | -------- | ------ | ------------------------------- |
@@ -215,7 +215,7 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 | id        | string | 该成员ID    |
 | username  | string | 该成员昵称    |
 
-### MESSAGE_AUDIT
+#### MESSAGE_AUDIT
 
 | 结构          |        |                                   |
 | ----------- | ------ | --------------------------------- |
@@ -229,7 +229,7 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 | t           | string | 事件类型字段，如GUILD_CREATE              |
 | event_id    | sring  | 事件ID                              |
 
-### FORUMS_EVENT
+#### FORUMS_EVENT
 
 -   官方目前仍在开发此事件，目前的字段存在许多冗余，因此后续很有可能随时出现变化。
 
@@ -322,7 +322,7 @@ thread_info
 
 > 原type 5：##子频道，目前为空子字段，无任何内容反馈
 
-### OPEN_FORUMS
+#### OPEN_FORUMS
 
 -   公域版本的FORUMS论坛事件
 
@@ -335,7 +335,7 @@ thread_info
 | t          | string | 事件类型字段，如GUILD_CREATE |
 | event_id   | sring  | 事件ID                 |
 
-### AUDIO_ACTION
+#### AUDIO_ACTION
 
 -   只有AUDIO_START、AUDIO_FINISH拥有audio_url和text字段
 
@@ -349,7 +349,7 @@ thread_info
 | t          | string | 事件类型字段，如GUILD_CREATE |
 | event_id   | sring  | 事件ID                 |
 
-### REACTION
+#### REACTION
 
 | 结构         |        |                                 |
 | ---------- | ------ | ------------------------------- |
@@ -380,7 +380,7 @@ thread_info
 
 ![](image/model3.png)
 
-### INTERACTION
+#### INTERACTION
 
 | 结构             |        |                             |
 | -------------- | ------ | --------------------------- |
@@ -409,7 +409,7 @@ thread_info
 | message_id  | string | 触发按钮事件的消息ID |
 | user_id     | string | 触发按钮事件的用户ID |
 
-### LIVE_CHANNEL_MEMBER
+#### LIVE_CHANNEL_MEMBER
 
 | 结构           |        |                         |
 | ------------ | ------ | ----------------------- |
@@ -420,3 +420,52 @@ thread_info
 | user_id      | string | 用户ID                    |
 | t            | string | 事件类型字段，如GUILD_CREATE    |
 | event_id     | sring  | 事件ID                    |
+
+## Scope
+
+* 作用域的枚举值
+
+| 值        | 说明          |
+|----------|-------------|
+| USER     | 代表只在当前用户有效  |
+| GUILD    | 代表只在当前频道有效  |
+| CHANNEL  | 代表只在当前子频道有效 |
+| GLOBAL   | 代表全局有效      |
+
+## SessionStatus
+    
+* Session状态的枚举值
+
+| 值         | 说明                                        |
+|-----------|-------------------------------------------|
+| ACTIVE    | 此状态会检查并根据特定条件（gc timeout）自动删除session      |
+| INACTIVE  | 此状态代表session正在运行中，会检查timeout并进入INACTIVE状态 |
+| HANGING   | 此状态代表session不检查timeout，但会在下次操作时进入ACTIVE状态 |
+
+## SessionObject
+
+* session对象，用于存储session的数据
+
+| 字段名      | 类型       | 说明                                                          |
+|----------|----------|-------------------------------------------------------------|
+| scope    | Scope    | session的作用域                                                 |
+| status   | Status   | session的状态                                                  |
+| key      | Hashable | session的键                                                   |
+| data     | dict     | session的值                                                   |
+| identify | Hashable | scope作用域下的标识，用户不输入时为消息数据自动填入的标识（如Scope.USER会为此项自动填入user id） |
+
+## BotCommandObject
+
+* 机器人的on_command命令对象，用于存储机器人命令的数据
+
+| 字段名                     | 类型                             | 说明                                                       |
+|-------------------------|--------------------------------|----------------------------------------------------------|
+| command                 | Iterable[str]                  | 可触发事件的指令列表，与正则 regex 互斥，优先使用此项                           |
+| regex                   | Iterable[Pattern]              | 可触发指令的正则 compile 实例或正则表达式，与指令表互斥                         |
+| func                    | Callable[[Model.MESSAGE], Any] | 指令触发后的回调函数                                               |
+| treat                   | bool                           | 是否返回处理后的消息                                               |
+| at                      | bool                           | 是否要求必须艾特机器人才能触发指令                                        |
+| short_circuit           | bool                           | 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和 command 先 regex 后排序指令的短路机制） |
+| is_custom_short_circuit | bool                           | 如果触发指令成功而回调函数返回True则不运行后续指令，存在时优先于short_circuit          |
+| admin                   | bool                           | 是否要求频道主或或管理才可触发指令                                        |
+| admin_error_msg         | Optional[str]                  | 当admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路       |

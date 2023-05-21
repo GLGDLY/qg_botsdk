@@ -15,8 +15,18 @@ qg_botsdk Library
 :license: MIT, see LICENSE for more details.
 """
 
+from . import utils
+from ._exception import IdTokenError, IdTokenMissing, WaitTimeoutError
 from .logger import Logger
-from .model import EmojiID, EmojiString, Model
+from .model import (
+    BotCommandObject,
+    EmojiID,
+    EmojiString,
+    Model,
+    Scope,
+    SessionObject,
+    SessionStatus,
+)
 from .plugins import Plugins
 from .qg_bot import BOT
 from .version import __version__
@@ -31,4 +41,19 @@ __copyright__ = "Copyright (c) 2022 GLGDLY"
 
 
 name = "qg_botsdk"
-__all__ = ("BOT", "Model", "EmojiID", "EmojiString", "Logger", "Plugins")
+__all__ = (
+    "BOT",
+    "Model",
+    "Scope",
+    "SessionObject",
+    "SessionStatus",
+    "BotCommandObject",
+    "EmojiID",
+    "EmojiString",
+    "Logger",
+    "Plugins",
+    "utils",
+    "IdTokenMissing",
+    "IdTokenError",
+    "WaitTimeoutError",
+)

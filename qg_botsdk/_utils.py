@@ -3,13 +3,13 @@
 from asyncio import iscoroutinefunction
 from copy import deepcopy
 from functools import wraps
-from inspect import Signature, signature
+from inspect import Signature, signature, stack
 from json import dumps, loads
 from json.decoder import JSONDecodeError
 from sys import exc_info
 from time import localtime, strftime
 from traceback import extract_tb
-from typing import BinaryIO, Callable, Optional, Union
+from typing import BinaryIO, Callable, Iterable, Optional, Union
 
 from aiohttp import ContentTypeError
 
@@ -99,6 +99,16 @@ def security_wrapper(func):
     return wrap
 
 
+def stack_exception_handler(error, stack_no: int = 1):
+    target_frame = stack()[stack_no]
+    return '[error:{}] File "{}", line {}, in {}'.format(
+        error.__repr__(),
+        target_frame.filename,
+        target_frame.lineno,
+        target_frame.function,
+    )
+
+
 def exception_handler(error):
     error_info = extract_tb(exc_info()[-1])[-1]
     return '[error:{}] File "{}", line {}, in {}'.format(
@@ -115,11 +125,11 @@ def exception_processor(func):
             logger = getattr(args[0], "logger", None)
             if logger:
                 logger.error(e.__repr__())
-                logger.debug(exception_handler(e))
+                logger.error(exception_handler(e))
             else:
                 t = strftime("%m-%d %H:%M:%S", localtime())
                 print(f"\033[1;31m[{t}] [ERROR]\033[0m {e.__repr__()}")
-                print(f"[{t}] [DEBUG] {exception_handler(e)}")
+                print(f"[{t}] [ERROR] {exception_handler(e)}")
 
     return wrap
 
@@ -170,6 +180,15 @@ def _send_msg():  # Cannot direct import from _api_model.py since circular impor
     return SendMsg
 
 
+_reply_args = (
+    "content",
+    "image",
+    "file_image",
+    "message_reference_id",
+    "ignore_message_reference_error",
+)
+
+
 class event_class(object_class):
     def reply(
         self,
@@ -195,8 +214,8 @@ class event_class(object_class):
         :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        kwargs = locals()
-        kwargs.pop("self", None)
+        raw_args = locals()
+        kwargs = {arg: raw_args[arg] for arg in _reply_args}
         t = getattr(self, "t", None)
         if t in msg_t:
             kwargs["message_id"] = getattr(self, "id", None)
@@ -239,8 +258,8 @@ class async_event_class(object_class):
         :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        kwargs = locals()
-        kwargs.pop("self", None)
+        raw_args = locals()
+        kwargs = {arg: raw_args[arg] for arg in _reply_args}
         t = getattr(self, "t", None)
         if t in msg_t:
             kwargs["message_id"] = getattr(self, "id", None)
@@ -380,12 +399,15 @@ def sdk_error_temp(message):
     )
 
 
-def check_func(func, *args, is_async: bool = False):
+def func_type_checker(func, *args, is_async: bool = False):
     sig = signature(func).parameters
     sig_keys = list(sig.keys())
     sig_keys_len = len(sig_keys)
     if sig_keys_len != len(args):
-        raise TypeError(f'函数{func.__name__}应包含以下类型的参数：{" ".join(args)}')
+        raise TypeError(
+            f'函数{func.__name__}应包含以下类型的{len(args)}个参数：{" ".join(args)}\n'
+            f"当前为{sig_keys_len}个参数：{sig_keys}"
+        )
     for i in range(sig_keys_len):
         annotation = sig[sig_keys[i]].annotation
         if annotation is not Signature.empty and annotation != args[i]:
@@ -396,3 +418,43 @@ def check_func(func, *args, is_async: bool = False):
     else:
         if not isinstance(func, Callable) or iscoroutinefunction(func):
             raise TypeError(f"函数{func.__name__}应为一个普通函数")
+
+
+class TraceCallerData:
+    def __init__(self, caller_names: Iterable[str], datas: Iterable[str]):
+        self.caller_names = caller_names
+        self.datas = datas
+
+    def get_target_data(self):
+        for frame in stack():
+            caller_name = frame.function
+            if caller_name in self.caller_names:
+                if not self.datas:
+                    return frame.frame.f_locals
+                try:
+                    target_data = frame.frame.f_locals
+                    for data in self.datas:
+                        target_data = (
+                            target_data.get(data, None)
+                            if isinstance(target_data, dict)
+                            else getattr(target_data, data, None)
+                        )
+                    return target_data
+                except Exception:
+                    pass
+
+    def __getattr__(self, item):
+        target_data = self.get_target_data()
+        if target_data:
+            return getattr(target_data, item)
+        raise AttributeError(
+            f"没有追溯到 {'::'.join(self.datas)} 变量（probably because of haven't start bot instance）"
+        )
+
+    def __getitem__(self, item):
+        target_data = self.get_target_data()
+        if target_data:
+            return target_data[item]
+        raise KeyError(
+            f"没有追溯到 {'::'.join(self.datas)} 变量（probably because of haven't start bot instance）"
+        )

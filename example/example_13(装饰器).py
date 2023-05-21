@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# 使用装饰器与plugins的一个实例（装饰器要求SDK版本>=2.5.0 & plugins要求SDK版本>=2.5.1）
-from qg_botsdk import BOT, Model
+# 使用装饰器与plugins的一个实例（装饰器要求SDK版本>=2.5.0 & plugins要求SDK版本>=2.5.1 & session要求SDK版本>=3.0.0）
+from qg_botsdk import BOT, Model, Scope
 
 # import example_13_plugins  # 使用plugins的方法一，直接import相应module，BOT.start()时将自动加载
 
@@ -45,7 +45,19 @@ def c_2(data: Model.MESSAGE):
 # 可用作类似switch case(match case)中的default(当全部指令都未触发短路时，触发最后的这一条)
 @bot.bind_msg()
 def deliver(data: Model.MESSAGE):
-    data.reply(file_image=r"example_10_image.jpg")
+    if _session := bot.session.get(
+        Scope.USER, "Plugin"
+    ):  # 当前用户（Scope.USER）存在key为"Plugin"的session时
+        my_session_status = _session.data[
+            "status"
+        ]  # 获取session的保存的数据，并从这个字典获取key为"status"的值
+        bot.logger.info(f"Plugin的session状态：{my_session_status}")
+        data.reply(f"Plugin的session状态：{my_session_status}")
+        bot.session.end(
+            Scope.USER, "Plugin"
+        )  # 删除当前用户（Scope.USER）中，key为"Plugin"的session
+    else:
+        data.reply(file_image=r"example_10_image.jpg")
 
 
 if __name__ == "__main__":

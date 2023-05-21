@@ -27,24 +27,25 @@ BOT(bot_id='xxx', bot_token='xxx')
 # 路径：qg_botsdk.BOT()
 ```
 
-| 参数                  |        |              |                                                                                                          |
-| --------------------- | ------ | ------------ | -------------------------------------------------------------------------------------------------------- |
-| 字段名                | 类型   | 默认值       | 说明                                                                                                     |
-| bot_id                | string | 无，必选参数 | 机器人平台 BotAppID                                                                                      |
-| bot_token             | string | 无，必选参数 | 机器人平台机器人令牌                                                                                     |
-| bot_secret            | string | None         | 机器人平台机器人密钥                                                                                     |
-| is_private            | bool   | False        | 是否私域机器人，默认为公域（只订阅艾特消息，不订阅全部）                                                 |
-| is_sandbox            | bool   | False        | 是否开启沙箱环境测试                                                                                     |
-| max_shard             | int    | 5            | 最大分片数限制（SDK 版本 2.3.1 后已遗弃，转为自定义 shard_no 以及 total_shard）                          |
-| no_permission_warning | bool   | True         | 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启                                             |
-| is_async              | bool   | False        | 使用同步 api 还是异步 api，默认 False（使用同步）                                                        |
-| is_retry              | bool   | True         | 使用 api 时，如遇可重试的错误码是否自动进行重试（需求 SDK 版本>=2.2.8）                                  |
-| is_log_error          | bool   | True         | 使用 api 时，如返回的结果为不成功，可自动 log 输出报错信息（需求 SDK 版本>=2.2.10）                      |
-| shard_no              | int    | 0            | 当前分片数，如不熟悉相关配置请不要轻易改动此项（需求 SDK 版本>=2.3.1）                                   |
-| total_shard           | int    | 1            | 最大分片数，如不熟悉相关配置请不要轻易改动此项（需求 SDK 版本>=2.3.1）                                   |
-| max_workers           | int    | None         | 在同步模式下，允许同时运行的最大线程数（需求 SDK 版本>=2.3.5）                                           |
-| api_max_concurrency   | int    | 0            | API 允许的最大并发数，超过此并发数将进入队列，如此数值&lt; =0 代表不开启任何队列（需求 SDK 版本>=2.5.6） |
-| api_timeout           | int    | 20           | API 请求的超时设置（需求 SDK 版本>=2.6.3）                                                               |
+| 参数                                |        |          |                                                                  |
+|-----------------------------------|--------|----------|------------------------------------------------------------------|
+| 字段名                               | 类型     | 默认值      | 说明                                                               |
+| bot_id                            | string | 无，必选参数   | 机器人平台 BotAppID                                                   |
+| bot_token                         | string | 无，必选参数   | 机器人平台机器人令牌                                                       |
+| bot_secret                        | string | None     | 机器人平台机器人密钥                                                       |
+| is_private                        | bool   | False    | 是否私域机器人，默认为公域（只订阅艾特消息，不订阅全部）                                     |
+| is_sandbox                        | bool   | False    | 是否开启沙箱环境测试                                                       |
+| max_shard                         | int    | 5        | 最大分片数限制（SDK 版本 2.3.1 后已遗弃，转为自定义 shard_no 以及 total_shard）         |
+| no_permission_warning             | bool   | True     | 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启                                   |
+| is_async                          | bool   | False    | 使用同步 api 还是异步 api，默认 False（使用同步）                                 |
+| is_retry                          | bool   | True     | 使用 api 时，如遇可重试的错误码是否自动进行重试（需求 SDK 版本>=2.2.8）                     |
+| is_log_error                      | bool   | True     | 使用 api 时，如返回的结果为不成功，可自动 log 输出报错信息（需求 SDK 版本>=2.2.10）            |
+| shard_no                          | int    | 0        | 当前分片数，如不熟悉相关配置请不要轻易改动此项（需求 SDK 版本>=2.3.1）                        |
+| total_shard                       | int    | 1        | 最大分片数，如不熟悉相关配置请不要轻易改动此项（需求 SDK 版本>=2.3.1）                        |
+| max_workers                       | int    | None     | 在同步模式下，允许同时运行的最大线程数（需求 SDK 版本>=2.3.5）                            |
+| api_max_concurrency               | int    | 0        | API 允许的最大并发数，超过此并发数将进入队列，如此数值&lt; =0 代表不开启任何队列（需求 SDK 版本>=2.5.6） |
+| api_timeout                       | int    | 20       | API 请求的超时设置（需求 SDK 版本>=2.6.3）                                    |
+ | disable_reconnect_on_not_recv_msg | float  | 1000     | 当机器人长时间未收到消息后进行连接而非重连。默认1000秒（需求 SDK 版本>=3.0.0）                  |
 
 ### 开始机器人
 
@@ -55,10 +56,10 @@ bot.start()
 # 路径：qg_botsdk.BOT().start()
 ```
 
-| 参数        |      |        |                                                                                                                                |
-| ----------- | ---- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| 字段名      | 类型 | 默认值 | 说明                                                                                                                           |
-| is_blocking | bool | True   | 机器人是否阻塞运行，如选择 False，机器人将以异步任务的方式非阻塞性运行，如不熟悉异步编程请不要使用此项（需求 SDK 版本>=2.6.0） |
+| 参数           |       |        |                                                                           |
+|--------------|-------|--------|---------------------------------------------------------------------------|
+| 字段名          | 类型    | 默认值    | 说明                                                                        |
+| is_blocking  | bool  | True   | 机器人是否阻塞运行，如选择 False，机器人将以异步任务的方式非阻塞性运行，如不熟悉异步编程请不要使用此项（需求 SDK 版本>=2.6.0）  |
 
 ### 阻塞机器人进程（需求 SDK 版本>=2.6.0）
 
@@ -118,16 +119,70 @@ def c_0(data: Model.MESSAGE):
 # 路径：qg_botsdk.BOT().on_command
 ```
 
-| 参数             |                |        |                                                                                                  |
-| ---------------- | -------------- | ------ | ------------------------------------------------------------------------------------------------ |
-| 字段名           | 类型           | 默认值 | 说明                                                                                             |
-| command          | List[str], str | None   | 可触发事件的指令列表，与正则 regex 互斥，优先使用此项                                            |
-| regex            | Pattern, str   | None   | 可触发指令的正则 compile 实例或正则表达式，与指令表互斥                                          |
-| is_require_at    | bool           | False  | 是否要求必须艾特机器人才能触发指令                                                               |
-| is_short_circuit | bool           | False  | 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和 command 先 regex 后排序指令的短路机制） |
-| is_require_admin | bool           | False  | 是否要求频道主或或管理才可触发指令                                                               |
+| 参数                      |                                                                                        |       |                                                               |
+|-------------------------|----------------------------------------------------------------------------------------|-------|---------------------------------------------------------------|
+| 字段名                     | 类型                                                                                     | 默认值   | 说明                                                            |
+| command                 | List[str], str                                                                         | None  | 可触发事件的指令列表，与正则 regex 互斥，优先使用此项                                |
+| regex                   | Pattern, str                                                                           | None  | 可触发指令的正则 compile 实例或正则表达式，与指令表互斥                              |
+| is_require_at           | bool                                                                                   | False | 是否要求必须艾特机器人才能触发指令                                             |
+| is_short_circuit        | bool                                                                                   | False | 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和 command 先 regex 后排序指令的短路机制）      |
+ | is_custom_short_circuit | bool                                                                                   | False | 如果触发指令成功而回调函数返回True则不运行后续指令，存在时优先于is_short_circuit            |
+| is_require_admin        | bool                                                                                   | False | 是否要求频道主或或管理才可触发指令                                             |
+ | admin_error_msg         | str                                                                                    | None  | 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路 |
+| required_session        | [SessionObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#id4) | None  | 触发指令所需的session，校验是否存在session以及session中是否存在特定数据                |
 
 > （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
+
+### 获取当前机器人的指令列表（需求 SDK 版本>=3.0.0）
+
+* 获取当前机器人的指令列表
+
+```python
+bot.get_current_commands()
+```
+
+| 返回                                                                                               |                            |
+|--------------------------------------------------------------------------------------------------|----------------------------|
+| 类型                                                                                               | 说明                         |
+| list[[BotCommandObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#id5)]  | 包含机器人指令BotCommandObject的列表 |
+
+> 无参数
+
+### 获取当前机器人的预处理器列表（需求 SDK 版本>=3.0.0）
+
+* 获取当前机器人的预处理器列表
+
+```python
+bot.get_current_preprocessors()
+```
+
+> 无参数
+
+### 删除指令（需求 SDK 版本>=3.0.0）
+
+* 删除指令
+
+```python
+bot.remove_command(command_obj=xxx)
+```
+
+| 参数                   |                                                                                              |       |                     |
+|----------------------|----------------------------------------------------------------------------------------------|-------|---------------------|
+| 字段名                  | 类型                                                                                           | 默认值   | 说明                  |
+| command_obj          | [BotCommandObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#id5)    | None  | 指令对象                |
+
+### 删除预处理器（需求 SDK 版本>=3.0.0）
+
+* 删除预处理器
+
+```python
+bot.remove_preprocessor(preprocessor=xxx)
+```
+
+| 参数                 |                                |      |                 |
+|--------------------|--------------------------------|------|-----------------|
+| 字段名                | 类型                             | 默认值  | 说明              |
+| preprocessor       | Callable[[Model.MESSAGE], Any] | None | 相应预处理器（注册的回调函数） |
 
 ### 加载默认消息日志模块（需求 SDK 版本>=2.6.0）
 
@@ -139,6 +194,42 @@ bot.load_default_msg_logger()
 ```
 
 > 无参数
+
+### 加载插件（需求 SDK 版本>=2.5.0）
+
+* 用于加载插件到当前机器人实例
+
+```python
+bot.load_plugins(path_to_plugins="xxx")
+```
+
+| 参数              | 类型    | 默认值   | 说明                   |
+|-----------------|-------|-------|----------------------|
+| 字段名             | 类型    | 默认值   | 说明                   |
+| path_to_plugins | str   | None  | 指向相应.py插件文件的相对或绝对路径  |
+
+> （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
+
+### 清除当前所有插件、指令、预处理器（需求 SDK 版本>=3.0.0）
+
+* 清除当前所有插件、指令、预处理器
+
+```python
+bot.clear_current_plugins()
+```
+
+> 无参数
+
+### 更新当前机器人实例的插件（需求 SDK 版本>=3.0.0）
+
+* 更新当前机器人实例的插件
+
+```python
+bot.refresh_plugins()
+```
+
+> 无参数
+
 
 ## 绑定回调函数组件（SDK 版本>=2.5.0 支持装饰器）
 
@@ -314,8 +405,8 @@ def guild_member_function(data):   # 可使用 def msg_function(data: Model.GUIL
 data.id, data.user.username, data.t))
 
 bot = BOT(bot_id='xxx', bot_token='xxx')
-bot.bind_guild_event(callback=guild_member_function)
-# 路径：qg_botsdk.qg_bot.BOT().bind_guild_event()
+bot.bind_guild_member(callback=guild_member_function)
+# 路径：qg_botsdk.qg_bot.BOT().bind_guild_member()
 ```
 
 | 参数                     |               |              |                                                    |

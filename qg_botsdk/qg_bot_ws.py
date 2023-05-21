@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from asyncio import AbstractEventLoop, all_tasks, sleep
+from asyncio import AbstractEventLoop
+from asyncio import TimeoutError as AsyncTimeoutError
+from asyncio import all_tasks, sleep
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy, deepcopy
 from json import dumps, loads
 from ssl import create_default_context
 from typing import Any, Callable, Union
-from unittest.mock import PropertyMock, patch
 
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 
-from ._api_model import Bot_Command_Obj
+from ._session import SessionManager
 from ._statics import EVENTS
 from ._utils import (
     exception_handler,
@@ -24,15 +25,16 @@ from .api import API
 from .async_api import AsyncAPI
 from .http import Session
 from .logger import Logger
-from .model import Model
-from .plugins import Plugins
+from .model import BotCommandObject, Model
+
+Op9RetryTime = 2
 
 
 class BotWs:
     def __init__(
         self,
         loop: AbstractEventLoop,
-        session: Session,
+        http_session: Session,
         logger: Logger,
         total_shard: int,
         shard_no: int,
@@ -48,8 +50,10 @@ class BotWs:
         is_async: bool,
         max_workers: int,
         api: Union[AsyncAPI, API],
-        commands: list[Bot_Command_Obj],
-        preprocessors: list[Model.MESSAGE],
+        commands: list[BotCommandObject],
+        preprocessors: list[Callable[[Model.MESSAGE], Any]],
+        disable_reconnect_on_not_recv_msg: float,
+        session_manager: SessionManager,
     ):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
@@ -58,7 +62,7 @@ class BotWs:
             更多教程和相关资讯可参阅：
             https://qg-botsdk.readthedocs.io/zh_CN/latest/快速入门.html
         """
-        self.session = session
+        self.http_session = http_session
         self._ssl = create_default_context()
         self.logger = logger
         self.total_shard = total_shard
@@ -116,7 +120,11 @@ class BotWs:
         self.api = api
         self.commands = commands
         self.preprocessors = preprocessors
+        self.session_manager = session_manager
         self.at = "<@!%s>"
+        self.disable_reconnect = False
+        self.disable_reconnect_on_not_recv_msg = disable_reconnect_on_not_recv_msg
+        self.skip_connect_waiting = False
 
     @exception_processor
     async def _time_event_run(self):
@@ -137,9 +145,11 @@ class BotWs:
         self.logger.info(f"机器人频道用户ID：{self.robot.id}")
         if self.on_start_function is not None:
             if self.is_async:
-                self.loop.create_task(self.on_start_function())
+                self.loop.create_task(
+                    self.async_start_callback_task(self.on_start_function)
+                )
             else:
-                self.threads.submit(self.start_task, self.on_start_function)
+                self.threads.submit(self.start_callback_task, self.on_start_function)
         if self.repeat_function is not None:
             self.loop.create_task(self._time_event_check())
 
@@ -178,7 +188,7 @@ class BotWs:
             self.heartbeat = self.loop.create_task(self.heart())
 
     async def get_robot_info(self, retry=False):
-        robot_info = await self.session.get(r"https://api.sgroup.qq.com/users/@me")
+        robot_info = await self.http_session.get(r"https://api.sgroup.qq.com/users/@me")
         robot_info = await robot_info.json()
         if "id" not in robot_info:
             if not retry:
@@ -189,16 +199,12 @@ class BotWs:
         return objectize(robot_info)
 
     @exception_processor
-    async def async_start_task(self, func, *args):
-        with patch.object(Plugins, "api", new_callable=PropertyMock) as mock_api:
-            mock_api.return_value = self.api
-            await func(*args)
+    async def async_start_callback_task(self, func, *args):
+        return await func(*args)
 
     @exception_processor
-    def start_task(self, func, *args):
-        with patch.object(Plugins, "api", new_callable=PropertyMock) as mock_api:
-            mock_api.return_value = self.api
-            func(*args)
+    def start_callback_task(self, func, *args):
+        return func(*args)
 
     @exception_processor
     async def distribute(
@@ -208,10 +214,12 @@ class BotWs:
             if not objectized_data:
                 objectized_data = objectize(data.get("d", {}), self.api, self.is_async)
             if not self.is_async:
-                return self.threads.submit(self.start_task, function, objectized_data)
+                return self.threads.submit(
+                    self.start_callback_task, function, objectized_data
+                )
             else:
                 return self.loop.create_task(
-                    self.async_start_task(function, objectized_data)
+                    self.async_start_callback_task(function, objectized_data)
                 )
 
     @exception_processor
@@ -241,11 +249,10 @@ class BotWs:
         self,
         objectized_data: Model.MESSAGE,
         treated_msg: str,
-        command_obj: Bot_Command_Obj,
+        command_obj: BotCommandObject,
         **kwargs,
     ):
-        # command: {command or regex, func, treat, at, short_circuit, admin, admin_error_msg}
-        if command_obj["admin"]:
+        if command_obj.admin:
             try:
                 roles = objectized_data.member.roles
             except Exception:
@@ -257,31 +264,62 @@ class BotWs:
                 )
                 return False
             if "2" not in roles and "4" not in roles:  # if not admin
-                if command_obj["admin_error_msg"]:
+                if command_obj.admin_error_msg:
                     if self.is_async:
                         self.loop.create_task(
                             objectized_data.reply(
-                                command_obj["admin_error_msg"],
+                                command_obj.admin_error_msg,
                             )
                         )
                     else:
                         self.threads.submit(
                             objectized_data.reply,
-                            command_obj["admin_error_msg"],
+                            command_obj.admin_error_msg,
                         )
                     return True
                 return False
-        if command_obj["treat"] and self.msg_treat:
+        if command_obj.treat:
             objectized_data = self.treat_command(objectized_data, treated_msg, **kwargs)
-            task = await self.distribute(
-                command_obj["func"], objectized_data=objectized_data
-            )
-            if not command_obj["is_custom_short_circuit"]:
-                return command_obj["short_circuit"]  # True or False
+        task = await self.distribute(command_obj.func, objectized_data=objectized_data)
+        if not command_obj.is_custom_short_circuit:
+            return command_obj.short_circuit  # True or False
+        else:
+            while not task.done():
+                await sleep(0.1)
+            r = task.result()
+            return r  # True or False
+
+    def process_wait_for_commands(self, objectized_data, msg, treated_msg):
+        wait_for_commands = self.session_manager.wait_for_message_checker(
+            objectized_data
+        )
+        for x in wait_for_commands:
+            commands = x.command.command
+            regexs = x.command.regex
+            if commands:
+                for command in commands:
+                    if command in msg and (not x.command.at or self.at in msg):
+                        if x.command.treat:
+                            objectized_data = self.treat_command(
+                                objectized_data, treated_msg, command=command
+                            )
+                        x.callback(objectized_data)
+                        if x.command.short_circuit:
+                            return True
+                        break
             else:
-                while not task.done():
-                    await sleep(0.5)
-                return task.result()  # True or False
+                for regex in regexs:
+                    regex = regex.search(msg)
+                    if regex and (not x.command.at or self.at in msg):
+                        if x.command.treat:
+                            objectized_data = self.treat_command(
+                                objectized_data, treated_msg, regex=regex
+                            )
+                        x.callback(objectized_data)
+                        if x.command.short_circuit:
+                            return True
+                        break
+        return False
 
     @exception_processor
     async def distribute_commands(self, data: dict, treated_msg: str):
@@ -291,23 +329,26 @@ class BotWs:
             await self.distribute(func, objectized_data=objectized_data)
         # check commands
         msg = data.get("d", {}).get("content", "")
-        # commands = [{command or regex, func, treat, at, short_circuit, admin, admin_error_msg}]
+        if self.process_wait_for_commands(objectized_data, msg, treated_msg):
+            return True
         for items in self.commands:
-            commands = items.get("command", [])
+            commands = items.command
+            regexs = items.regex
             if commands:
                 for command in commands:
-                    if command in msg and (not items["at"] or self.at in msg):
+                    if command in msg and (not items.at or self.at in msg):
                         if await self.check_command(
                             objectized_data, treated_msg, items, command=command
                         ):
                             return True
             else:
-                regex = items.get("regex").search(msg)
-                if regex and (not items["at"] or self.at in msg):
-                    if await self.check_command(
-                        objectized_data, treated_msg, items, regex=regex
-                    ):
-                        return True
+                for regex in regexs:
+                    regex = regex.search(msg)
+                    if regex and (not items.at or self.at in msg):
+                        if await self.check_command(
+                            objectized_data, treated_msg, items, regex=regex
+                        ):
+                            return True
 
     @exception_processor
     async def data_process(self, data: dict):
@@ -359,11 +400,7 @@ class BotWs:
             self.logger.debug("心跳发送成功")
         elif op == 9:
             self.logger.error("[错误] op9参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）")
-            await sleep(3)
-            if not self.is_reconnect:
-                await self.send_connect()
-            else:
-                await self.send_reconnect()
+            self.disable_reconnect = True
         elif op == 10:
             self.heartbeat_time = (
                 int(data.get("d", {}).get("heartbeat_interval", 40)) * 0.001
@@ -388,24 +425,41 @@ class BotWs:
             else:
                 await self.data_process(data)
 
+    async def close(self):
+        if self.heartbeat is not None and not self.heartbeat.cancelled():
+            self.heartbeat.cancel()
+        await self.ws.close()
+        self.logger.info("WS链接已结束")
+
     async def connect(self):
         self.reconnect_times += 1
         try:
             async with ClientSession() as ws_session:
                 async with ws_session.ws_connect(self.ws_url, ssl=self._ssl) as self.ws:
                     while not self.ws.closed:
-                        message = await self.ws.receive()
-                        if not self.running:
+                        try:
+                            message = await self.ws.receive(
+                                timeout=self.disable_reconnect_on_not_recv_msg
+                            )
+                        except AsyncTimeoutError:
+                            self.logger.warning("BOT_WS链接已断开，正在尝试重连……")
                             if (
                                 self.heartbeat is not None
                                 and not self.heartbeat.cancelled()
                             ):
                                 self.heartbeat.cancel()
-                            await self.ws.close()
-                            self.logger.info("WS链接已结束")
+                            self.disable_reconnect = True
+                            self.skip_connect_waiting = True
+                            return
+                        if not self.running:
+                            if not not self.ws.closed:
+                                await self.close()
                             return
                         if message.type == WSMsgType.TEXT:
                             self.loop.create_task(self.dispatch_events(message.data))
+                            if self.disable_reconnect:
+                                await self.ws.close()
+                                return
                         elif message.type in (
                             WSMsgType.CLOSE,
                             WSMsgType.CLOSED,
@@ -424,16 +478,23 @@ class BotWs:
             self.logger.warning("BOT_WS链接已断开，正在尝试重连……")
             if self.heartbeat is not None and not self.heartbeat.cancelled():
                 self.heartbeat.cancel()
-            self.logger.error(e)
-            self.logger.debug(exception_handler(e))
+            self.logger.error(repr(e))
+            self.logger.error(exception_handler(e))
             return
 
     async def starter(self):
+        self.session_manager.start(self.loop)
         await self.connect()
         while self.running:
-            self.is_reconnect = self.reconnect_times < 20
+            if self.disable_reconnect:
+                if not self.skip_connect_waiting:
+                    await sleep(Op9RetryTime)
+                self.skip_connect_waiting = False
+                self.disable_reconnect = False
+                self.is_reconnect = False
             try:
                 await self.connect()
             except WSServerHandshakeError:
                 self.logger.warning("网络连线不稳定或已断开，请检查网络链接")
-            await sleep(5)
+            await sleep(3)
+            self.is_reconnect = self.reconnect_times < 20

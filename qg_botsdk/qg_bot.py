@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import json
 from asyncio import Lock as ALock
-from asyncio import get_event_loop, new_event_loop, sleep
+from asyncio import get_event_loop, new_event_loop
 from importlib.machinery import SourceFileLoader
 from os import getpid
 from os.path import exists
@@ -9,22 +10,28 @@ from os.path import split as path_split
 from re import Pattern
 from threading import Lock as TLock
 from time import sleep as t_sleep
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Iterable, Optional, Union
 
+from . import _exception
 from ._api_model import robot_model
-from ._utils import check_func
+from ._session import SessionManager
+from ._utils import func_type_checker
 from .api import API
 from .async_api import AsyncAPI
 from .http import Session
 from .logger import Logger
-from .model import Model
+from .model import BotCommandObject, Model
 from .plugins import Plugins
 from .qg_bot_ws import BotWs as _BotWs
+from .session import AbstractSessionManager, SessionPatcher
 from .version import __version__
 
 pid = getpid()
 print(f"本次程序进程ID：{pid} | SDK版本：{__version__} | 即将开始运行机器人……")
 t_sleep(0.5)
+json.JSONEncoder.default = lambda self, obj: (
+    obj.__json__() if hasattr(obj, "__json__") else str(obj)
+)
 
 
 class BOT:
@@ -44,6 +51,7 @@ class BOT:
         max_workers: int = 32,
         api_max_concurrency: int = 0,
         api_timeout: int = 20,
+        disable_reconnect_on_not_recv_msg: float = 1000,
     ):
         """
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
@@ -62,6 +70,7 @@ class BOT:
         :param max_workers: 在同步模式下，允许同时运行的最大线程数，默认32
         :param api_max_concurrency: API允许的最大并发数，超过此并发数将进入队列，如此数值<=0代表不开启任何队列，默认0
         :param api_timeout: API请求的超时设置。默认20
+        :param disable_reconnect_on_not_recv_msg: 当机器人长时间未收到消息后进行连接而非重连。默认1000秒
         """
         self.logger = Logger(bot_id)
         self.bot_id = bot_id
@@ -79,7 +88,7 @@ class BOT:
         else:
             self.bot_url = r"https://api.sgroup.qq.com"
         if not bot_id or not bot_token:
-            raise type("IdTokenMissing", (Exception,), {})(
+            raise _exception.IdTokenMissing(
                 "你还没有输入 bot_id 和 bot_token，无法连接使用机器人\n如尚未有相关票据，"
                 "请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情"
             )
@@ -100,7 +109,7 @@ class BOT:
         self.__await_closure = False
         self.auth = f"Bot {bot_id}.{bot_token}"
         self.bot_headers = {"Authorization": self.auth}
-        self._session = Session(
+        self._http_session = Session(
             self._loop,
             is_retry,
             is_log_error,
@@ -114,17 +123,29 @@ class BOT:
         self.no_permission_warning = no_permission_warning
         self.max_workers = max_workers
         self.is_async = is_async
+        self.__session_manager = SessionManager(self.logger)
         self.api: Union[AsyncAPI, API] = AsyncAPI(
             self.bot_url,
-            self._session,
+            self._http_session,
             self.logger,
             self._check_warning,
+            self.__session_manager,
         )
         if not is_async:
             self.lock = TLock()
-            self.api = API(self.api, self._loop)
+            self.api = API(
+                self.api,
+                self._loop,
+                api_timeout,
+                self.__session_manager,
+            )
         else:
             self.lock = ALock()
+        self.__task = None
+        self._commands: list[BotCommandObject] = []
+        self._preprocessors: list[Callable[[Model.MESSAGE], Any]] = []
+        self.session: AbstractSessionManager = SessionPatcher()
+        self.disable_reconnect_on_not_recv_msg = disable_reconnect_on_not_recv_msg
 
     def __repr__(self):
         return f"<qg_botsdk.BOT object [id: {self.bot_id}, token: {self.bot_token}]>"
@@ -168,18 +189,46 @@ class BOT:
                 if is_log:
                     self.logger.info("消息（艾特消息）接收函数订阅成功")
 
-    def _get_plugins(self):
+    def _retrieve_new_plugins(self):
         commands, preprocessors = Plugins()
         if commands:
             for items in commands:
-                check_func(items["func"], Model.MESSAGE, is_async=self.is_async)
+                func_type_checker(items.func, Model.MESSAGE, is_async=self.is_async)
             self.__register_msg_intents()
         for func in preprocessors:
-            check_func(func, Model.MESSAGE, is_async=self.is_async)
+            func_type_checker(func, Model.MESSAGE, is_async=self.is_async)
         return commands, preprocessors
 
-    @staticmethod
-    def load_plugins(path_to_plugins: str):
+    def refresh_plugins(self):
+        commands, preprocessors = self._retrieve_new_plugins()
+        self._commands.extend(commands)
+        self._preprocessors.extend(preprocessors)
+
+    def clear_current_plugins(self):
+        self._commands.clear()
+        self._preprocessors.clear()
+
+    def remove_command(self, command_obj: BotCommandObject):
+        if command_obj in self._commands:
+            self._commands.remove(command_obj)
+        else:
+            raise ValueError(f"未找到指定的command {command_obj}")
+
+    def remove_preprocessors(self, preprocessor: Callable[[Model.MESSAGE], Any]):
+        if preprocessor in self._preprocessors:
+            self._preprocessors.remove(preprocessor)
+        else:
+            raise ValueError(f"未找到指定的preprocessor {preprocessor}")
+
+    @property
+    def get_current_commands(self) -> list[BotCommandObject]:
+        return self._commands[:]
+
+    @property
+    def get_current_preprocessors(self) -> list[Callable[[Model.MESSAGE], Any]]:
+        return self._preprocessors[:]
+
+    def load_plugins(self, path_to_plugins: str):
         """
         用于加载插件的.py程序
 
@@ -193,27 +242,28 @@ class BOT:
         _name = path_split(path_to_plugins)[1][:-3]
         try:
             SourceFileLoader(_name, path_to_plugins).load_module()
-            with open(path_to_plugins, "r", encoding="utf-8") as f:
-                exec(f.read())
         except Exception:
             raise ImportError(f"plugin [{path_to_plugins}] 导入失败")
+        if self._bot_class and self._bot_class.running:
+            self.refresh_plugins()
 
-    @staticmethod
-    def before_command():
+    def before_command(self):
         """
         注册预处理器，将在检查所有commands前执行
         """
 
-        def wrap(func: Model.MESSAGE):
+        def wrap(func: Callable[[Model.MESSAGE], Any]):
             Plugins.before_command()(func)
+            if self._bot_class and self._bot_class.running:
+                self.refresh_plugins()
             return func
 
         return wrap
 
-    @staticmethod
     def on_command(
-        command: Optional[Union[List[str], str]] = None,
-        regex: Optional[Union[Pattern, str]] = None,
+        self,
+        command: Optional[Union[Iterable[str], str]] = None,
+        regex: Optional[Union[Pattern, str, Iterable[Union[Pattern, str]]]] = None,
         is_treat: bool = True,
         is_require_at: bool = False,
         is_short_circuit: bool = True,
@@ -229,12 +279,12 @@ class BOT:
         :param is_treat: 是否在treated_msg中同时处理指令，如正则将返回.groups()，默认是
         :param is_require_at: 是否要求必须艾特机器人才能触发指令，默认否
         :param is_short_circuit: 如果触发指令成功是否短路不运行后续指令（将根据注册顺序排序指令的短路机制），默认是
-        :param is_custom_short_circuit: 如果触发指令成功而返回True则不运行后续指令，与is_short_circuit不能同时存在，默认否
+        :param is_custom_short_circuit: 如果触发指令成功而回调函数返回True则不运行后续指令，存在时优先于is_short_circuit，默认否
         :param is_require_admin: 是否要求频道主或或管理才可触发指令，默认否
         :param admin_error_msg: 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
         """
 
-        def wrap(callback: Model.MESSAGE):
+        def wrap(callback: Callable[[Model.MESSAGE], Any]):
             Plugins.on_command(
                 command,
                 regex,
@@ -245,6 +295,8 @@ class BOT:
                 is_require_admin,
                 admin_error_msg,
             )(callback)
+            if self._bot_class and self._bot_class.running:
+                self.refresh_plugins()
             return callback
 
         return wrap
@@ -264,7 +316,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.MESSAGE, is_async=self.is_async)
+            func_type_checker(func, Model.MESSAGE, is_async=self.is_async)
             self._func_registers["on_msg"] = func
             if not treated_data:
                 self.msg_treat = False
@@ -294,11 +346,10 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.DIRECT_MESSAGE, is_async=self.is_async)
+            func_type_checker(func, Model.DIRECT_MESSAGE, is_async=self.is_async)
             self._func_registers["on_dm"] = func
             self._intents = self._intents | 1 << 12
-            if treated_data:
-                self.dm_treat = True
+            self.dm_treat = treated_data
             self.logger.info("私信接收函数订阅成功")
 
         if not callback:
@@ -318,7 +369,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.MESSAGE_DELETE, is_async=self.is_async)
+            func_type_checker(func, Model.MESSAGE_DELETE, is_async=self.is_async)
             self._func_registers["on_delete"] = func
             self._func_registers["del_is_filter_self"] = is_filter_self
             self.__register_msg_intents(False)
@@ -336,7 +387,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.GUILDS, is_async=self.is_async)
+            func_type_checker(func, Model.GUILDS, is_async=self.is_async)
             self._func_registers["on_guild_event"] = func
             self._intents = self._intents | 1
             self.logger.info("频道事件订阅成功")
@@ -353,7 +404,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.CHANNELS, is_async=self.is_async)
+            func_type_checker(func, Model.CHANNELS, is_async=self.is_async)
             self._func_registers["on_channel_event"] = func
             self._intents = self._intents | 1
             self.logger.info("子频道事件订阅成功")
@@ -370,7 +421,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.GUILD_MEMBERS, is_async=self.is_async)
+            func_type_checker(func, Model.GUILD_MEMBERS, is_async=self.is_async)
             self._func_registers["on_guild_member"] = func
             self._intents = self._intents | 1 << 1
             self.logger.info("频道成员事件订阅成功")
@@ -387,7 +438,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.REACTION, is_async=self.is_async)
+            func_type_checker(func, Model.REACTION, is_async=self.is_async)
             self._func_registers["on_reaction"] = func
             self._intents = self._intents | 1 << 10
             self.logger.info("表情表态事件订阅成功")
@@ -404,7 +455,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.INTERACTION, is_async=self.is_async)
+            func_type_checker(func, Model.INTERACTION, is_async=self.is_async)
             self._func_registers["on_interaction"] = func
             self._intents = self._intents | 1 << 26
             self.logger.info("互动事件订阅成功")
@@ -421,7 +472,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.MESSAGE_AUDIT, is_async=self.is_async)
+            func_type_checker(func, Model.MESSAGE_AUDIT, is_async=self.is_async)
             self._func_registers["on_audit"] = func
             self._intents = self._intents | 1 << 27
             self.logger.info("审核事件订阅成功")
@@ -441,7 +492,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.FORUMS_EVENT, is_async=self.is_async)
+            func_type_checker(func, Model.FORUMS_EVENT, is_async=self.is_async)
             self._func_registers["on_forum"] = func
             self._intents = self._intents | 1 << 28
             self.logger.info("论坛事件订阅成功")
@@ -463,7 +514,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.OPEN_FORUMS, is_async=self.is_async)
+            func_type_checker(func, Model.OPEN_FORUMS, is_async=self.is_async)
             self._func_registers["on_open_forum"] = func
             self._intents = self._intents | 1 << 18
             self.logger.info("论坛事件订阅成功")
@@ -480,7 +531,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.AUDIO_ACTION, is_async=self.is_async)
+            func_type_checker(func, Model.AUDIO_ACTION, is_async=self.is_async)
             self._func_registers["on_audio"] = func
             self._intents = self._intents | 1 << 29
             self.logger.info("音频事件订阅成功")
@@ -502,7 +553,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, Model.LIVE_CHANNEL_MEMBER, is_async=self.is_async)
+            func_type_checker(func, Model.LIVE_CHANNEL_MEMBER, is_async=self.is_async)
             self._func_registers["on_live_channel_member"] = func
             self._intents = self._intents | 1 << 19
             self.logger.info("音视频/直播子频道成员进出事件订阅成功")
@@ -524,7 +575,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, is_async=self.is_async)
+            func_type_checker(func, is_async=self.is_async)
             self._repeat_function = func
             self.check_interval = check_interval
             self.logger.info("重复运行事件注册成功")
@@ -541,7 +592,7 @@ class BOT:
         """
 
         def wraps(func):
-            check_func(func, is_async=self.is_async)
+            func_type_checker(func, is_async=self.is_async)
             self._on_start_function = func
             self.logger.info("初始事件注册成功")
 
@@ -580,20 +631,20 @@ class BOT:
             if not self.__running and not self._bot_class:
                 self.__running = True
                 gateway = self._loop.run_until_complete(
-                    self._session.get(f"{self.bot_url}/gateway/bot")
+                    self._http_session.get(f"{self.bot_url}/gateway/bot")
                 )
                 gateway = self._loop.run_until_complete(gateway.json())
                 url = gateway.get("url")
                 if not url:
-                    raise type("IdTokenError", (Exception,), {})(
+                    raise _exception.IdTokenError(
                         "你输入的 bot_id 和/或 bot_token 错误，无法连接使用机器人\n如尚未有相关票据，"
                         "请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情"
                     )
                 self.logger.debug("[机器人ws地址] " + url)
-                commands, preprocessors = self._get_plugins()
+                self.refresh_plugins()
                 self._bot_class = _BotWs(
                     self._loop,
-                    self._session,
+                    self._http_session,
                     self.logger,
                     self._total_shard,
                     self._shard_no,
@@ -609,13 +660,14 @@ class BOT:
                     self.is_async,
                     self.max_workers,
                     self.api,
-                    commands,
-                    preprocessors,
+                    self._commands,
+                    self._preprocessors,
+                    self.disable_reconnect_on_not_recv_msg,
+                    self.__session_manager,
                 )
-                self._loop.create_task(self._bot_class.starter())
-                if is_blocking:
-
-                    self._loop.run_forever()
+                self.__task = self._loop.create_task(self._bot_class.starter())
+                if is_blocking and not self._loop.is_running():
+                    self._loop.run_until_complete(self.__task)
             else:
                 self.logger.error("当前机器人已在运行中！")
         except KeyboardInterrupt:
@@ -628,7 +680,10 @@ class BOT:
         """
         try:
             if self.__running or self.__await_closure:
-                self._loop.run_forever()
+                if self.__task and not self._loop.is_running():
+                    self._loop.run_until_complete(self.__task)
+                    return
+            self.logger.error("当前机器人没有运行！")
         except KeyboardInterrupt:
             self.logger.info("结束运行机器人（KeyboardInterrupt）")
             exit()
@@ -646,14 +701,6 @@ class BOT:
             self.__running = False
             self.logger.info("WS链接已开始结束进程，请等待另一端完成握手并等待 TCP 连接终止")
             self._bot_class.running = False
-            timeout = self._loop.time() + 60
-            while self._loop.time() < timeout:
-                t_sleep(1)
-                if not self._bot_class or self._bot_class.ws.closed:
-                    self.__await_closure = False
-                    return
-            self._bot_class = None
-            self.logger.info("判断超时，WS链接已强制结束")
-            self.__await_closure = False
+            self._loop.create_task(self._bot_class.close())
         else:
             self.logger.error("当前机器人没有运行！")

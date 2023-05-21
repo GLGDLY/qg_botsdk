@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from io import IOBase
 from typing import Any, Dict, Tuple, Union
 
 try:
@@ -8,11 +9,16 @@ except (ImportError, ModuleNotFoundError):
     safe_load = None
 
 
-def read_yaml(yaml_path) -> Dict[str, Any]:
+def read_yaml(target: Union[str, IOBase], encoding: str = "utf-8") -> Dict[str, Any]:
     if not safe_load:
         raise AssertionError("如需使用read_yaml函数，必须先pip install pyyaml")
-    with open(yaml_path, "r", encoding="utf-8") as f:
-        return safe_load(f)
+    if isinstance(target, str):
+        with open(target, "r", encoding=encoding) as f:
+            return safe_load(f)
+    elif isinstance(target, IOBase):
+        return safe_load(target)
+    else:
+        raise TypeError("target应为str或IO")
 
 
 def convert_color(color: Union[Tuple[int, int, int], str]):

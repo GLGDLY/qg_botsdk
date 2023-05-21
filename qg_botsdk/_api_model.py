@@ -1,22 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from re import Pattern
-from typing import List, Optional, TypedDict
+from typing import Any, Callable, List, Optional
 
 from ._utils import object_class
-from .model import Model
+from .model import BotCommandObject, Model
 
 
-class Bot_Command_Obj(TypedDict, total=False):
-    command: list[str]
-    regex: Pattern
-    func: Model.MESSAGE
-    treat: bool
-    at: bool
-    short_circuit: bool
-    is_custom_short_circuit: bool
-    admin: bool
-    admin_error_msg: Optional[str]
+class WaifForCommandCallback:
+    def __init__(
+        self, command: BotCommandObject, callback: Callable[[Model.MESSAGE], Any]
+    ):
+        self.command = command
+        self.callback = callback
 
 
 apis = {

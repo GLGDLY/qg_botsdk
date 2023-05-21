@@ -32,17 +32,17 @@ def p_0(data: Model.MESSAGE):
     data.reply("使用plugins的on_command模块进行注册，用户消息包含指令p_0可触发此函数")
 ```
 
-| 参数                      |                                |       |                                                               |
-| ----------------------- | ------------------------------ | ----- | ------------------------------------------------------------- |
-| 字段名                     | 类型                             | 默认值   | 说明                                                            |
-| command                 | List[string], string           | None  | 可触发事件的指令列表，与正则regex互斥，优先使用此项                                  |
-| regex                   | regex compiled Pattern, string | None  | 可触发指令的正则compile实例或正则表达式，与指令表互斥                                |
-| is_treat                | bool                           | True  | 是否在treated_msg中同时处理指令，如正则将返回.groups()                         |
-| is_require_at           | bool                           | False | 是否要求必须艾特机器人才能触发指令                                             |
-| is_short_circuit        | bool                           | True  | 如果触发指令成功是否短路不运行后续指令（将根据注册顺序排序指令的短路机制）                         |
-| is_custom_short_circuit | bool                           | False | 如果触发指令成功而返回True则不运行后续指令，与is_short_circuit不能同时存在               |
-| is_require_admin        | bool                           | False | 是否要求频道主或或管理才可触发指令，默认否                                         |
-| admin_error_msg         | string                         | None  | 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路 |
+| 参数                      |                                                                                                   |       |                                                               |
+|-------------------------|---------------------------------------------------------------------------------------------------|-------|---------------------------------------------------------------|
+| 字段名                     | 类型                                                                                                | 默认值   | 说明                                                            |
+| command                 | List[str], str                                                                                    | None  | 可触发事件的指令列表，与正则 regex 互斥，优先使用此项                                |
+| regex                   | Pattern, str                                                                                      | None  | 可触发指令的正则 compile 实例或正则表达式，与指令表互斥                              |
+| is_require_at           | bool                                                                                              | False | 是否要求必须艾特机器人才能触发指令                                             |
+| is_short_circuit        | bool                                                                                              | False | 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和 command 先 regex 后排序指令的短路机制）      |
+ | is_custom_short_circuit | bool                                                                                              | False | 如果触发指令成功而回调函数返回True则不运行后续指令，存在时优先于is_short_circuit            |
+| is_require_admin        | bool                                                                                              | False | 是否要求频道主或或管理才可触发指令                                             |
+ | admin_error_msg         | str                                                                                               | None  | 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路 |
+| required_session        | [SessionObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#SessionObject)  | None  | 触发指令所需的session，校验是否存在session以及session中是否存在特定数据                |
 
 ### 使用API
 

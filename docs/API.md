@@ -177,6 +177,35 @@ bot.api.get_guild_info()
 
 ## 子频道API
 
+| ChannelType |        |
+|-------------|--------|
+| 0           | 文字子频道  |
+| 1           | 保留，不可用 |
+| 2           | 语音子频道  |
+| 3           | 保留，不可用 |
+| 4           | 子频道分组  |
+| 10005       | 直播子频道  |
+| 10006       | 应用子频道  |
+| 10007       | 论坛子频道  |
+
+| ChannelSubType |    |
+|----------------|----|
+| 0              | 闲聊 |
+| 1              | 公告 |
+| 2              | 攻略 |
+| 3              | 开黑 |
+
+| 应用子频道的应用类型(application_id)            |             |
+|---------------------------------------|-------------|
+| 1000000                               | 王者开黑大厅      |
+| 1000001                               | 互动小游戏       |
+| 1000010                               | 腾讯投票        |
+| 1000051                               | 飞车开黑大厅      |
+| 1000050                               | 日程提醒        |
+| 1000070                               | CoDM 开黑大厅   |
+| 1010000                               | 和平精英开黑大厅    |
+
+
 ### 获取子频道列表
 
 * 用于获取 `guild_id`指定的频道下的子频道列表
@@ -239,26 +268,26 @@ bot.api.create_channels()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_channels()
 ```
 
-| 参数               |                |        |                                                |
-| ---------------- | -------------- | ------ | ---------------------------------------------- |
-| 字段名              | 类型             | 默认值    | 说明                                             |
-| guild_id         | string         | 无，必选参数 | 频道ID                                           |
-| name             | string         | 无，必选参数 | 需要创建的子频道名                                      |
-| type\_           | int            | 无，必选参数 | 需要创建的子频道类型                                     |
-| position         | int            | 无，必选参数 | 需要创建的子频道位置，当子频道类型为子频道类型ChannelType=4时，必须大于等于 2 |
-| parent_id        | str            | 无，必选参数 | 需要创建的子频道所属分组ID                                 |
-| sub_type         | int            | 无，必选参数 | 需要创建的子频道子类型                                    |
-| private_type     | int            | 无，必选参数 | 需要创建的子频道私密类型                                   |
-| private_user_ids | list[str]      | 无，必选参数 | 需要创建的子频道私密类型成员ID列表                             |
-| speak_permission | int            | 无，必选参数 | 需要创建的子频道发言权限                                   |
-| application_id   | string or None | None   | 需要创建的应用类型子频道应用 AppID，仅应用子频道需要该字段               |
+| 参数               |                |         |                                                |
+|------------------|----------------|---------|------------------------------------------------|
+| 字段名              | 类型             | 默认值     | 说明                                             |
+| guild_id         | string         | 无，必选参数  | 频道ID                                           |
+| name             | string         | 无，必选参数  | 需要创建的子频道名                                      |
+| type\_           | int            | 无，必选参数  | 需要创建的子频道类型                                     |
+| position         | int            | 无，必选参数  | 需要创建的子频道位置，当子频道类型为子频道类型ChannelType=4时，必须大于等于 2 |
+| parent_id        | str            | 无，必选参数  | 需要创建的子频道所属分组ID                                 |
+| sub_type         | int            | 无，必选参数  | 需要创建的子频道子类型                                    |
+| private_type     | int            | 无，必选参数  | 需要创建的子频道私密类型                                   |
+| private_user_ids | list[str]      | 无，必选参数  | 需要创建的子频道私密类型成员ID列表                             |
+| speak_permission | int            | 无，必选参数  | 需要创建的子频道发言权限                                   |
+| application_id   | string or None | None    | 需要创建的应用类型子频道应用 AppID，仅应用子频道需要该字段               |
 
-| 返回       |        |                  |
-| -------- | ------ | ---------------- |
-| 字段       | 类型     | 说明               |
-| data     | object | 解析后的json数据       |
-| trace_id | string | 腾讯官方提供的错误追踪 ID   |
-| result   | bool   | 成功为True；否则为False |
+| 返回        |          |                  |
+|-----------|----------|------------------|
+| 字段        | 类型       | 说明               |
+| data      | object   | 解析后的json数据       |
+| trace_id  | string   | 腾讯官方提供的错误追踪 ID   |
+| result    | bool     | 成功为True；否则为False |
 
 ### 修改子频道
 
@@ -615,14 +644,15 @@ bot.api.delete_role_member()
 ## 子频道权限API
 
 * 子频道权限详情：
+  + 把以下数值按需要进行位运算后（如1|4）后，得到的值转变为string填入permissions字段即可
 
 | 子频道权限permissions字段数据 |        |                                         |
 | -------------------- | ------ | --------------------------------------- |
 | 值                    | 类型     | 说明                                      |
-| 1                    | string | 可查看子频道：支持指定成员可见类型，支持身份组可见类型             |
-| 2                    | string | 可管理子频道：创建者、管理员、子频道管理员都具有此权限             |
-| 4                    | string | 可发言子频道：支持指定成员发言类型，支持身份组发言类型             |
-| 8                    | string | 可直播子频道：支持指定成员发起直播，支持身份组发起直播；仅可在直播子频道中设置 |
+| 1(1<<0)               | string | 可查看子频道：支持指定成员可见类型，支持身份组可见类型             |
+| 2(1<<1)               | string | 可管理子频道：创建者、管理员、子频道管理员都具有此权限             |
+| 4(1<<2)               | string | 可发言子频道：支持指定成员发言类型，支持身份组发言类型             |
+| 8(1<<3)               | string | 可直播子频道：支持指定成员发起直播，支持身份组发起直播；仅可在直播子频道中设置 |
 
 ### 获取子频道用户权限
 
@@ -672,8 +702,8 @@ bot.api.put_channel_member_permission()
 | 字段名        | 类型          | 默认值    | 说明               |
 | channel_id | string      | 无，必选参数 | 子频道ID            |
 | user_id    | string      | 无，必选参数 | 目标成员的用户ID        |
-| add        | string None | None   | 赋予用户的权限（可选1 2 4） |
-| remove     | string None | None   | 删除用户的权限（可选1 2 4） |
+| add        | string None | None   | 赋予用户的权限（1，2，4，8按需进行位运算后的结果） |
+| remove     | string None | None   | 删除用户的权限（1，2，4，8按需进行位运算后的结果） |
 
 | 返回       |             |                             |
 | -------- | ----------- | --------------------------- |
@@ -730,8 +760,8 @@ bot.api.put_channel_role_permission()
 | 字段名        | 类型          | 默认值    | 说明               |
 | channel_id | string      | 无，必选参数 | 子频道ID            |
 | role_id    | string      | 无，必选参数 | 目标身份组ID          |
-| add        | string None | None   | 赋予用户的权限（可选1 2 4） |
-| remove     | string None | None   | 删除用户的权限（可选1 2 4） |
+| add        | string None | None   | 赋予用户的权限（1，2，4，8按需进行位运算后的结果） |
+| remove     | string None | None   | 删除用户的权限（1，2，4，8按需进行位运算后的结果） |
 
 | 返回       |             |                             |
 | -------- | ----------- | --------------------------- |
@@ -1277,16 +1307,16 @@ bot.api.create_announce()
 # v2.2.0后路径：qg_botsdk.qg_bot.BOT().api.create_announce()
 ```
 
-| 参数                           |             |        |                                          |
-| ---------------------------- | ----------- | ------ | ---------------------------------------- |
-| 字段名                         | 类型          | 默认值             | 说明                                       |
-| guild_id                     | string           | 无，必选参数       | 频道id                                     |
-| channel_id                   | string None      | None              | 子频道id；message_id有值则为必填                   |
-| message_id                   | string None      | None              | 消息id，此项有值则优选将某条消息设置为成员公告                 |
-| announces_type               | int None         | None              | 公告类别 0：成员公告，1：欢迎公告，默认为成员公告               |
-| recommend_channels           | list[AnnounceRecommendChannels] None | None   | 推荐子频道id列表，会一次全部替换推荐子频道列表                 |
+| 参数                    |                                            |                |                                   |
+|-----------------------|--------------------------------------------|----------------|-----------------------------------|
+| 字段名                   | 类型                                         | 默认值            | 说明                                |
+| guild_id              | string                                     | 无，必选参数         | 频道id                              |
+| channel_id            | string None                                | None           | 子频道id；message_id有值则为必填            |
+| message_id            | string None                                | None           | 消息id，此项有值则优选将某条消息设置为成员公告          |
+| announces_type        | int None                                   | None           | 公告类别 0：成员公告，1：欢迎公告，默认为成员公告        |
+| recommend_channels    | list[Model.AnnounceRecommendChannels] None | None           | 推荐子频道id列表，会一次全部替换推荐子频道列表          |
 
-> 参数中 `recommend_channels` 字段（列表list）中每一项（字典dict）的数据：
+> 参数中 `recommend_channels` 字段（列表list）中每一项（Model.AnnounceRecommendChannels）的数据：
 
 | 字段名         | 类型     | 说明                                                 |
 | ----------- | ------ | -------------------------------------------------- |
@@ -1955,7 +1985,7 @@ bot.api.get_guild_permissions()
 | api         | string | 该 API 在 SDK 中的名字，如get_guild_info（需求sdk版本v2.2.1或以上） |
 | path        | string | API 接口名，例如/guilds/{guild_id}/members/{user_id}     |
 | method      | string | 请求方法，例如GET                                         |
-| desc        | string | API 接口名称，例如 获取频道信                                  |
+| desc        | string | API 接口名称，例如 获取频道信息                                 |
 | auth_status | int    | 授权状态，auth_stats 为 1 时已授权                           |
 
 ### 创建频道 API 接口权限授权链接

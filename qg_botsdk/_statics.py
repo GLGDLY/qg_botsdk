@@ -36,3 +36,6 @@ class EVENTS:
         "AUDIO_OR_LIVE_CHANNEL_MEMBER_ENTER",
         "AUDIO_OR_LIVE_CHANNEL_MEMBER_EXIT",
     )
+
+
+TraceNames = ("start_callback_task", "async_start_callback_task")

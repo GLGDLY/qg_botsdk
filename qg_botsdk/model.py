@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import List, Union
+from enum import Enum
+from re import Pattern
+from re import compile as re_compile
+from typing import Any, Callable, Hashable, Iterable, List, Optional, Union
 
 from ._utils import event_class
 
@@ -464,6 +467,129 @@ class Model:
         event_id: str
 
 
+class Scope(Enum):
+    USER = "USER"  # 代表只在当前用户有效
+    GUILD = "GUILD"  # 代表只在当前频道有效
+    CHANNEL = "CHANNEL"  # 代表只在当前子频道有效
+    GLOBAL = "GLOBAL"  # 代表在全局有效
+
+
+class SessionStatus(Enum):
+    INACTIVE = 0  # 此状态会检查并根据特定条件（gc timeout）自动删除session
+    ACTIVE = 1  # 此状态代表session正在运行中，会检查timeout并进入INACTIVE状态
+    HANGING = 2  # 此状态代表session不检查timeout，但会在下次操作时进入ACTIVE状态
+
+
+class SessionObject:
+    """
+    session对象，用于存储session的数据
+
+    :param scope: session的作用域
+    :param status: session的状态
+    :param key: session的键
+    :param data: session的值
+    :param identify: scope作用域下的标识，不输入时为消息数据自动填入的标识（如Scope.USER会为此项自动填入user id）
+    """
+
+    def __init__(
+        self,
+        scope: Scope,
+        status: SessionStatus,
+        key: Hashable,
+        data: dict,
+        identify: Hashable = None,
+    ):
+        self.scope: Scope = scope
+        self.status: SessionStatus = status
+        self.key: Hashable = key
+        self.data: dict = data
+        self.identify: Hashable = identify
+
+    def __repr__(self):
+        return (
+            f"<SessionObject scope={self.scope} status={self.status} key={self.key} "
+            f"data={self.data} identify={self.identify}>"
+        )
+
+
+class BotCommandObject:
+    """
+    机器人的on_command命令对象，用于存储机器人命令的数据
+
+    :param command: 可触发事件的指令列表，与正则 regex 互斥，优先使用此项
+    :param regex: 可触发指令的正则 compile 实例或正则表达式，与指令表互斥
+    :param func: 指令触发后的回调函数
+    :param treat: 是否返回处理后的消息
+    :param at: 是否要求必须艾特机器人才能触发指令
+    :param short_circuit: 如果触发指令成功是否短路不运行后续指令（将根据注册顺序和 command 先 regex 后排序指令的短路机制）
+    :param is_custom_short_circuit: 如果触发指令成功而回调函数返回True则不运行后续指令，存在时优先于short_circuit
+    :param admin: 是否要求频道主或或管理才可触发指令
+    :param admin_error_msg: 当admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
+    """
+
+    def __init__(
+        self,
+        command: Iterable[str] = None,
+        regex: Iterable[Pattern] = None,
+        func: Callable[[Model.MESSAGE], Any] = None,
+        treat: bool = True,
+        at: bool = False,
+        short_circuit: bool = True,
+        is_custom_short_circuit: bool = False,
+        admin: bool = False,
+        admin_error_msg: Optional[str] = None,
+    ):
+        # type checking for user input, not included items are not important(for wait_for api)
+        if command is not None:
+            if isinstance(command, str):
+                command = (command,)
+            elif isinstance(command, Iterable):
+                for i in command:
+                    if not isinstance(i, str):
+                        raise TypeError("command must be of type Iterable[str]")
+            else:
+                raise TypeError("command must be of type Iterable[str]")
+        _regex = None
+        if regex is not None:
+            if isinstance(regex, Pattern):
+                _regex = (regex,)
+            elif isinstance(regex, str):
+                _regex = (re_compile(regex),)
+            elif isinstance(regex, Iterable):
+                _regex = []
+                for x in regex:
+                    if isinstance(x, str):
+                        _regex.append(re_compile(x))
+                    elif isinstance(x, Pattern):
+                        _regex.append(x)
+                    else:
+                        raise TypeError("regex must be of type Iterable[Pattern]")
+            else:
+                raise TypeError("regex must be of type Iterable[Pattern]")
+        if not isinstance(treat, bool):
+            raise TypeError("treat must be of type bool")
+        if not isinstance(at, bool):
+            raise TypeError("at must be of type bool")
+        if not isinstance(short_circuit, bool):
+            raise TypeError("short_circuit must be of type bool")
+        # init
+        self.command: Iterable[str] = command
+        self.regex: Iterable[Pattern] = _regex
+        self.func: Callable[[Model.MESSAGE], Any] = func
+        self.treat: bool = treat
+        self.at: bool = at
+        self.short_circuit: bool = short_circuit
+        self.is_custom_short_circuit: bool = is_custom_short_circuit
+        self.admin: bool = admin
+        self.admin_error_msg: Optional[str] = admin_error_msg
+
+    def __repr__(self):
+        if self.command:
+            return f"<BotCommandObject command={self.command} func={self.func}>"
+        else:
+            return f"<BotCommandObject regex={self.regex} func={self.func}>"
+
+
 class EmojiID:
     得意 = 4
     流泪 = 5
@@ -700,3 +826,12 @@ class EmojiString:
     拒绝 = "<emoji:322>"
     吃糖 = "<emoji:324>"
     生气 = "<emoji:326>"
+
+
+class AnnounceRecommendChannels:
+    def __init__(self, channel_id: str, introduce: str):
+        self.channel_id = channel_id
+        self.introduce = introduce
+
+    def __json__(self):
+        return {"channel_id": self.channel_id, "introduce": self.introduce}
