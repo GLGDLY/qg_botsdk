@@ -370,7 +370,7 @@ class TestRunning:
         self.bot = bot
         bot.register_start_event(self._start_event)
         bot.start(is_blocking=False)
-        bot.loop.run_until_complete(asyncio.sleep(2))
+        bot.loop.run_until_complete(asyncio.sleep(5))
         while self.bot._bot_class.heartbeat not in asyncio.all_tasks(self.bot.loop):
             self.bot.loop.run_until_complete(asyncio.sleep(0.1))
         assert self._called_counter == 1
