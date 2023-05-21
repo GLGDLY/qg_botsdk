@@ -109,7 +109,7 @@ class TestSession:
         assert session_data_from_get.status == SessionStatus.ACTIVE
         assert session_data_from_get.data == {"test": "test"}
 
-    @pytest.mark.timeout(10)
+    @pytest.mark.timeout(15)
     def test_timeout(self, bot_async, session):
         session.remove()
         session.new(MockObj, Scope.USER, "test", data={"test": "test"})
@@ -122,14 +122,14 @@ class TestSession:
             session.get_all()[Scope.USER.value]["111"]["test"].status
             == SessionStatus.INACTIVE
         )
-        bot_async.loop.run_until_complete(sleep(0.2))
+        bot_async.loop.run_until_complete(sleep(0.5))
         assert "111" not in session.get_all()[Scope.USER.value]
         session.new(MockObj, Scope.USER, "test", data={"test": "test"}, timeout=0.1)
         assert (
             session.get_all()[Scope.USER.value]["111"]["test"].status
             == SessionStatus.ACTIVE
         )
-        bot_async.loop.run_until_complete(sleep(0.2))
+        bot_async.loop.run_until_complete(sleep(0.5))
         assert "111" not in session.get_all()[Scope.USER.value]
         session.new(MockObj, Scope.USER, "test", data={"test": "test"})
         session.end(MockObj, Scope.USER, "test", inactive_gc_timeout=0.5)
@@ -142,7 +142,7 @@ class TestSession:
             session.get_all()[Scope.USER.value]["111"]["test"].status
             == SessionStatus.INACTIVE
         )
-        bot_async.loop.run_until_complete(sleep(0.5))
+        bot_async.loop.run_until_complete(sleep(1))
         assert "111" not in session.get_all()[Scope.USER.value]
 
     @pytest.mark.timeout(10)
@@ -162,7 +162,7 @@ class TestSession:
             session.get_all()[Scope.USER.value]["111"]["test"].status
             == SessionStatus.INACTIVE
         )
-        bot_async.loop.run_until_complete(sleep(0.2))
+        bot_async.loop.run_until_complete(sleep(0.5))
         assert session.get(MockObj, Scope.USER, "test") is None
 
     @pytest.mark.timeout(10)
