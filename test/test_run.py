@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import asyncio
+import sys
 from unittest import mock
 
 import pytest
@@ -120,14 +121,15 @@ class TestRunning:
             self.bot.loop.create_task(self.bot._bot_class.dispatch_events(MockOp10Msg))
             self.bot.loop.run_until_complete(asyncio.sleep(1))
             mock_ws_send.assert_called_once()
-            print(mock_ws_send.call_args)
-            assert '"op": 2' in mock_ws_send.call_args.args[0]
+            if sys.version_info >= (3, 8):
+                assert '"op": 2' in mock_ws_send.call_args.args[0]
             self.bot._bot_class.disable_reconnect = False
             self.bot._bot_class.is_reconnect = True
             self.bot.loop.create_task(self.bot._bot_class.dispatch_events(MockOp10Msg))
             self.bot.loop.run_until_complete(asyncio.sleep(1))
             assert mock_ws_send.call_count == 2
-            assert '"op": 6' in mock_ws_send.call_args.args[0]
+            if sys.version_info >= (3, 8):
+                assert '"op": 6' in mock_ws_send.call_args.args[0]
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(20)
