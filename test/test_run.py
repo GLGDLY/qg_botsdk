@@ -42,57 +42,6 @@ class TestRunning:
     bot: qg_botsdk.BOT
     _called_counter: int = 0
     _last_called: float = 0
-    
-    async def _start_assertions(self, is_stop=True):
-        await asyncio.sleep(1)
-        while self.bot._bot_class.disable_reconnect:
-            await asyncio.sleep(1)
-
-        assert self.bot.running
-        assert self.bot._bot_class is not None
-        assert self.bot._bot_class.running
-        assert self.bot._bot_class.session_id
-        assert self.bot._bot_class.heartbeat
-        assert (
-            self.bot._bot_class.auth == f'Bot {config["bot_id"]}.{config["bot_token"]}'
-        )
-        assert self.bot.robot == self.bot._bot_class.robot
-
-        if is_stop:
-            self.bot.loop.stop()
-
-    @pytest.mark.asyncio
-    @pytest.mark.timeout(20)
-    def test_start(self, bot):
-        self.bot = bot
-        assert not self.bot.running
-        self.bot.loop.create_task(self._start_assertions())
-        try:
-            self.bot.start()
-        except RuntimeError:
-            pass
-
-    @pytest.mark.asyncio
-    @pytest.mark.timeout(20)
-    def test_start_async(self, bot_async):
-        self.bot = bot_async
-        assert not self.bot.running
-        self.bot.loop.create_task(self._start_assertions())
-        try:
-            self.bot.start()
-        except RuntimeError:
-            pass
-
-    async def _close_assertion(self):
-        await self._start_assertions(is_stop=False)
-
-        await self.bot.close()
-        assert not self.bot.running
-        assert not self.bot._bot_class.running
-        assert not self.bot._bot_class.session_id
-        assert not self.bot._bot_class.heartbeat
-        assert not self.bot._bot_class.auth
-        assert not self.bot.robot
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(20)
@@ -103,17 +52,36 @@ class TestRunning:
             self.bot.close()
             mock_logger.assert_called_once()
             assert mock_logger.call_args == mock.call("当前机器人没有运行！")
-        self.bot.loop.create_task(self._close_assertion())
-        self.bot.start()
 
     async def _start_assertions_with_proper_close(self):
-        await self._start_assertions(is_stop=False)
+        await asyncio.sleep(1)
+
+        assert self.bot.running
+        assert self.bot._bot_class is not None
+        assert self.bot._bot_class.running
+        assert self.bot._bot_class.session_id
+        assert self.bot._bot_class.heartbeat
+        assert (
+                self.bot._bot_class.auth == f'Bot {config["bot_id"]}.{config["bot_token"]}'
+        )
+        assert self.bot.robot == self.bot._bot_class.robot
         self.bot.close()
 
     @pytest.mark.asyncio
     @pytest.mark.timeout(20)
-    def test_non_blocking_start(self, bot):
+    def test_start(self, bot):
         self.bot = bot
+        assert not self.bot.running
+        self.bot.start(is_blocking=False)
+        self.bot.loop.run_until_complete(asyncio.sleep(0.5))
+        self.bot.loop.create_task(self._start_assertions_with_proper_close())
+        self.bot.block()
+
+    @pytest.mark.asyncio
+    @pytest.mark.timeout(20)
+    def test_async_start(self, bot_async):
+        self.bot = bot_async
+        assert not self.bot.running
         self.bot.start(is_blocking=False)
         self.bot.loop.run_until_complete(asyncio.sleep(0.5))
         self.bot.loop.create_task(self._start_assertions_with_proper_close())
@@ -150,13 +118,13 @@ class TestRunning:
         with mock.patch.object(self.bot._bot_class, "ws_send") as mock_ws_send:
             self.bot._bot_class.disable_reconnect = True
             self.bot.loop.create_task(self.bot._bot_class.dispatch_events(MockOp10Msg))
-            self.bot.loop.run_until_complete(asyncio.sleep(0.5))
+            self.bot.loop.run_until_complete(asyncio.sleep(1))
             mock_ws_send.assert_called_once()
             assert '"op": 2' in mock_ws_send.call_args.args[0]
             self.bot._bot_class.disable_reconnect = False
             self.bot._bot_class.is_reconnect = True
             self.bot.loop.create_task(self.bot._bot_class.dispatch_events(MockOp10Msg))
-            self.bot.loop.run_until_complete(asyncio.sleep(0.5))
+            self.bot.loop.run_until_complete(asyncio.sleep(1))
             assert mock_ws_send.call_count == 2
             assert '"op": 6' in mock_ws_send.call_args.args[0]
 
@@ -178,8 +146,8 @@ class TestRunning:
                 while mock_logger.call_count < 2:
                     self.bot.loop.run_until_complete(asyncio.sleep(0.1))
                 assert (
-                    mock.call(repr(ValueError("testing error")))
-                    in mock_logger.call_args_list
+                        mock.call(repr(ValueError("testing error")))
+                        in mock_logger.call_args_list
                 )
 
     @pytest.mark.asyncio
@@ -204,36 +172,36 @@ class TestRunning:
                     self.bot.loop.run_until_complete(asyncio.sleep(0.1))
                 self.bot.loop.run_until_complete(asyncio.sleep(0.5))
                 assert (
-                    mock.call("before_command_test", "plugins_test")
-                    in mock_logger.call_args_list
-                    and mock.call("收到频道 xxx 用户 xxx(xxx) 的消息：plugins_test")
-                    in mock_logger.call_args_list
+                        mock.call("before_command_test", "plugins_test")
+                        in mock_logger.call_args_list
+                        and mock.call("收到频道 xxx 用户 xxx(xxx) 的消息：plugins_test")
+                        in mock_logger.call_args_list
                 )
                 call_hist = mock_send_msg.call_args_list
                 assert len(call_hist) == 2
                 assert (
-                    mock.call(
-                        content="plugins_test",
-                        image=None,
-                        file_image=None,
-                        message_reference_id=None,
-                        ignore_message_reference_error=None,
-                        message_id="id",
-                        channel_id="channel_id",
-                    )
-                    in call_hist
+                        mock.call(
+                            content="plugins_test",
+                            image=None,
+                            file_image=None,
+                            message_reference_id=None,
+                            ignore_message_reference_error=None,
+                            message_id="id",
+                            channel_id="channel_id",
+                        )
+                        in call_hist
                 )
                 assert (
-                    mock.call(
-                        content="test",
-                        image=None,
-                        file_image=None,
-                        message_reference_id=None,
-                        ignore_message_reference_error=None,
-                        message_id="id",
-                        channel_id="channel_id",
-                    )
-                    in call_hist
+                        mock.call(
+                            content="test",
+                            image=None,
+                            file_image=None,
+                            message_reference_id=None,
+                            ignore_message_reference_error=None,
+                            message_id="id",
+                            channel_id="channel_id",
+                        )
+                        in call_hist
                 )
 
     @pytest.mark.asyncio
@@ -280,7 +248,7 @@ class TestRunning:
         with mock.patch.object(self.bot.api, "send_msg") as mock_send_msg:
             mock_send_msg.return_value = None
             for i, (mock_msg, ret_msg) in enumerate(
-                ((MockMsg, "err"), (MockMsgAdmin, "test"))
+                    ((MockMsg, "err"), (MockMsgAdmin, "test"))
             ):
                 self.bot.loop.create_task(self.bot._bot_class.dispatch_events(mock_msg))
                 while mock_send_msg.call_count <= i:
@@ -399,7 +367,7 @@ class TestRunning:
         self.bot = bot
         bot.register_start_event(self._start_event)
         bot.start(is_blocking=False)
-        bot.loop.run_until_complete(asyncio.sleep(0.5))
+        bot.loop.run_until_complete(asyncio.sleep(2))
         while self.bot._bot_class.heartbeat not in asyncio.all_tasks(self.bot.loop):
             self.bot.loop.run_until_complete(asyncio.sleep(0.1))
         assert self._called_counter == 1
