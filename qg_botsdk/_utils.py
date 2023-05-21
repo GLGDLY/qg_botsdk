@@ -9,7 +9,7 @@ from json.decoder import JSONDecodeError
 from sys import exc_info
 from time import localtime, strftime
 from traceback import extract_tb
-from typing import BinaryIO, Callable, Iterable, Optional, Union
+from typing import BinaryIO, Callable, Dict, Iterable, Optional, Union
 
 from aiohttp import ContentTypeError
 
