@@ -1014,7 +1014,7 @@ class AsyncAPI:
         ] = None,
         content: Optional[str] = None,
         keyboard_id: Optional[str] = None,
-        keyboard_content: Optional[dict] = None,
+        keyboard_content: Optional[Dict] = None,
         message_id: Optional[str] = None,
         event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
@@ -1787,7 +1787,7 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def create_thread(
-        self, channel_id: str, title: str, content: Union[str, dict], format_: int
+        self, channel_id: str, title: str, content: Union[str, Dict], format_: int
     ) -> _api_model.create_thread():
         """
         创建帖子，创建成功后，返回创建成功的任务ID

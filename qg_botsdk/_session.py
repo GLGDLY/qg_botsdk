@@ -7,7 +7,7 @@ from collections import namedtuple
 from copy import deepcopy
 from threading import Thread
 from time import time
-from typing import Hashable, Iterable, Optional, Union
+from typing import Dict, Hashable, Iterable, List, Optional, Union
 from weakref import finalize
 
 from ._api_model import WaifForCommandCallback
@@ -26,13 +26,13 @@ class _SessionObject:
     def __init__(
         self,
         status: SessionStatus,
-        data: dict,
+        data: Dict,
         timeout: Optional[float] = None,
         last_operate: float = 0,
         timeout_reply: str = None,
         inactive_gc_timeout: Optional[float] = None,
         gc_timeout_stamp: Optional[float] = None,
-        timeout_reply_params: dict = None,
+        timeout_reply_params: Dict = None,
         timeout_reply_message_id_expire: float = None,
     ):
         self.status = status
@@ -73,8 +73,8 @@ class SessionManager:
         commit_path: Optional[str] = None,
         is_auto_commit: bool = True,
     ):
-        self.__sessions: dict = {x: {} for x in _AllScopeStr}
-        self.__wait_for_registers: dict = {}
+        self.__sessions: Dict = {x: {} for x in _AllScopeStr}
+        self.__wait_for_registers: Dict = {}
         self.__logger: Logger = logger
         self.__bot_identify: str = logger.bot_app_id
         self.__commit_path: str = commit_path or os.path.join(
@@ -95,7 +95,7 @@ class SessionManager:
                 self.__logger.info("Session Manager结束中，正在保存数据...")
             except Exception:
                 print("Session Manager结束中，正在保存数据...")
-            self.commit_data(is_info=False
+            self.commit_data(is_info=False)
 
     # -*- class internal methods -*-
     @staticmethod
@@ -219,7 +219,7 @@ class SessionManager:
 
     def __check_scope(
         self, scope: Union[Scope, str]
-    ) -> dict[Hashable, dict[Hashable, _SessionObject]]:
+    ) -> Dict[Hashable, Dict[Hashable, _SessionObject]]:
         if scope == Scope.USER or scope == "USER":
             target_sessions = self.__sessions["USER"]
         elif scope == Scope.GUILD or scope == "GUILD":
@@ -316,7 +316,7 @@ class SessionManager:
         obj,
         scope: Scope,
         key: Hashable,
-        data: dict = None,
+        data: Dict = None,
         identify: Hashable = None,
         is_replace: bool = True,
         timeout: Optional[float] = None,
@@ -380,7 +380,7 @@ class SessionManager:
         obj,
         scope: Scope,
         key: Hashable,
-        data: dict,
+        data: Dict,
         identify: Hashable = None,
     ) -> SessionObject:
         target_session = self.__check_and_get_target_session(obj, scope, key, identify)
@@ -438,7 +438,7 @@ class SessionManager:
             scope, target_session.status, key, target_session.data, identify
         )
 
-    def get_all(self) -> dict:
+    def get_all(self) -> Dict:
         return deepcopy(self.__sessions)
 
     def set_status(
@@ -574,7 +574,7 @@ class SessionManager:
 
     def wait_for_message_checker(
         self, obj: Model.MESSAGE
-    ) -> list[WaifForCommandCallback]:
+    ) -> List[WaifForCommandCallback]:
         triggered_commands = []
         _scope_value = {
             scope: self.__check_identify(scope, obj) for scope in _AllScopeStr

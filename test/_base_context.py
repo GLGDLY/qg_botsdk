@@ -3,6 +3,7 @@
 from io import StringIO
 from os import getcwd, getenv
 from threading import Thread
+from typing import Dict
 
 import pytest
 
@@ -16,7 +17,7 @@ else:
     plugin_path = "./test/_testing_plugin.py"
 
 try:
-    config: dict
+    config: Dict
     raw_config = getenv("TEST_CONFIG", None)
     if raw_config:
         config = qg_botsdk.utils.read_yaml(StringIO(raw_config))

@@ -165,7 +165,7 @@ def _send_msg():  # Cannot direct import from _api_model.py since circular impor
             timestamp: str
             tts: bool
             mention_everyone: bool
-            author: dict
+            author: Dict
             pinned: bool
             type: int
             flags: int
@@ -321,7 +321,7 @@ def treat_msg(raw_msg: str, at: str):
     )
 
 
-def treat_thread(data: dict):
+def treat_thread(data: Dict):
     for items in ("content", "title"):
         try:
             data["d"]["thread_info"][items] = loads(

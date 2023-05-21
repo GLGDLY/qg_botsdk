@@ -6,7 +6,7 @@ from os import PathLike, getcwd, makedirs, sep
 from os.path import exists, isdir, join
 from re import split as re_split
 from time import localtime, strftime
-from typing import List, Union
+from typing import Dict, List, Union
 
 try:
     from colorama import init as color_init
@@ -97,7 +97,7 @@ class Logger:
             40: "\033[1;31m[%(asctime)s] [%(levelname)s]\033[0m %(message)s",
         }
 
-        def __init__(self, formats: dict = None, date_format: str = None):
+        def __init__(self, formats: Dict = None, date_format: str = None):
             super().__init__()
             if formats is not None:
                 self.FORMATS[20] = formats.get(20, None) or self.FORMATS[20]

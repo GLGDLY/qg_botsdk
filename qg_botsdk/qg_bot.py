@@ -10,7 +10,7 @@ from os.path import split as path_split
 from re import Pattern
 from threading import Lock as TLock
 from time import sleep as t_sleep
-from typing import Any, Callable, Iterable, Optional, Union
+from typing import Any, Callable, Iterable, List, Optional, Union
 
 from . import _exception
 from ._api_model import robot_model
@@ -142,8 +142,8 @@ class BOT:
         else:
             self.lock = ALock()
         self.__task = None
-        self._commands: list[BotCommandObject] = []
-        self._preprocessors: list[Callable[[Model.MESSAGE], Any]] = []
+        self._commands: List[BotCommandObject] = []
+        self._preprocessors: List[Callable[[Model.MESSAGE], Any]] = []
         self.session: AbstractSessionManager = SessionPatcher()
         self.disable_reconnect_on_not_recv_msg = disable_reconnect_on_not_recv_msg
 
@@ -221,11 +221,11 @@ class BOT:
             raise ValueError(f"未找到指定的preprocessor {preprocessor}")
 
     @property
-    def get_current_commands(self) -> list[BotCommandObject]:
+    def get_current_commands(self) -> List[BotCommandObject]:
         return self._commands[:]
 
     @property
-    def get_current_preprocessors(self) -> list[Callable[[Model.MESSAGE], Any]]:
+    def get_current_preprocessors(self) -> List[Callable[[Model.MESSAGE], Any]]:
         return self._preprocessors[:]
 
     def load_plugins(self, path_to_plugins: str):

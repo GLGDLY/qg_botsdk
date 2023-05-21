@@ -4,6 +4,7 @@ import asyncio
 import os
 from logging import getLogger
 from re import compile as re_compile
+from typing import List
 
 import pytest
 
@@ -20,7 +21,7 @@ async def _async_repeat_or_start():
     pass
 
 
-async def _queue_task(start_time: list):
+async def _queue_task(start_time: List):
     start_time.append(asyncio.get_event_loop().time())
     await asyncio.sleep(0.5)
 

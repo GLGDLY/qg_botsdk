@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from re import compile as re_compile
-from typing import Any, Callable, Iterable, Optional, Pattern, Union
+from typing import Any, Callable, Iterable, List, Optional, Pattern, Tuple, Union
 
 from ._statics import TraceNames
 from ._utils import TraceCallerData
@@ -13,8 +13,8 @@ from .session import AbstractSessionManager, SessionPatcher
 
 
 class Plugins:
-    _commands: list[BotCommandObject] = []
-    _preprocessors: list[Callable[[Model.MESSAGE], Any]] = []
+    _commands: List[BotCommandObject] = []
+    _preprocessors: List[Callable[[Model.MESSAGE], Any]] = []
     api: Union[API, AsyncAPI] = TraceCallerData(TraceNames, ("self", "api"))
     logger: Logger = TraceCallerData(TraceNames, ("self", "logger"))
     session: AbstractSessionManager = SessionPatcher()
@@ -24,7 +24,7 @@ class Plugins:
         bot_id=None,
         api=None,
         logger=None,
-    ) -> tuple[list, list]:
+    ) -> Tuple[List, List]:
         commands, preprocessors = cls._commands, cls._preprocessors
         cls._commands, cls._preprocessors = [], []
         return commands, preprocessors

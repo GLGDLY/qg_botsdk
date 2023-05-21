@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Hashable, Optional
+from typing import Dict, Hashable, Optional
 
 from ._statics import TraceNames
 from ._utils import TraceCallerData, stack_exception_handler
@@ -17,7 +17,7 @@ class AbstractSessionManager:
         self,
         scope: Scope,
         key: Hashable,
-        data: dict = None,
+        data: Dict = None,
         identify: Hashable = None,
         is_replace: bool = True,
         timeout: Optional[float] = None,
@@ -63,7 +63,7 @@ class AbstractSessionManager:
         self,
         scope: Scope,
         key: Hashable,
-        data: dict,
+        data: Dict,
         identify: Hashable = None,
     ) -> SessionObject:
         """
@@ -104,7 +104,7 @@ class AbstractSessionManager:
         """
         ...
 
-    def get_all(self) -> dict:
+    def get_all(self) -> Dict:
         """
         获取所有session
         """

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from ._utils import object_class
 from .model import BotCommandObject, Model
@@ -575,7 +575,7 @@ def send_msg():
             timestamp: str
             tts: bool
             mention_everyone: bool
-            author: dict
+            author: Dict
             pinned: bool
             type: int
             flags: int

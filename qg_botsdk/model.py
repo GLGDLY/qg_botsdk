@@ -3,7 +3,7 @@
 from enum import Enum
 from re import Pattern
 from re import compile as re_compile
-from typing import Any, Callable, Hashable, Iterable, List, Optional, Union
+from typing import Any, Callable, Dict, Hashable, Iterable, List, Optional, Tuple, Union
 
 from ._utils import event_class
 
@@ -154,7 +154,7 @@ class Model:
         pinned: bool
         type: int
         flags: int
-        treated_msg: Union[str, tuple]
+        treated_msg: Union[str, Tuple]
         t: str
         event_id: str
 
@@ -496,13 +496,13 @@ class SessionObject:
         scope: Scope,
         status: SessionStatus,
         key: Hashable,
-        data: dict,
+        data: Dict,
         identify: Hashable = None,
     ):
         self.scope: Scope = scope
         self.status: SessionStatus = status
         self.key: Hashable = key
-        self.data: dict = data
+        self.data: Dict = data
         self.identify: Hashable = identify
 
     def __repr__(self):

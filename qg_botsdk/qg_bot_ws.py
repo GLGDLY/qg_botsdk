@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import copy, deepcopy
 from json import dumps, loads
 from ssl import create_default_context
-from typing import Any, Callable, Union
+from typing import Any, Callable, Dict, List, Union
 
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 
@@ -40,7 +40,7 @@ class BotWs:
         shard_no: int,
         ws_url: str,
         auth: str,
-        func_registers: dict,
+        func_registers: Dict,
         intents: int,
         msg_treat: bool,
         dm_treat: bool,
@@ -50,8 +50,8 @@ class BotWs:
         is_async: bool,
         max_workers: int,
         api: Union[AsyncAPI, API],
-        commands: list[BotCommandObject],
-        preprocessors: list[Callable[[Model.MESSAGE], Any]],
+        commands: List[BotCommandObject],
+        preprocessors: List[Callable[[Model.MESSAGE], Any]],
         disable_reconnect_on_not_recv_msg: float,
         session_manager: SessionManager,
     ):
@@ -208,7 +208,7 @@ class BotWs:
 
     @exception_processor
     async def distribute(
-        self, function, data: dict = None, objectized_data: object_class = None
+        self, function, data: Dict = None, objectized_data: object_class = None
     ):
         if function:
             if not objectized_data:
@@ -322,7 +322,7 @@ class BotWs:
         return False
 
     @exception_processor
-    async def distribute_commands(self, data: dict, treated_msg: str):
+    async def distribute_commands(self, data: Dict, treated_msg: str):
         objectized_data = objectize(data.get("d", {}), self.api, self.is_async)
         # run preprocessors
         for func in self.preprocessors:
@@ -351,7 +351,7 @@ class BotWs:
                             return True
 
     @exception_processor
-    async def data_process(self, data: dict):
+    async def data_process(self, data: Dict):
         # initialize values
         t = data.get("t")
         d = data.get("d", {})
