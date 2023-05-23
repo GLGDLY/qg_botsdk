@@ -24,6 +24,7 @@ apis = {
     ("创建子频道", "create_channels"): ["POST", "/guilds/{guild_id}/channels"],
     ("修改子频道", "patch_channels"): ["PATCH", "/channels/{channel_id}"],
     ("删除子频道", "delete_channels"): ["DELETE", "/channels/{channel_id}"],
+    ("获取在线成员数", "get_online_nums"): ["GET", "/channels/{channel_id}/online_nums"],
     ("获取频道成员列表", "get_guild_members"): ["GET", "/guilds/{guild_id}/members"],
     ("获取频道身份组成员列表", "get_role_members"): [
         "GET",
@@ -319,6 +320,18 @@ def delete_channels():
         result: bool
 
     return DeleteChannels
+
+
+def get_online_nums():
+    class GetOnlineNums(object_class):
+        class data:
+            online_nums: int
+
+        http_code: int
+        trace_id: str
+        result: bool
+
+    return GetOnlineNums
 
 
 class _Member:

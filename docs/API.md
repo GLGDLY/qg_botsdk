@@ -354,6 +354,28 @@ bot.api.delete_channels()
 
 > 可通过 `result` 判断是否成功
 
+### 获取在线成员数（需求sdk版本>=3.0.1）
+
+* 用于获取 `channel_id` 指定的音视频/直播子频道中在线人数
+
+```python
+bot.api.get_online_nums()
+# qg_botsdk.qg_bot.BOT().api.get_online_nums()
+```
+
+| 参数             |         |          |               |
+|----------------|---------|----------|---------------|
+| 字段名            | 类型      | 默认值      | 说明            |
+| channel_id     | string  | 无，必选参数   | 子频道ID         |
+
+| 返回       |         |                  |
+|----------|---------|------------------|
+| 字段       | 类型      | 说明               |
+| data     | object  | 解析后的json数据       |
+| trace_id | string  | 腾讯官方提供的错误追踪 ID   |
+| result   | bool    | 成功为True；否则为False |
+
+
 ## 成员API
 
 ### 获取频道成员列表

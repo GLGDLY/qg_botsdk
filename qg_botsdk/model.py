@@ -590,6 +590,25 @@ class BotCommandObject:
             return f"<BotCommandObject regex={self.regex} func={self.func}>"
 
 
+class AnnounceRecommendChannels:
+    def __init__(self, channel_id: str, introduce: str):
+        self.channel_id = channel_id
+        self.introduce = introduce
+
+    def __json__(self):
+        return {"channel_id": self.channel_id, "introduce": self.introduce}
+
+
+class AT(str):
+    def __new__(cls, user_id: str):
+        """
+        用于构建艾特其他用户的字符串
+
+        :param user_id: 要@的用户id
+        """
+        return super().__new__(cls, f"<@{user_id}>")
+
+
 class EmojiID:
     得意 = 4
     流泪 = 5
@@ -826,12 +845,3 @@ class EmojiString:
     拒绝 = "<emoji:322>"
     吃糖 = "<emoji:324>"
     生气 = "<emoji:326>"
-
-
-class AnnounceRecommendChannels:
-    def __init__(self, channel_id: str, introduce: str):
-        self.channel_id = channel_id
-        self.introduce = introduce
-
-    def __json__(self):
-        return {"channel_id": self.channel_id, "introduce": self.introduce}

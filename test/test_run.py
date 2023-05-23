@@ -63,7 +63,7 @@ class TestRunning:
         assert self.bot._bot_class.session_id
         assert self.bot._bot_class.heartbeat
         assert (
-                self.bot._bot_class.auth == f'Bot {config["bot_id"]}.{config["bot_token"]}'
+            self.bot._bot_class.auth == f'Bot {config["bot_id"]}.{config["bot_token"]}'
         )
         assert self.bot.robot == self.bot._bot_class.robot
         self.bot.close()
@@ -149,8 +149,8 @@ class TestRunning:
                 while mock_logger.call_count < 2:
                     self.bot.loop.run_until_complete(asyncio.sleep(0.1))
                 assert (
-                        mock.call(repr(ValueError("testing error")))
-                        in mock_logger.call_args_list
+                    mock.call(repr(ValueError("testing error")))
+                    in mock_logger.call_args_list
                 )
 
     @pytest.mark.asyncio
@@ -175,36 +175,36 @@ class TestRunning:
                     self.bot.loop.run_until_complete(asyncio.sleep(0.1))
                 self.bot.loop.run_until_complete(asyncio.sleep(0.5))
                 assert (
-                        mock.call("before_command_test", "plugins_test")
-                        in mock_logger.call_args_list
-                        and mock.call("收到频道 xxx 用户 xxx(xxx) 的消息：plugins_test")
-                        in mock_logger.call_args_list
+                    mock.call("before_command_test", "plugins_test")
+                    in mock_logger.call_args_list
+                    and mock.call("收到频道 xxx 用户 xxx(xxx) 的消息：plugins_test")
+                    in mock_logger.call_args_list
                 )
                 call_hist = mock_send_msg.call_args_list
                 assert len(call_hist) == 2
                 assert (
-                        mock.call(
-                            content="plugins_test",
-                            image=None,
-                            file_image=None,
-                            message_reference_id=None,
-                            ignore_message_reference_error=None,
-                            message_id="id",
-                            channel_id="channel_id",
-                        )
-                        in call_hist
+                    mock.call(
+                        content="plugins_test",
+                        image=None,
+                        file_image=None,
+                        message_reference_id=None,
+                        ignore_message_reference_error=None,
+                        message_id="id",
+                        channel_id="channel_id",
+                    )
+                    in call_hist
                 )
                 assert (
-                        mock.call(
-                            content="test",
-                            image=None,
-                            file_image=None,
-                            message_reference_id=None,
-                            ignore_message_reference_error=None,
-                            message_id="id",
-                            channel_id="channel_id",
-                        )
-                        in call_hist
+                    mock.call(
+                        content="test",
+                        image=None,
+                        file_image=None,
+                        message_reference_id=None,
+                        ignore_message_reference_error=None,
+                        message_id="id",
+                        channel_id="channel_id",
+                    )
+                    in call_hist
                 )
 
     @pytest.mark.asyncio
@@ -251,7 +251,7 @@ class TestRunning:
         with mock.patch.object(self.bot.api, "send_msg") as mock_send_msg:
             mock_send_msg.return_value = None
             for i, (mock_msg, ret_msg) in enumerate(
-                    ((MockMsg, "err"), (MockMsgAdmin, "test"))
+                ((MockMsg, "err"), (MockMsgAdmin, "test"))
             ):
                 self.bot.loop.create_task(self.bot._bot_class.dispatch_events(mock_msg))
                 while mock_send_msg.call_count <= i:

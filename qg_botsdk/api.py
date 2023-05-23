@@ -230,6 +230,21 @@ class API:
         )
         return future_.result(timeout=self._timeout)
 
+    def get_online_nums(self, channel_id: str) -> _api_model.get_online_nums():
+        """
+        用于获取 channel_id 指定的音视频/直播子频道中在线人数
+
+        :param channel_id: 子频道id
+        :return: 返回的.data中为解析后的json数据
+        """
+        _args = locals()
+        _args.pop("self")
+        self.__check_ready()
+        future_ = run_coroutine_threadsafe(
+            self._api.get_online_nums(**_args), self._loop
+        )
+        return future_.result(timeout=self._timeout)
+
     def get_guild_members(self, guild_id: str) -> _api_model.get_guild_members():
         """
         用于获取 guild_id 指定的频道中所有成员的详情列表
