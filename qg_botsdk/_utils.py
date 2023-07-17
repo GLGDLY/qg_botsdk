@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from asyncio import iscoroutinefunction
-from copy import deepcopy
 from functools import wraps
 from inspect import Signature, signature, stack
 from json import dumps, loads
@@ -13,6 +12,7 @@ from typing import BinaryIO, Callable, Dict, Iterable, Optional, Union
 
 from aiohttp import ContentTypeError
 
+from ._api_model import object_class, send_msg
 from .version import __version__
 
 general_header = {"User-Agent": f"qg-botsdk v{__version__}"}
@@ -57,6 +57,102 @@ event_t = (
     "FORUM_REPLY_DELETE",
     "INTERACTION_CREATE",
 )
+
+_reply_args = (
+    "content",
+    "image",
+    "file_image",
+    "message_reference_id",
+    "ignore_message_reference_error",
+)
+
+
+class event_class(object_class):
+    def reply(
+        self,
+        content: Optional[str] = None,
+        image: Optional[str] = None,
+        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
+    ) -> send_msg():
+        raw_args = locals()
+        kwargs = {arg: raw_args[arg] for arg in _reply_args}
+        t = getattr(self, "t", None)
+        if t in msg_t:
+            kwargs["message_id"] = getattr(self, "id", None)
+        elif t in event_t:
+            kwargs["message_id"] = getattr(self, "event_id", None)
+        if "DIRECT_MESSAGE" in t:
+            kwargs["guild_id"] = getattr(self, "guild_id", None)
+            return getattr(self, "api").send_dm(**kwargs)
+        else:
+            kwargs["channel_id"] = (
+                self.channel_id
+                if hasattr(self, "channel_id")
+                else getattr(self, "id", None)
+            )
+            return getattr(self, "api").send_msg(**kwargs)
+
+
+class async_event_class(object_class):
+    async def reply(
+        self,
+        content: Optional[str] = None,
+        image: Optional[str] = None,
+        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
+    ) -> send_msg():
+        raw_args = locals()
+        kwargs = {arg: raw_args[arg] for arg in _reply_args}
+        t = getattr(self, "t", None)
+        if t in msg_t:
+            kwargs["message_id"] = getattr(self, "id", None)
+        elif t in event_t:
+            kwargs["message_id"] = getattr(self, "event_id", None)
+        if "DIRECT_MESSAGE" in t:
+            kwargs["guild_id"] = getattr(self, "guild_id", None)
+            return await getattr(self, "api").send_dm(**kwargs)
+        else:
+            kwargs["channel_id"] = (
+                self.channel_id
+                if hasattr(self, "channel_id")
+                else getattr(self, "id", None)
+            )
+            return await getattr(self, "api").send_msg(**kwargs)
+
+
+def objectize(
+    data, api=None, is_async=False
+):  # if api is not None, the event is a resp class
+    if isinstance(data, dict):
+        try:
+            _static_copy = dumps(data)
+        except (TypeError, JSONDecodeError):
+            _static_copy = str(data)
+        # main func to process data
+        for keys, values in data.items():
+            if keys.isnumeric():
+                return data
+            if isinstance(values, dict):
+                data[keys] = objectize(values)
+            elif isinstance(values, list):
+                for i, items in enumerate(values):
+                    if isinstance(items, dict):
+                        data[keys][i] = objectize(items)
+        if api:
+            data["api"] = api
+            object_data = (
+                async_event_class(_static_copy, data)
+                if is_async
+                else event_class(_static_copy, data)
+            )
+        else:
+            object_data = object_class(_static_copy, data)
+        return object_data
+    else:
+        return data
 
 
 def template_wrapper(func):
@@ -132,178 +228,6 @@ def exception_processor(func):
                 print(f"[{t}] [ERROR] {exception_handler(e)}")
 
     return wrap
-
-
-class object_class:
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            self.__setattr__(k, v)
-
-    def __getattribute__(self, item):
-        if item == "__doc__":
-            return object.__getattribute__(self, "__repr__")()
-        return object.__getattribute__(self, item)
-
-    def __repr__(self):
-        try:
-            return dumps(self._data)
-        except (TypeError, ValueError):
-            return str(self._data)
-
-    @property
-    def dict(self):
-        return self._data
-
-
-def _send_msg():  # Cannot direct import from _api_model.py since circular import
-    class SendMsg(object_class):
-        class data:
-            id: str
-            channel_id: str
-            guild_id: str
-            content: str
-            timestamp: str
-            tts: bool
-            mention_everyone: bool
-            author: Dict
-            pinned: bool
-            type: int
-            flags: int
-            seq_in_channel: str
-            code: int
-            message: str
-
-        http_code: int
-        trace_id: str
-        result: bool
-
-    return SendMsg
-
-
-_reply_args = (
-    "content",
-    "image",
-    "file_image",
-    "message_reference_id",
-    "ignore_message_reference_error",
-)
-
-
-class event_class(object_class):
-    def reply(
-        self,
-        content: Optional[str] = None,
-        image: Optional[str] = None,
-        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-        message_reference_id: Optional[str] = None,
-        ignore_message_reference_error: Optional[bool] = None,
-    ) -> _send_msg():
-        """
-        目前支持reply()发送被动消息的事件类型有:
-
-        GUILD_MEMBER_ADD GUILD_MEMBER_UPDATE GUILD_MEMBER_REMOVE MESSAGE_REACTION_ADD MESSAGE_REACTION_REMOVE
-        FORUM_THREAD_CREATE FORUM_THREAD_UPDATE FORUM_THREAD_DELETE FORUM_POST_CREATE FORUM_POST_DELETE
-        FORUM_REPLY_CREATE FORUM_REPLY_DELETE INTERACTION_CREATE
-
-        剩余事件的reply()将会转为发送主动消息
-
-        :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
-        :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
-        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
-        :param message_reference_id: 引用消息的id（选填）
-        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
-        :return: 返回的.data中为解析后的json数据
-        """
-        raw_args = locals()
-        kwargs = {arg: raw_args[arg] for arg in _reply_args}
-        t = getattr(self, "t", None)
-        if t in msg_t:
-            kwargs["message_id"] = getattr(self, "id", None)
-        elif t in event_t:
-            kwargs["message_id"] = getattr(self, "event_id", None)
-        if "DIRECT_MESSAGE" in t:
-            kwargs["guild_id"] = getattr(self, "guild_id", None)
-            return getattr(self, "api").send_dm(**kwargs)
-        else:
-            kwargs["channel_id"] = (
-                self.channel_id
-                if hasattr(self, "channel_id")
-                else getattr(self, "id", None)
-            )
-            return getattr(self, "api").send_msg(**kwargs)
-
-
-class async_event_class(object_class):
-    async def reply(
-        self,
-        content: Optional[str] = None,
-        image: Optional[str] = None,
-        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-        message_reference_id: Optional[str] = None,
-        ignore_message_reference_error: Optional[bool] = None,
-    ) -> _send_msg():
-        """
-        目前支持reply()发送被动消息的事件类型有:
-
-        GUILD_MEMBER_ADD GUILD_MEMBER_UPDATE GUILD_MEMBER_REMOVE MESSAGE_REACTION_ADD MESSAGE_REACTION_REMOVE
-        FORUM_THREAD_CREATE FORUM_THREAD_UPDATE FORUM_THREAD_DELETE FORUM_POST_CREATE FORUM_POST_DELETE
-        FORUM_REPLY_CREATE FORUM_REPLY_DELETE INTERACTION_CREATE
-
-        剩余事件的reply()将会转为发送主动消息
-
-        :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
-        :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
-        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
-        :param message_reference_id: 引用消息的id（选填）
-        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
-        :return: 返回的.data中为解析后的json数据
-        """
-        raw_args = locals()
-        kwargs = {arg: raw_args[arg] for arg in _reply_args}
-        t = getattr(self, "t", None)
-        if t in msg_t:
-            kwargs["message_id"] = getattr(self, "id", None)
-        elif t in event_t:
-            kwargs["message_id"] = getattr(self, "event_id", None)
-        if "DIRECT_MESSAGE" in t:
-            kwargs["guild_id"] = getattr(self, "guild_id", None)
-            return await getattr(self, "api").send_dm(**kwargs)
-        else:
-            kwargs["channel_id"] = (
-                self.channel_id
-                if hasattr(self, "channel_id")
-                else getattr(self, "id", None)
-            )
-            return await getattr(self, "api").send_msg(**kwargs)
-
-
-def objectize(
-    data, api=None, is_async=False, is_recursion=False
-):  # if api is not None, the event is a resp class
-    if isinstance(data, dict):
-        _data = data
-        if not is_recursion:
-            # create a copy that doesn't reference to the original data
-            data = deepcopy(data)
-        # main func to process data
-        for keys, values in data.items():
-            if keys.isnumeric():
-                return data
-            if isinstance(values, dict):
-                data[keys] = objectize(values, is_recursion=True)
-            elif isinstance(values, list):
-                for i, items in enumerate(values):
-                    if isinstance(items, dict):
-                        data[keys][i] = objectize(items, is_recursion=True)
-        data["_data"] = _data
-        if api:
-            data["api"] = api
-            object_data = async_event_class(**data) if is_async else event_class(**data)
-        else:
-            object_data = object_class(**data)
-        return object_data
-    else:
-        return data
 
 
 def treat_msg(raw_msg: str, at: str):

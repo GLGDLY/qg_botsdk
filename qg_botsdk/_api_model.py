@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Any, Callable, Dict, List, Optional
-
-from ._utils import object_class
-from .model import BotCommandObject, Model
+from typing import Dict, List, Optional
 
 
-class WaifForCommandCallback:
-    def __init__(
-        self, command: BotCommandObject, callback: Callable[[Model.MESSAGE], Any]
-    ):
-        self.command = command
-        self.callback = callback
+class object_class:
+    def __init__(self, _static_copy, _data):
+        self.__dict__.update(_data)
+        self._static_copy = _static_copy
+
+    def __doc__(self):
+        return self._static_copy
+
+    def __repr__(self):
+        return self._static_copy
+
+    @property
+    def dict(self):
+        return self._static_copy
 
 
 apis = {

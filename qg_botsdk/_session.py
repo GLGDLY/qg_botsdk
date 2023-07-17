@@ -10,13 +10,19 @@ from time import time
 from typing import Dict, Hashable, Iterable, List, Optional, Union
 from weakref import finalize
 
-from ._api_model import WaifForCommandCallback
 from ._statics import EVENTS
 from ._utils import exception_handler
 from .api import API
 from .async_api import AsyncAPI
 from .logger import Logger
-from .model import BotCommandObject, Model, Scope, SessionObject, SessionStatus
+from .model import (
+    BotCommandObject,
+    Model,
+    Scope,
+    SessionObject,
+    SessionStatus,
+    WaifForCommandCallback,
+)
 
 _AllScopeStr = ("USER", "GUILD", "CHANNEL", "GLOBAL")
 ScopeRegisterKey = namedtuple("ScopeRegisterKey", _AllScopeStr)
@@ -74,6 +80,7 @@ class SessionManager:
         is_auto_commit: bool = True,
     ):
         self.__sessions: Dict = {x: {} for x in _AllScopeStr}
+        self.__sessions_pk_cache = None
         self.__wait_for_registers: Dict = {}
         self.__logger: Logger = logger
         self.__bot_identify: str = logger.bot_app_id
@@ -193,8 +200,14 @@ class SessionManager:
             except Exception as e:
                 self.__logger.error(e.__repr__())
                 self.__logger.error(exception_handler(e))
-            if change and self.__is_auto_commit:
-                self.commit_data(is_info=False)
+            if self.__is_auto_commit:
+                if change:
+                    self.commit_data(is_info=False)
+                else:
+                    _new_pk_data = pickle.dumps(self.__sessions)
+                    if self.__sessions_pk_cache != _new_pk_data:
+                        self.__sessions_pk_cache = _new_pk_data
+                        self.commit_data(is_info=False, pk_data=_new_pk_data)
 
     @staticmethod
     def __valid_scope(scope):
@@ -507,12 +520,13 @@ class SessionManager:
         except Exception as e:
             self.__logger.error(f"Session Manager 读取 {_path} 时出现错误，将跳过：{repr(e)}")
 
-    def commit_data(self, is_info: bool = True):
+    def commit_data(self, is_info: bool = True, pk_data: Optional[bytes] = None):
         _path = os.path.join(self.__commit_path, f"session_{self.__bot_identify}.db")
         try:
-            # print(dill.dumps(self.__sessions["USER"]))
             with open(_path, "wb") as f_db:
-                f_db.write(pickle.dumps(self.__sessions))
+                if not pk_data:
+                    pk_data = pickle.dumps(self.__sessions)
+                f_db.write(pk_data)
             if is_info:
                 self.__logger.info(f"Session Manager 写入了 {_path} 的数据")
         except Exception as e:

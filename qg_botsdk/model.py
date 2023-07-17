@@ -3,9 +3,48 @@
 from enum import Enum
 from re import Pattern
 from re import compile as re_compile
-from typing import Any, Callable, Dict, Hashable, Iterable, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    BinaryIO,
+    Callable,
+    Dict,
+    Hashable,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
-from ._utils import event_class
+from ._api_model import send_msg
+
+
+class _AbstractEventClass:
+    def reply(
+        self,
+        content: Optional[str] = None,
+        image: Optional[str] = None,
+        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
+    ) -> send_msg():
+        """
+        目前支持reply()发送被动消息的事件类型有:
+
+        GUILD_MEMBER_ADD GUILD_MEMBER_UPDATE GUILD_MEMBER_REMOVE MESSAGE_REACTION_ADD MESSAGE_REACTION_REMOVE
+        FORUM_THREAD_CREATE FORUM_THREAD_UPDATE FORUM_THREAD_DELETE FORUM_POST_CREATE FORUM_POST_DELETE
+        FORUM_REPLY_CREATE FORUM_REPLY_DELETE INTERACTION_CREATE
+
+        剩余事件的reply()将会转为发送主动消息
+
+        :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
+        :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
+        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
+        :param message_reference_id: 引用消息的id（选填）
+        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
+        :return: 返回的.data中为解析后的json数据
+        """
+        ...
 
 
 class Model:
@@ -16,7 +55,7 @@ class Model:
     GUILD_MEMBERS -
     """
 
-    class GUILDS(event_class):
+    class GUILDS(_AbstractEventClass):
         """
         频道事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -41,7 +80,7 @@ class Model:
         t: str
         event_id: str
 
-    class CHANNELS(event_class):
+    class CHANNELS(_AbstractEventClass):
         """
         子频道事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -70,7 +109,7 @@ class Model:
         t: str
         event_id: str
 
-    class GUILD_MEMBERS(event_class):
+    class GUILD_MEMBERS(_AbstractEventClass):
         """
         频道成员事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -97,7 +136,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE(event_class):
+    class MESSAGE(_AbstractEventClass):
         """
         消息事件的数据模，可从t字段判断具体事件，其中包含：
 
@@ -158,7 +197,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE_DELETE(event_class):
+    class MESSAGE_DELETE(_AbstractEventClass):
         """
         消息撤回事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -190,7 +229,7 @@ class Model:
         t: str
         event_id: str
 
-    class DIRECT_MESSAGE(event_class):
+    class DIRECT_MESSAGE(_AbstractEventClass):
         """
         私信消息事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -235,7 +274,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE_AUDIT(event_class):
+    class MESSAGE_AUDIT(_AbstractEventClass):
         """
         主动消息审核事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -259,7 +298,7 @@ class Model:
         t: str
         event_id: str
 
-    class FORUMS_EVENT(event_class):
+    class FORUMS_EVENT(_AbstractEventClass):
         """
         论坛事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -347,7 +386,7 @@ class Model:
         t: str
         event_id: str
 
-    class OPEN_FORUMS(event_class):
+    class OPEN_FORUMS(_AbstractEventClass):
         """
         公域论坛事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -368,7 +407,7 @@ class Model:
         t: str
         event_id: str
 
-    class AUDIO_ACTION(event_class):
+    class AUDIO_ACTION(_AbstractEventClass):
         """
         音频事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -392,7 +431,7 @@ class Model:
         t: str
         event_id: str
 
-    class REACTION(event_class):
+    class REACTION(_AbstractEventClass):
         """
         表情表态事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -418,7 +457,7 @@ class Model:
         t: str
         event_id: str
 
-    class INTERACTION(event_class):
+    class INTERACTION(_AbstractEventClass):
         """
         互动事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -447,7 +486,7 @@ class Model:
         t: str
         event_id: str
 
-    class LIVE_CHANNEL_MEMBER(event_class):
+    class LIVE_CHANNEL_MEMBER(_AbstractEventClass):
         """
         音视频/直播子频道成员进出事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -845,3 +884,11 @@ class EmojiString:
     拒绝 = "<emoji:322>"
     吃糖 = "<emoji:324>"
     生气 = "<emoji:326>"
+
+
+class WaifForCommandCallback:
+    def __init__(
+        self, command: BotCommandObject, callback: Callable[[Model.MESSAGE], Any]
+    ):
+        self.command = command
+        self.callback = callback

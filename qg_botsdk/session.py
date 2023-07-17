@@ -9,7 +9,9 @@ from .model import Scope, SessionObject, SessionStatus
 
 class AbstractSessionManager:
     """
-    Session Manager用于管理在不同作用域（scope）下的 sessions，具有
+    Session Manager用于管理在不同作用域（scope）下的 sessions，主要用处为存储运行时的临时数据。
+
+    注意：为允许session可以保存class实例等py数据类型，session的数据以pickle方式保存
     """
 
     # -*- session manage methods -*-

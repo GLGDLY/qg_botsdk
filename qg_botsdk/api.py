@@ -827,8 +827,8 @@ class API:
     def mute_all_member(
         self,
         guild_id: str,
-        mute_end_timestamp: Optional[str],
-        mute_seconds: Optional[str],
+        mute_end_timestamp: Optional[str] = None,
+        mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_member():
         """
         用于将频道的全体成员（非管理员）禁言
@@ -850,8 +850,8 @@ class API:
         self,
         guild_id: str,
         user_id: str,
-        mute_end_timestamp: Optional[str],
-        mute_seconds: Optional[str],
+        mute_end_timestamp: Optional[str] = None,
+        mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_member():
         """
         用于禁言频道 guild_id 下的成员 user_id
@@ -872,8 +872,8 @@ class API:
         self,
         guild_id: str,
         user_id: List[str],
-        mute_end_timestamp: Optional[str],
-        mute_seconds: Optional[str],
+        mute_end_timestamp: Optional[str] = None,
+        mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_members():
         """
         用于将频道的指定批量成员（非管理员）禁言
