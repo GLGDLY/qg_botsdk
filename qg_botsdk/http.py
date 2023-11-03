@@ -1,5 +1,4 @@
-from asyncio import get_event_loop
-from ssl import create_default_context
+from asyncio import get_event_loop, AbstractEventLoop
 from typing import Optional
 
 from aiohttp import (
@@ -75,9 +74,6 @@ class FormData_(FormData):
         return self._writer
 
 
-from asyncio import AbstractEventLoop
-
-
 class Session:
     def __init__(
         self,
@@ -129,6 +125,7 @@ class Session:
     async def _check_session(self):
         if not self._session or self._session.closed:
             self._session = ClientSession(timeout=self._timeout, **self._kwargs)
+            self._session.headers.update(general_header)
 
     async def _warning(self, url, resp):
         self._logger.warning(
@@ -151,7 +148,6 @@ class Session:
 
     async def _request(self, method, url, retry=False, **kwargs):
         await self._check_session()
-        kwargs["headers"] = kwargs.get("headers", general_header)
         resp = await self._session.request(method, url, **kwargs)
         if resp.ok:
             return resp
