@@ -12,7 +12,7 @@ from typing import BinaryIO, Callable, Dict, Iterable, Optional, Union
 
 from aiohttp import ContentTypeError
 
-from ._api_model import object_class, send_msg
+from ._api_model import BaseMessage, object_class, send_msg
 from .version import __version__
 
 general_header = {"User-Agent": f"qg-botsdk v{__version__}"}
@@ -70,12 +70,21 @@ _reply_args = (
 class event_class(object_class):
     def reply(
         self,
-        content: Optional[str] = None,
+        content: Optional[Union[str, BaseMessage]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_reference_id: Optional[str] = None,
         ignore_message_reference_error: Optional[bool] = None,
     ) -> send_msg():
+        """
+        回复消息
+
+        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
+        :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
+        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档，与image同时存在时优先使用此项
+        :param message_reference_id: 引用消息的id（选填）
+        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
+        """
         raw_args = locals()
         kwargs = {arg: raw_args[arg] for arg in _reply_args}
         t = getattr(self, "t", None)
@@ -98,12 +107,21 @@ class event_class(object_class):
 class async_event_class(object_class):
     async def reply(
         self,
-        content: Optional[str] = None,
+        content: Optional[Union[str, BaseMessage]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_reference_id: Optional[str] = None,
         ignore_message_reference_error: Optional[bool] = None,
     ) -> send_msg():
+        """
+        回复消息
+
+        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
+        :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
+        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档，与image同时存在时优先使用此项
+        :param message_reference_id: 引用消息的id（选填）
+        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
+        """
         raw_args = locals()
         kwargs = {arg: raw_args[arg] for arg in _reply_args}
         t = getattr(self, "t", None)

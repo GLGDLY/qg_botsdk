@@ -979,3 +979,31 @@ def create_permission_demand():
         result: bool
 
     return CreatePermissionDemand
+
+
+# API related
+
+
+class MessageConstructRet:
+    def __init__(
+        self,
+        result: bool,
+        logger_msg: Optional[str] = None,
+        error_ret: Optional[send_msg()] = None,
+        kwargs: Optional[dict] = None,
+    ):
+        self.result = result
+        self.logger_msg = logger_msg
+        self.error_ret = error_ret
+        self.kwargs = kwargs
+
+
+class BaseMessage:
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "<BaseMessage abstract class>"
+
+    def construct(self, message_id, event_id) -> MessageConstructRet:
+        pass

@@ -1,4 +1,4 @@
-from asyncio import get_event_loop, AbstractEventLoop
+from asyncio import AbstractEventLoop, get_event_loop
 from typing import Optional
 
 from aiohttp import (

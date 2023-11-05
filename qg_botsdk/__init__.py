@@ -17,6 +17,7 @@ qg_botsdk Library
 
 from . import utils
 from ._exception import IdTokenError, IdTokenMissing, WaitTimeoutError
+from .api_model import ApiModel
 from .logger import Logger
 from .model import (
     BotCommandObject,
@@ -44,6 +45,7 @@ name = "qg_botsdk"
 __all__ = (
     "BOT",
     "Model",
+    "ApiModel",
     "Scope",
     "SessionObject",
     "SessionStatus",

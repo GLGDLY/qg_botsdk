@@ -8,6 +8,7 @@ from . import _api_model, model
 from ._exception import WaitError, WaitTimeoutError
 from ._statics import TraceNames
 from ._utils import TraceCallerData
+from .api_model import ApiModel, BaseMessage
 from .async_api import AsyncAPI
 
 
@@ -546,7 +547,7 @@ class API:
     def send_msg(
         self,
         channel_id: str,
-        content: Optional[str] = None,
+        content: Optional[Union[str, BaseMessage]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_id: Optional[str] = None,
@@ -558,7 +559,7 @@ class API:
         发送普通消息的API
 
         :param channel_id: 子频道id
-        :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
+        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
         :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
         :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
         :param message_id: 消息id（选填）
@@ -780,7 +781,7 @@ class API:
     def send_dm(
         self,
         guild_id: str,
-        content: Optional[str] = None,
+        content: Optional[Union[str, BaseMessage]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_id: Optional[str] = None,
@@ -792,7 +793,7 @@ class API:
         私信用户的API
 
         :param guild_id: 虚拟频道id（非子频道id），从用户主动私信机器人的事件、或机器人主动创建私信的API中获取
-        :param content: 消息内容文本
+        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
         :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
         :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
         :param message_id: 消息id（选填）
