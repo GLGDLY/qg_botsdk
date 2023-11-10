@@ -8,7 +8,7 @@ from . import _api_model, model
 from ._exception import WaitError, WaitTimeoutError
 from ._statics import TraceNames
 from ._utils import TraceCallerData
-from .api_model import ApiModel, BaseMessage
+from .api_model import BaseMessageApiModel
 from .async_api import AsyncAPI
 
 
@@ -547,7 +547,7 @@ class API:
     def send_msg(
         self,
         channel_id: str,
-        content: Optional[Union[str, BaseMessage]] = None,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_id: Optional[str] = None,
@@ -781,7 +781,7 @@ class API:
     def send_dm(
         self,
         guild_id: str,
-        content: Optional[Union[str, BaseMessage]] = None,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_id: Optional[str] = None,

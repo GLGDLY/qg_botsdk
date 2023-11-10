@@ -2,14 +2,14 @@ from io import BufferedReader
 from os.path import exists
 from typing import BinaryIO, Dict, List, Optional, Union
 
-from ._api_model import BaseMessage
+from ._api_model import BaseMessageApiModel
 from ._api_model import MessageConstructRet as _MessageConstructRet
 from ._utils import sdk_error_temp
 from .http import FormData_
 
 
 class ApiModel:
-    class Message(BaseMessage):
+    class Message(BaseMessageApiModel):
         def __init__(
             self,
             content: Optional[str] = None,
@@ -103,7 +103,7 @@ class ApiModel:
             else:
                 return _MessageConstructRet(result=True, kwargs={"json": json_})
 
-    class MessageEmbed(BaseMessage):
+    class MessageEmbed(BaseMessageApiModel):
         def __init__(
             self,
             title: Optional[str] = None,
@@ -152,7 +152,7 @@ class ApiModel:
                     json_["embed"]["fields"].append({"name": str(items)})
             return _MessageConstructRet(result=True, kwargs={"json": json_})
 
-    class MessageArk23(BaseMessage):
+    class MessageArk23(BaseMessageApiModel):
         def __init__(
             self,
             content: List[str],
@@ -217,7 +217,7 @@ class ApiModel:
                 )
             return _MessageConstructRet(result=True, kwargs={"json": json_})
 
-    class MessageArk24(BaseMessage):
+    class MessageArk24(BaseMessageApiModel):
         def __init__(
             self,
             title: Optional[str] = None,
@@ -278,7 +278,7 @@ class ApiModel:
             }
             return _MessageConstructRet(result=True, kwargs={"json": json_})
 
-    class MessageArk37(BaseMessage):
+    class MessageArk37(BaseMessageApiModel):
         def __init__(
             self,
             title: Optional[str] = None,
@@ -326,7 +326,7 @@ class ApiModel:
             }
             return _MessageConstructRet(result=True, kwargs={"json": json_})
 
-    class MessageMarkdown(BaseMessage):
+    class MessageMarkdown(BaseMessageApiModel):
         def __init__(
             self,
             template_id: Optional[str] = None,

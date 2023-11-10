@@ -998,7 +998,7 @@ class MessageConstructRet:
         self.kwargs = kwargs
 
 
-class BaseMessage:
+class BaseMessageApiModel:
     def __init__(self):
         pass
 

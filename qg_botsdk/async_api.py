@@ -19,7 +19,7 @@ from ._utils import (
     security_header,
     security_wrapper,
 )
-from .api_model import ApiModel, BaseMessage
+from .api_model import ApiModel, BaseMessageApiModel
 from .utils import convert_color
 
 
@@ -757,7 +757,7 @@ class AsyncAPI:
     async def send_msg(
         self,
         channel_id: str,
-        content: Optional[Union[str, BaseMessage]] = None,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_id: Optional[str] = None,
@@ -778,7 +778,7 @@ class AsyncAPI:
         :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        if not isinstance(content, BaseMessage):
+        if not isinstance(content, BaseMessageApiModel):
             content = ApiModel.Message(
                 content=content,
                 image=image,
@@ -786,9 +786,9 @@ class AsyncAPI:
                 message_reference_id=message_reference_id,
                 ignore_message_reference_error=ignore_message_reference_error,
             )
-            self._logger.warning(
-                "Deprecated warning: 参数传入方式即将废弃，请传入msg_model中的消息对象到content参数中"
-            )
+            # self._logger.warning(
+            #     "Deprecated warning: 参数传入方式即将废弃，请传入msg_model中的消息对象到content参数中"
+            # )
         ret = content.construct(
             message_id=message_id,
             event_id=event_id,
@@ -1035,7 +1035,7 @@ class AsyncAPI:
     async def send_dm(
         self,
         guild_id: str,
-        content: Optional[Union[str, BaseMessage]] = None,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_id: Optional[str] = None,
@@ -1056,7 +1056,7 @@ class AsyncAPI:
         :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        if not isinstance(content, BaseMessage):
+        if not isinstance(content, BaseMessageApiModel):
             content = ApiModel.Message(
                 content=content,
                 image=image,
@@ -1064,9 +1064,9 @@ class AsyncAPI:
                 message_reference_id=message_reference_id,
                 ignore_message_reference_error=ignore_message_reference_error,
             )
-            self._logger.warning(
-                "Deprecated warning: 参数传入方式即将废弃，请传入msg_model中的消息对象到content参数中"
-            )
+            # self._logger.warning(
+            #     "Deprecated warning: 参数传入方式即将废弃，请传入msg_model中的消息对象到content参数中"
+            # )
         ret = content.construct(
             message_id=message_id,
             event_id=event_id,
