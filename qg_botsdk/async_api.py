@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from asyncio import sleep
-from io import BufferedReader
 from json import dumps, loads
 from json.decoder import JSONDecodeError
-from os.path import exists
 from time import time
 from typing import BinaryIO, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -21,7 +19,7 @@ from ._utils import (
     security_header,
     security_wrapper,
 )
-from .http import FormData_
+from .api_model import ApiModel, BaseMessageApiModel
 from .utils import convert_color
 
 
@@ -759,7 +757,7 @@ class AsyncAPI:
     async def send_msg(
         self,
         channel_id: str,
-        content: Optional[str] = None,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_id: Optional[str] = None,
@@ -771,7 +769,7 @@ class AsyncAPI:
         发送普通消息的API
 
         :param channel_id: 子频道id
-        :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
+        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
         :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
         :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档，与image同时存在时优先使用此项
         :param message_id: 消息id（选填）
@@ -780,54 +778,27 @@ class AsyncAPI:
         :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        if content is not None and not isinstance(content, str):
-            content = str(content)
-        if message_reference_id is not None:
-            if ignore_message_reference_error is None:
-                ignore_message_reference_error = False
-            json_ = {
-                "content": content,
-                "msg_id": message_id,
-                "event_id": event_id,
-                "image": image,
-                "message_reference": {
-                    "message_id": message_reference_id,
-                    "ignore_get_message_error": ignore_message_reference_error,
-                },
-            }
-        else:
-            json_ = {
-                "content": content,
-                "msg_id": message_id,
-                "event_id": event_id,
-                "image": image,
-            }
-        if file_image is not None:
-            if isinstance(file_image, BufferedReader):
-                file_image = file_image.read()
-            elif isinstance(file_image, str):
-                if exists(file_image):
-                    with open(file_image, "rb") as img:
-                        file_image = img.read()
-                else:
-                    if file_image.startswith("http"):
-                        return sdk_error_temp("发送网络图片请使用image参数，而非file_image")
-                    return sdk_error_temp("目标图片路径不存在，无法发送")
-            elif not isinstance(file_image, bytes):
-                return sdk_error_temp(f"file_image不支持{type(file_image)}的内容")
-            json_["file_image"] = file_image
-            data_ = FormData_()
-            for keys, values in json_.items():
-                if values is not None and keys != "image":
-                    data_.add_field(keys, values)
-            return_ = await self._session.post(
-                f"{self._bot_url}/channels/{channel_id}/messages", data=data_
+        if not isinstance(content, BaseMessageApiModel):
+            content = ApiModel.Message(
+                content=content,
+                image=image,
+                file_image=file_image,
+                message_reference_id=message_reference_id,
+                ignore_message_reference_error=ignore_message_reference_error,
             )
-        else:
+        ret = content.construct(
+            message_id=message_id,
+            event_id=event_id,
+        )
+        if ret.logger_msg:
+            self._logger.warning(ret.logger_msg)
+        if ret.result:
             return_ = await self._session.post(
-                f"{self._bot_url}/channels/{channel_id}/messages", json=json_
+                f"{self._bot_url}/channels/{channel_id}/messages", **ret.kwargs
             )
-        return await regular_temp(return_)
+            return await regular_temp(return_)
+        else:
+            return ret.error_ret
 
     async def send_embed(
         self,
@@ -851,23 +822,18 @@ class AsyncAPI:
         :param event_id: 事件id（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        json_ = {
-            "embed": {
-                "title": title,
-                "prompt": prompt,
-                "thumbnail": {"url": image},
-                "fields": [],
-            },
-            "msg_id": message_id,
-            "event_id": event_id,
-        }
-        if content is not None:
-            for items in content:
-                json_["embed"]["fields"].append({"name": str(items)})
-        return_ = await self._session.post(
-            f"{self._bot_url}/channels/{channel_id}/messages", json=json_
+        msg = ApiModel.MessageEmbed(
+            title=title,
+            content=content,
+            image=image,
+            prompt=prompt,
         )
-        return await regular_temp(return_)
+        self._logger.warning(
+            "Deprecated warning: 此发送方式即将废弃，请使用send_msg()并传入msg_model中的消息对象"
+        )
+        return await self.send_msg(
+            channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
+        )
 
     async def send_ark_23(
         self,
@@ -891,37 +857,18 @@ class AsyncAPI:
         :param event_id: 事件id（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        if len(content) != len(link):
-            return sdk_error_temp("注意内容列表长度应与链接列表长度一致")
-        json_ = {
-            "ark": {
-                "template_id": 23,
-                "kv": [
-                    {"key": "#DESC#", "value": desc},
-                    {"key": "#PROMPT#", "value": prompt},
-                    {"key": "#LIST#", "obj": []},
-                ],
-            },
-            "msg_id": message_id,
-            "event_id": event_id,
-        }
-        for _link, _content in zip(link, content):
-            if _content is not None and not isinstance(_content, str):
-                _content = str(_content)
-            if _link is not None and not isinstance(_link, str):
-                _link = str(_link)
-            json_["ark"]["kv"][2]["obj"].append(
-                {
-                    "obj_kv": [
-                        {"key": "desc", "value": _content},
-                        {"key": "link", "value": _link},
-                    ]
-                }
-            )
-        return_ = await self._session.post(
-            f"{self._bot_url}/channels/{channel_id}/messages", json=json_
+        msg = ApiModel.MessageArk23(
+            content=content,
+            link=link,
+            desc=desc,
+            prompt=prompt,
         )
-        return await regular_temp(return_)
+        self._logger.warning(
+            "Deprecated warning: 此发送方式即将废弃，请使用send_msg()并传入msg_model中的消息对象"
+        )
+        return await self.send_msg(
+            channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
+        )
 
     async def send_ark_24(
         self,
@@ -951,26 +898,18 @@ class AsyncAPI:
         :param event_id: 事件id（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        json_ = {
-            "ark": {
-                "template_id": 24,
-                "kv": [
-                    {"key": "#DESC#", "value": desc},
-                    {"key": "#PROMPT#", "value": prompt},
-                    {"key": "#TITLE#", "value": title},
-                    {"key": "#METADESC#", "value": content},
-                    {"key": "#IMG#", "value": image},
-                    {"key": "#LINK#", "value": link},
-                    {"key": "#SUBTITLE#", "value": subtitile},
-                ],
-            },
-            "msg_id": message_id,
-            "event_id": event_id,
-        }
-        return_ = await self._session.post(
-            f"{self._bot_url}/channels/{channel_id}/messages", json=json_
+        msg = ApiModel.MessageArk24(
+            title=title,
+            content=content,
+            subtitile=subtitile,
+            link=link,
+            image=image,
+            desc=desc,
+            prompt=prompt,
         )
-        return await regular_temp(return_)
+        return await self.send_msg(
+            channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
+        )
 
     async def send_ark_37(
         self,
@@ -996,24 +935,16 @@ class AsyncAPI:
         :param event_id: 事件id（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        json_ = {
-            "ark": {
-                "template_id": 37,
-                "kv": [
-                    {"key": "#PROMPT#", "value": prompt},
-                    {"key": "#METATITLE#", "value": title},
-                    {"key": "#METASUBTITLE#", "value": content},
-                    {"key": "#METACOVER#", "value": image},
-                    {"key": "#METAURL#", "value": link},
-                ],
-            },
-            "msg_id": message_id,
-            "event_id": event_id,
-        }
-        return_ = await self._session.post(
-            f"{self._bot_url}/channels/{channel_id}/messages", json=json_
+        msg = ApiModel.MessageArk37(
+            title=title,
+            content=content,
+            link=link,
+            image=image,
+            prompt=prompt,
         )
-        return await regular_temp(return_)
+        return await self.send_msg(
+            channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
+        )
 
     async def send_markdown(
         self,
@@ -1043,59 +974,16 @@ class AsyncAPI:
         :param event_id: 事件id（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        if keyboard_content:
-            if keyboard_id:
-                self._logger.warning(
-                    "注意keyboard_id与keyboard_content不可同时存在，注意系统已根据优先级仅保留keyboard_content"
-                )
-            keyboard = {"content": keyboard_content}
-        elif keyboard_id:
-            keyboard = {"id": keyboard_id}
-        else:
-            keyboard = None
-        if content:
-            if template_id:
-                self._logger.warning("注意content与template_id不可同时存在，注意系统已根据优先级仅保留content")
-            json_ = {
-                "markdown": {"content": content},
-                "msg_id": message_id,
-                "event_id": event_id,
-                "keyboard": keyboard,
-            }
-        else:
-            if not template_id or not key_values:
-                return sdk_error_temp("注意content与template_id必须存在任意一个，否则消息无法下发！")
-            if isinstance(key_values, dict):
-                params = []
-                for k, v in key_values.items():
-                    if isinstance(v, list) or isinstance(v, tuple):
-                        v = list(v)
-                    else:
-                        v = [str(v)]
-                    params.append({"key": k, "values": v})
-            else:
-                try:
-                    params = list(key_values)
-                    for items in params:
-                        for k, v in items.items():
-                            if isinstance(v, list) or isinstance(v, tuple):
-                                items[k] = [str(v[0])]
-                            else:
-                                items[k] = [str(v)]
-                except Exception:
-                    return sdk_error_temp(
-                        "发送markdown消息的key_values仅可以是dict或list[dict]类型！"
-                    )
-            json_ = {
-                "markdown": {"custom_template_id": template_id, "params": params},
-                "msg_id": message_id,
-                "event_id": event_id,
-                "keyboard": keyboard,
-            }
-        return_ = await self._session.post(
-            f"{self._bot_url}/channels/{channel_id}/messages", json=json_
+        msg = ApiModel.MessageMarkdown(
+            template_id=template_id,
+            key_values=key_values,
+            content=content,
+            keyboard_id=keyboard_id,
+            keyboard_content=keyboard_content,
         )
-        return await regular_temp(return_)
+        return await self.send_msg(
+            channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
+        )
 
     async def delete_msg(
         self, channel_id: str, message_id: str, hidetip: bool = False
@@ -1144,7 +1032,7 @@ class AsyncAPI:
     async def send_dm(
         self,
         guild_id: str,
-        content: Optional[str] = None,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_id: Optional[str] = None,
@@ -1156,7 +1044,7 @@ class AsyncAPI:
         私信用户的API
 
         :param guild_id: 虚拟频道id（非子频道id），从用户主动私信机器人的事件、或机器人主动创建私信的API中获取
-        :param content: 消息内容文本
+        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
         :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
         :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档，与image同时存在时优先使用此项
         :param message_id: 消息id（选填）
@@ -1165,52 +1053,27 @@ class AsyncAPI:
         :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
         :return: 返回的.data中为解析后的json数据
         """
-        if message_reference_id is not None:
-            if ignore_message_reference_error is None:
-                ignore_message_reference_error = False
-            json_ = {
-                "content": content,
-                "msg_id": message_id,
-                "event_id": event_id,
-                "image": image,
-                "message_reference": {
-                    "message_id": message_reference_id,
-                    "ignore_get_message_error": ignore_message_reference_error,
-                },
-            }
-        else:
-            json_ = {
-                "content": content,
-                "msg_id": message_id,
-                "event_id": event_id,
-                "image": image,
-            }
-        if file_image is not None:
-            if isinstance(file_image, BufferedReader):
-                file_image = file_image.read()
-            elif isinstance(file_image, str):
-                if exists(file_image):
-                    with open(file_image, "rb") as img:
-                        file_image = img.read()
-                else:
-                    if file_image.startswith("http"):
-                        return sdk_error_temp("发送网络图片请使用image参数，而非file_image")
-                    return sdk_error_temp("目标图片路径不存在，无法发送")
-            elif not isinstance(file_image, bytes):
-                return sdk_error_temp(f"file_image不支持{type(file_image)}的内容")
-            json_["file_image"] = file_image
-            data_ = FormData_()
-            for keys, values in json_.items():
-                if values is not None and keys != "image":
-                    data_.add_field(keys, values)
-            return_ = await self._session.post(
-                f"{self._bot_url}/dms/{guild_id}/messages", data=data_
+        if not isinstance(content, BaseMessageApiModel):
+            content = ApiModel.Message(
+                content=content,
+                image=image,
+                file_image=file_image,
+                message_reference_id=message_reference_id,
+                ignore_message_reference_error=ignore_message_reference_error,
             )
-        else:
+        ret = content.construct(
+            message_id=message_id,
+            event_id=event_id,
+        )
+        if ret.logger_msg:
+            self._logger.warning(ret.logger_msg)
+        if ret.result:
             return_ = await self._session.post(
-                f"{self._bot_url}/dms/{guild_id}/messages", json=json_
+                f"{self._bot_url}/dms/{guild_id}/messages", **ret.kwargs
             )
-        return await regular_temp(return_)
+            return await regular_temp(return_)
+        else:
+            return ret.error_ret
 
     async def delete_dm_msg(
         self, guild_id: str, message_id: str, hidetip: bool = False
