@@ -205,7 +205,6 @@ bot.api.get_guild_info()
 | 1000070                               | CoDM 开黑大厅   |
 | 1010000                               | 和平精英开黑大厅    |
 
-
 ### 获取子频道列表
 
 * 用于获取 `guild_id`指定的频道下的子频道列表
@@ -374,7 +373,6 @@ bot.api.get_online_nums()
 | data     | object  | 解析后的json数据       |
 | trace_id | string  | 腾讯官方提供的错误追踪 ID   |
 | result   | bool    | 成功为True；否则为False |
-
 
 ## 成员API
 
@@ -853,7 +851,7 @@ bot.api.send_msg()
 | ------------------------------ | --------------------------------- | ------ | ------------------------------------------------------------------------------------------------ |
 | 字段名                            | 类型                                | 默认值    | 说明                                                                                               |
 | channel_id                     | string                            | 无，必选参数 | 子频道ID                                                                                            |
-| content                        | string None                       | None   | 消息内容文本（选填）                                                                                       |
+| content                        | string None                       | None   | 消息内容文本或相应消息类型结构体（选填）                                                                                       |
 | image                          | string None                       | None   | 图片url，不可发送本地图片（选填）                                                                               |
 | file_image                     | bytesBinaryIOstrPathLike[str]None | None   | 本地图片，可选以下三种方式传参：阅读档案后传入bytes类型图片数据、打开档案后直接传入档案、直接传入图片路径（具体例子可参阅github example_10，要求SDK版本>=2.1.3） |
 | message_id                     | string None                       | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）                                                         |
@@ -872,7 +870,7 @@ bot.api.send_msg()
 | trace_id | string | 腾讯官方提供的错误追踪 ID   |
 | result   | bool   | 成功为True；否则为False |
 
-### 发送embed模板消息
+### 发送embed模板消息（SDK 版本>=4.0.0 后已废弃，改为使用send_msg()并传入ApiModel. MessageEmbed()结构体）
 
 * 发送embed模板消息的API
 
@@ -906,7 +904,7 @@ bot.api.send_embed()
 | trace_id | string | 腾讯官方提供的错误追踪 ID   |
 | result   | bool   | 成功为True；否则为False |
 
-### 发送 23 链接+文本列表模板ark消息
+### 发送 23 链接+文本列表模板ark消息（SDK 版本>=4.0.0 后已废弃，改为使用send_msg()并传入ApiModel. MessageArk23()结构体）
 
 * 发送ark（id=23）模板消息的API，请注意机器人是否有权限使用此API
 
@@ -940,7 +938,7 @@ bot.api.send_ark_23()
 | trace_id | string | 腾讯官方提供的错误追踪 ID   |
 | result   | bool   | 成功为True；否则为False |
 
-### 发送 24 文本+缩略图模板ark消息
+### 发送 24 文本+缩略图模板ark消息（SDK 版本>=4.0.0 后已废弃，改为使用send_msg()并传入ApiModel. MessageArk24()结构体）
 
 * 发送ark（id=24）模板消息的API，请注意机器人是否有权限使用此API
 
@@ -977,7 +975,7 @@ bot.api.send_ark_24()
 | trace_id | string | 腾讯官方提供的错误追踪 ID   |
 | result   | bool   | 成功为True；否则为False |
 
-### 发送 37 大图模板ark消息
+### 发送 37 大图模板ark消息（SDK 版本>=4.0.0 后已废弃，改为使用send_msg()并传入ApiModel. MessageArk37()结构体）
 
 * 发送ark（id=37）模板消息的API，请注意机器人是否有权限使用此API
 
@@ -1012,7 +1010,7 @@ bot.api.send_ark_37()
 | trace_id | string | 腾讯官方提供的错误追踪 ID   |
 | result   | bool   | 成功为True；否则为False |
 
-### 发送 markdown 消息 （需求SDK版本>=2.3.6）
+### 发送 markdown 消息 （SDK 版本>=4.0.0 后已废弃，改为使用send_msg()并传入ApiModel. MessageMarkdown()结构体）
 
 * 发送markdown消息的API，请注意机器人是否有权限使用此API
 
@@ -1166,7 +1164,7 @@ bot.api.send_dm()
 | ------------------------------ | --------------------------------- | ------ | ------------------------------------------------------------------------------------------------ |
 | 字段名                            | 类型                                | 默认值    | 说明                                                                                               |
 | guild_id                       | string                            | 无，必选参数 | 虚拟频道id（非子频道id channel_id）                                                                        |
-| content                        | string None                       | None   | 消息内容文本（选填）                                                                                       |
+| content                        | string None                       | None   | 消息内容文本或相应消息类型结构体（选填）                                                                                       |
 | image                          | string None                       | None   | 图片url，不可发送本地图片（选填）                                                                               |
 | file_image                     | bytesBinaryIOstrPathLike[str]None | None   | 本地图片，可选以下三种方式传参：阅读档案后传入bytes类型图片数据、打开档案后直接传入档案、直接传入图片路径（具体例子可参阅github example_10，要求SDK版本>=2.1.5） |
 | message_id                     | string None                       | None   | 消息id（选填，如此项数据项与event_id均为None，则为此消息主动消息）                                                         |
@@ -1336,9 +1334,9 @@ bot.api.create_announce()
 | channel_id            | string None                                | None           | 子频道id；message_id有值则为必填            |
 | message_id            | string None                                | None           | 消息id，此项有值则优选将某条消息设置为成员公告          |
 | announces_type        | int None                                   | None           | 公告类别 0：成员公告，1：欢迎公告，默认为成员公告        |
-| recommend_channels    | list[Model.AnnounceRecommendChannels] None | None           | 推荐子频道id列表，会一次全部替换推荐子频道列表          |
+| recommend_channels    | list[Model. AnnounceRecommendChannels] None | None           | 推荐子频道id列表，会一次全部替换推荐子频道列表          |
 
-> 参数中 `recommend_channels` 字段（列表list）中每一项（Model.AnnounceRecommendChannels）的数据：
+> 参数中 `recommend_channels` 字段（列表list）中每一项（Model. AnnounceRecommendChannels）的数据：
 
 | 字段名         | 类型     | 说明                                                 |
 | ----------- | ------ | -------------------------------------------------- |
