@@ -74,6 +74,8 @@
     def deliver(data: Model.MESSAGE):   # 创建接收消息事件的函数
         if '你好' in data.treated_msg:   # 判断消息是否存在特定内容
             data.reply('你好，世界')   # 发送被动回复（带message_id直接reply回复）
+            # 如需使用如 Embed 等消息模板，可传入相应结构体， 如：
+            # data.reply(ApiModel.MessageEmbed(title="你好", content="世界"))
 
 
     if __name__ == '__main__':
@@ -131,11 +133,11 @@
 -   put_channel_role_permission
 -   get_message_info
 -   send_msg
--   send_embed
--   send_ark_23
--   send_ark_24
--   send_ark_37
--   send_markdown
+-   send_embed（已废弃）
+-   send_ark_23（已废弃）
+-   send_ark_24（已废弃）
+-   send_ark_37（已废弃）
+-   send_markdown（已废弃）
 -   delete_msg
 -   get_guild_setting
 -   create_dm_guild
