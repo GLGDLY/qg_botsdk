@@ -786,9 +786,6 @@ class AsyncAPI:
                 message_reference_id=message_reference_id,
                 ignore_message_reference_error=ignore_message_reference_error,
             )
-            # self._logger.warning(
-            #     "Deprecated warning: 参数传入方式即将废弃，请传入msg_model中的消息对象到content参数中"
-            # )
         ret = content.construct(
             message_id=message_id,
             event_id=event_id,
@@ -832,7 +829,7 @@ class AsyncAPI:
             prompt=prompt,
         )
         self._logger.warning(
-            "Deprecated warning: 参数传入方式即将废弃，请使用send_msg()并传入msg_model中的消息对象"
+            "Deprecated warning: 此发送方式即将废弃，请使用send_msg()并传入msg_model中的消息对象"
         )
         return await self.send_msg(
             channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
@@ -867,7 +864,7 @@ class AsyncAPI:
             prompt=prompt,
         )
         self._logger.warning(
-            "Deprecated warning: 参数传入方式即将废弃，请使用send_msg()并传入msg_model中的消息对象"
+            "Deprecated warning: 此发送方式即将废弃，请使用send_msg()并传入msg_model中的消息对象"
         )
         return await self.send_msg(
             channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
@@ -1064,9 +1061,6 @@ class AsyncAPI:
                 message_reference_id=message_reference_id,
                 ignore_message_reference_error=ignore_message_reference_error,
             )
-            # self._logger.warning(
-            #     "Deprecated warning: 参数传入方式即将废弃，请传入msg_model中的消息对象到content参数中"
-            # )
         ret = content.construct(
             message_id=message_id,
             event_id=event_id,

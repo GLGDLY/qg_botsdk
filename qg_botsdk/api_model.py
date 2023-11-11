@@ -38,6 +38,8 @@ class ApiModel:
                 ignore_message_reference_error = False
             self.__ignore_message_reference_error = ignore_message_reference_error
 
+            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+
         def __repr__(self):
             return (
                 f"<Message content={self.__content}, image={self.__image}, file_image={self.__file_image}, "
@@ -45,7 +47,7 @@ class ApiModel:
                 f"ignore_message_reference_error={self.__ignore_message_reference_error}>"
             )
 
-        def construct(self, message_id, event_id) -> _MessageConstructRet:
+        def __construct(self, message_id, event_id) -> _MessageConstructRet:
             """
             internal construct method
 
@@ -125,13 +127,15 @@ class ApiModel:
             self.__image = image
             self.__prompt = prompt
 
+            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+
         def __repr__(self):
             return (
                 f"<MessageEmbed title={self.__title}, content={self.__content}, image={self.__image}, "
                 f"prompt={self.__prompt}>"
             )
 
-        def construct(self, message_id, event_id) -> _MessageConstructRet:
+        def __construct(self, message_id, event_id) -> _MessageConstructRet:
             """
             internal construct method
 
@@ -174,13 +178,15 @@ class ApiModel:
             self.__desc = desc
             self.__prompt = prompt
 
+            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+
         def __repr__(self):
             return (
                 f"<MessageArk23 content={self.__content}, link={self.__link}, desc={self.__desc}, "
                 f"prompt={self.__prompt}>"
             )
 
-        def construct(self, message_id, event_id) -> _MessageConstructRet:
+        def __construct(self, message_id, event_id) -> _MessageConstructRet:
             """
             internal construct method
 
@@ -248,13 +254,15 @@ class ApiModel:
             self.__desc = desc
             self.__prompt = prompt
 
+            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+
         def __repr__(self):
             return (
                 f"<MessageArk24 title={self.__title}, content={self.__content}, subtitile={self.__subtitile}, "
                 f"link={self.__link}, image={self.__image}, desc={self.__desc}, prompt={self.__prompt}>"
             )
 
-        def construct(self, message_id, event_id) -> _MessageConstructRet:
+        def __construct(self, message_id, event_id) -> _MessageConstructRet:
             """
             internal construct method
 
@@ -303,13 +311,15 @@ class ApiModel:
             self.__image = image
             self.__prompt = prompt
 
+            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+
         def __repr__(self):
             return (
                 f"<MessageArk37 title={self.__title}, content={self.__content}, link={self.__link}, "
                 f"image={self.__image}, prompt={self.__prompt}>"
             )
 
-        def construct(self, message_id, event_id) -> _MessageConstructRet:
+        def __construct(self, message_id, event_id) -> _MessageConstructRet:
             json_ = {
                 "ark": {
                     "template_id": 37,
@@ -356,6 +366,8 @@ class ApiModel:
             self.__keyboard_id = keyboard_id
             self.__keyboard_content = keyboard_content
 
+            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+
         def __repr__(self):
             return (
                 f"<MessageMarkdown template_id={self.__template_id}, key_values={self.__key_values}, "
@@ -363,7 +375,7 @@ class ApiModel:
                 f"keyboard_content={self.__keyboard_content}>"
             )
 
-        def construct(self, message_id, event_id) -> _MessageConstructRet:
+        def __construct(self, message_id, event_id) -> _MessageConstructRet:
             """
             internal construct method
 

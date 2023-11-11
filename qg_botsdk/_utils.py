@@ -12,7 +12,7 @@ from typing import BinaryIO, Callable, Dict, Iterable, Optional, Union
 
 from aiohttp import ContentTypeError
 
-from ._api_model import BaseMessage, object_class, send_msg
+from ._api_model import BaseMessageApiModel, object_class, send_msg
 from .version import __version__
 
 general_header = {"User-Agent": f"qg-botsdk v{__version__}"}
@@ -70,7 +70,7 @@ _reply_args = (
 class event_class(object_class):
     def reply(
         self,
-        content: Optional[Union[str, BaseMessage]] = None,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_reference_id: Optional[str] = None,
@@ -107,7 +107,7 @@ class event_class(object_class):
 class async_event_class(object_class):
     async def reply(
         self,
-        content: Optional[Union[str, BaseMessage]] = None,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_reference_id: Optional[str] = None,

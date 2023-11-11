@@ -982,6 +982,15 @@ def create_permission_demand():
 
 
 # API related
+class StrPtr:
+    def __init__(self, value: Optional[str] = None):
+        self.value = value
+
+    def __repr__(self):
+        return f"<StrPtr \"{self.value}\">"
+
+    def __json__(self):
+        return str(self.value) if self.value is not None else None
 
 
 class MessageConstructRet:
@@ -1000,10 +1009,16 @@ class MessageConstructRet:
 
 class BaseMessageApiModel:
     def __init__(self):
-        pass
+        self._message_id, self._event_id = StrPtr(), StrPtr()
+        self._constructed_obj = None
 
     def __repr__(self):
         return "<BaseMessage abstract class>"
 
-    def construct(self, message_id, event_id) -> MessageConstructRet:
+    def __construct(self, message_id, event_id) -> MessageConstructRet:
         pass
+
+    def construct(self, message_id, event_id) -> MessageConstructRet:
+        self._message_id.value = message_id
+        self._event_id.value = event_id
+        return self._constructed_obj
