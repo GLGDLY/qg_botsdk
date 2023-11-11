@@ -130,11 +130,11 @@ if __name__ == '__main__':
 -   put_channel_role_permission
 -   get_message_info
 -   send_msg
--   send_embed
--   send_ark_23
--   send_ark_24
--   send_ark_37
--   send_markdown
+-   ~~send_embed~~
+-   ~~send_ark_23~~
+-   ~~send_ark_24~~
+-   ~~send_ark_37~~
+-   ~~send_markdown~~
 -   delete_msg
 -   get_guild_setting
 -   create_dm_guild

@@ -14,6 +14,7 @@ qg_botsdk Library
 :copyright: (c) 2022 by GLGDLY.
 :license: MIT, see LICENSE for more details.
 """
+import json
 
 from . import utils
 from ._exception import IdTokenError, IdTokenMissing, WaitTimeoutError
@@ -31,6 +32,10 @@ from .model import (
 from .plugins import Plugins
 from .qg_bot import BOT
 from .version import __version__
+
+json.JSONEncoder.default = lambda self, obj: (
+    obj.__json__() if hasattr(obj, "__json__") else str(obj)
+)
 
 __title__ = "qg_botsdk"
 __description__ = "easy-to-use SDK for Tencent QQ guild robot"

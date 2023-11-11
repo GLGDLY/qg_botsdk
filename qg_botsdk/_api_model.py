@@ -987,7 +987,7 @@ class StrPtr:
         self.value = value
 
     def __repr__(self):
-        return f"<StrPtr \"{self.value}\">"
+        return f'<StrPtr "{self.value}">'
 
     def __json__(self):
         return str(self.value) if self.value is not None else None

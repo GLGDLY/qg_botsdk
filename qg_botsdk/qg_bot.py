@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import json
 from asyncio import Lock as ALock
 from asyncio import get_event_loop, new_event_loop
 from importlib.machinery import SourceFileLoader
@@ -29,9 +28,6 @@ from .version import __version__
 pid = getpid()
 print(f"本次程序进程ID：{pid} | SDK版本：{__version__} | 即将开始运行机器人……")
 t_sleep(0.5)
-json.JSONEncoder.default = lambda self, obj: (
-    obj.__json__() if hasattr(obj, "__json__") else str(obj)
-)
 
 
 class BOT:
