@@ -13,6 +13,7 @@ from aiohttp import (
 
 from ._queue import Queue
 from ._utils import exception_handler, general_header, retry_err_code
+from ._api_model import StrPtr
 
 try:
     from importlib.metadata import version
@@ -43,6 +44,13 @@ class FormData_(FormData):
             return self._writer
         for dispparams, headers, value in self._fields:
             try:
+                # handle custom datatype in sdk
+                if isinstance(value, StrPtr):
+                    value = value.value
+                if value is None:
+                    continue
+
+                # original process
                 if hdrs.CONTENT_TYPE in headers:
                     part = payload.get_payload(
                         value,
@@ -55,11 +63,12 @@ class FormData_(FormData):
                         value, headers=headers, encoding=self._charset
                     )
             except Exception as exc:
-                print(value)
-                raise TypeError(
+                e = TypeError(
                     "Can not serialize value type: %r\n "
                     "headers: %r\n value: %r" % (type(value), headers, value)
-                ) from exc
+                )
+                print(e)
+                raise e from exc
 
             if dispparams:
                 part.set_content_disposition(
