@@ -11,9 +11,9 @@ from aiohttp import (
     payload,
 )
 
+from ._api_model import StrPtr
 from ._queue import Queue
 from ._utils import exception_handler, general_header, retry_err_code
-from ._api_model import StrPtr
 
 try:
     from importlib.metadata import version
