@@ -505,6 +505,96 @@ class Model:
         t: str
         event_id: str
 
+    class GROUP_ALL_EVENTS(_AbstractEventClass):
+        """
+        群聊机器人加入/退出群聊以及群聊拒绝/接受机器人主动消息的事件模型, 可从t字段判断具体事件, 其中包含:
+        - GROUP_ADD_ROBOT  - 机器人加入群聊
+        - GROUP_DEL_ROBOT  - 机器人退出群聊
+        - GROUP_MSG_REJECT - 群聊拒绝机器人主动消息
+        - GROUP_MSG_RECEIVE - 群聊接受机器人主动消息
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://bot.q.qq.com/wiki/develop/api-v2/server-inter/group/manage/event.html
+        """
+
+        t: str
+        id: str
+        group_openid: str
+        op_member_openid: str
+        timestamp: str
+
+    class FRIEND_ALL_EVENTS(_AbstractEventClass):
+        """
+        用户添加/删除机器人以及用户拒绝/接受机器人主动消息的事件模型, 可从t字段判断具体事件, 其中包含:
+        - FRIEND_ADD - 用户添加机器人
+        - FRIEND_DEL - 用户删除机器人
+        - C2C_MSG_REJECT - 用户拒绝机器人主动消息
+        - C2C_MSG_RECEIVE - 用户接受机器人主动消息
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://bot.q.qq.com/wiki/develop/api-v2/server-inter/user/manage/event.html
+        """
+
+        t: str
+        id: str
+        openid: str
+        timestamp: str
+
+    class GROUP_MESSAGE(_AbstractEventClass):
+        """
+        用户在群内@机器人发动的消息的事件模型, 可从t字段判断具体事件, 其中包含:
+        - GROUP_AT_MESSAGE_CREATE - 用户在群聊@机器人发送消息
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/send-receive/event.html#%E7%BE%A4%E8%81%8A-%E6%9C%BA%E5%99%A8%E4%BA%BA
+        """
+
+        class __MsgAttachments:
+            content_type: str
+            filename: str
+            height: int
+            width: int
+            size: int
+            url: str
+
+        class author:
+            member_openid: str
+
+        id: str
+        group_openid: str
+        content: str
+        attachments = List[__MsgAttachments]
+        timestamp: str
+
+    class C2C_MESSAGE(_AbstractEventClass):
+        """
+        用户在单聊发送消息给机器人的事件模型, 可从t字段判断具体事件, 其中包含:
+        - C2C_MESSAGE_CREATE - 用户在群聊@机器人发送消息
+
+        .. seealso::
+             其子字段数据可参阅：
+             https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/send-receive/event.html#%E5%8D%95%E8%81%8A%E6%B6%88%E6%81%AF
+        """
+
+        class __MsgAttachments:
+            content_type: str
+            filename: str
+            height: int
+            width: int
+            size: int
+            url: str
+
+        class author:
+            user_openid: str
+
+        id: str
+        content: str
+        attachments = List[__MsgAttachments]
+        timestamp: str
+
 
 class Scope(Enum):
     USER = "USER"  # 代表只在当前用户有效
@@ -888,7 +978,7 @@ class EmojiString:
 
 class WaifForCommandCallback:
     def __init__(
-        self, command: BotCommandObject, callback: Callable[[Model.MESSAGE], Any]
+            self, command: BotCommandObject, callback: Callable[[Model.MESSAGE], Any]
     ):
         self.command = command
         self.callback = callback

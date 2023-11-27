@@ -40,6 +40,9 @@ retry_err_code = (
     501011,
     501012,
     620007,
+    22009,
+    304082,
+    304083,
 )
 msg_t = ("MESSAGE_CREATE", "AT_MESSAGE_CREATE", "DIRECT_MESSAGE_CREATE")
 event_t = (

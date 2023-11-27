@@ -521,7 +521,7 @@ class BOT:
 
     def bind_audio(self, callback: Callable[[Model.AUDIO_ACTION], Any] = None):
         """
-        用作绑定接收论坛事件的回调函数
+        用作绑定音频事件的回调函数
 
         :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """
@@ -553,6 +553,86 @@ class BOT:
             self._func_registers["on_live_channel_member"] = func
             self._intents = self._intents | 1 << 19
             self.logger.info("音视频/直播子频道成员进出事件订阅成功")
+
+        if not callback:
+            return wraps
+        wraps(callback)
+
+    def bind_group_event(
+        self,
+        callback: Callable[[Model.GROUP_ALL_EVENTS], Any] = None,
+    ):
+        """
+        用作群聊事件的回调函数
+
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
+        """
+
+        def wraps(func):
+            func_type_checker(func, Model.GROUP_ALL_EVENTS, is_async=self.is_async)
+            self._func_registers["on_group_event"] = func
+            self._intents = self._intents | 1 << 25
+            self.logger.info("群聊事件订阅成功")
+
+        if not callback:
+            return wraps
+        wraps(callback)
+
+    def bind_friend_event(
+        self,
+        callback: Callable[[Model.FRIEND_ALL_EVENTS], Any] = None,
+    ):
+        """
+        用作用户事件的回调函数
+
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
+        """
+
+        def wraps(func):
+            func_type_checker(func, Model.FRIEND_ALL_EVENTS, is_async=self.is_async)
+            self._func_registers["on_group_event"] = func
+            self._intents = self._intents | 1 << 25
+            self.logger.info("用户事件订阅成功")
+
+        if not callback:
+            return wraps
+        wraps(callback)
+
+    def bind_group_msg(
+        self,
+        callback: Callable[[Model.GROUP_MESSAGE], Any] = None,
+    ):
+        """
+        用作群聊(艾特消息)事件的回调函数
+
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
+        """
+
+        def wraps(func):
+            func_type_checker(func, Model.GROUP_MESSAGE, is_async=self.is_async)
+            self._func_registers["on_group_event"] = func
+            self._intents = self._intents | 1 << 25
+            self.logger.info("群聊(艾特消息)事件订阅成功")
+
+        if not callback:
+            return wraps
+        wraps(callback)
+
+    def bind_friend_msg(
+        self,
+        callback: Callable[[Model.C2C_MESSAGE], Any] = None,
+    ):
+        """
+        用作用户单聊C2C事件的回调函数
+
+        :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
+        """
+
+        def wraps(func):
+            func_type_checker(func, Model.C2C_MESSAGE, is_async=self.is_async)
+            self._func_registers["on_friend_event"] = func
+            self._intents = self._intents | 1 << 25
+            self.logger.info("用户单聊C2C事件订阅成功")
 
         if not callback:
             return wraps

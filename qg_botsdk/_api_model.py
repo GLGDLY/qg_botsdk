@@ -134,6 +134,14 @@ apis = {
     ("发表帖子", "create_thread"): ["PUT", "/channels/{channel_id}/threads"],
     ("删除帖子", "delete_thread"): ["DELETE", "/channels/{channel_id}/threads/{thread_id}"],
     (
+        "[单聊]单独发动消息给用户",
+        "send_friend_msg",
+    ): ["POST", "/v2/users/{openid}/messages"],
+    (
+        "[群聊]发送消息到群聊",
+        "send_group_msg",
+    ): ["POST", "/v2/groups/{group_openid}/messages"],
+    (
         "获取频道可用权限列表",
         "get_guild_permissions",
         "创建频道 API 接口权限授权链接",

@@ -115,6 +115,8 @@ class BotWs:
                     ["on_live_channel_member"] * len(EVENTS.ALC_MEMBER),
                 )
             ),
+            **dict(zip(EVENTS.GROUP, ["on_group_event"] * len(EVENTS.GROUP))),
+            **dict(zip(EVENTS.FRIEND, ["on_friend_event"] * len(EVENTS.FRIEND))),
         }
         self.threads = ThreadPoolExecutor(max_workers) if not self.is_async else None
         self.api = api
