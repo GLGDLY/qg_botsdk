@@ -112,7 +112,7 @@ def deliver(data: Model.MESSAGE):  ## Model.MESSAGE为导入的一个数据模�
 | flags             | sring  | 未知详情（该字段不稳定出现，请勿用于运营应用环境）                               |
 | t                 | string | 事件类型字段，如GUILD_CREATE                                    |
 | event_id          | sring  | 事件ID                                                    |
-| member            | object | 发送消息成员在频道的详细信息, 其子类请参阅下表【结构：member】                                                  |
+| member            | object | 发送消息成员在频道的详细信息，其子类请参阅下表【结构：member】                                                  |
 | treated_msg       | string | 经过处理（包括去除艾特机器人、/等字段）的内容（绑定事件时treated_data=False则没有此字段）  |
 
 | 结构：author |        |             |
