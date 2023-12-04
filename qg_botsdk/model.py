@@ -978,7 +978,7 @@ class EmojiString:
 
 class WaifForCommandCallback:
     def __init__(
-            self, command: BotCommandObject, callback: Callable[[Model.MESSAGE], Any]
+        self, command: BotCommandObject, callback: Callable[[Model.MESSAGE], Any]
     ):
         self.command = command
         self.callback = callback

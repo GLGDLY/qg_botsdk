@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Union
 
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 
+from ._api_model import StrPtr
 from ._session import SessionManager
 from ._statics import EVENTS
 from ._utils import (
@@ -33,13 +34,16 @@ Op9RetryTime = 2
 class BotWs:
     def __init__(
         self,
+        bot_id: str,
+        bot_token: str,
+        bot_secret: str,
         loop: AbstractEventLoop,
         http_session: Session,
         logger: Logger,
         total_shard: int,
         shard_no: int,
         ws_url: str,
-        auth: str,
+        access_token: StrPtr,
         func_registers: Dict,
         intents: int,
         msg_treat: bool,
@@ -62,13 +66,16 @@ class BotWs:
             更多教程和相关资讯可参阅：
             https://qg-botsdk.readthedocs.io/zh_CN/latest/快速入门.html
         """
+        self._bot_id = bot_id
+        self._bot_token = bot_token
+        self._bot_secret = bot_secret
         self.http_session = http_session
         self._ssl = create_default_context()
         self.logger = logger
         self.total_shard = total_shard
         self.shard_no = shard_no
         self.ws_url = ws_url
-        self.auth = auth
+        self.auth = access_token if bot_secret else f"Bot {bot_id}.{bot_token}"
         self.on_start_function = on_start_function
         self.check_interval = check_interval
         self.repeat_function = repeat_function
@@ -115,8 +122,6 @@ class BotWs:
                     ["on_live_channel_member"] * len(EVENTS.ALC_MEMBER),
                 )
             ),
-            **dict(zip(EVENTS.GROUP, ["on_group_event"] * len(EVENTS.GROUP))),
-            **dict(zip(EVENTS.FRIEND, ["on_friend_event"] * len(EVENTS.FRIEND))),
         }
         self.threads = ThreadPoolExecutor(max_workers) if not self.is_async else None
         self.api = api
@@ -156,7 +161,7 @@ class BotWs:
             self.loop.create_task(self._time_event_check())
 
     async def send_connect(self):
-        connect_paras = {
+        connect_params = {
             "op": 2,
             "d": {
                 "token": self.auth,
@@ -164,7 +169,7 @@ class BotWs:
                 "shard": [self.shard_no, self.total_shard],
             },
         }
-        await self.ws_send(dumps(connect_paras))
+        await self.ws_send(dumps(connect_params))
 
     async def send_reconnect(self):
         reconnect_paras = {
@@ -292,9 +297,12 @@ class BotWs:
             return r  # True or False
 
     def process_wait_for_commands(self, objectized_data, msg, treated_msg):
-        wait_for_commands = self.session_manager.wait_for_message_checker(
-            objectized_data
-        )
+        try:
+            wait_for_commands = self.session_manager.wait_for_message_checker(
+                objectized_data
+            )
+        except Exception:
+            return False
         for x in wait_for_commands:
             commands = x.command.command
             regexs = x.command.regex
@@ -354,6 +362,7 @@ class BotWs:
 
     @exception_processor
     async def data_process(self, data: Dict):
+        print(data)
         # initialize values
         t = data.get("t")
         d = data.get("d", {})
@@ -365,7 +374,11 @@ class BotWs:
         if t in self.events:
             _key = self.events[t]
             await self.distribute(self.func_registers[_key], data)
-        elif t in EVENTS.MESSAGE_CREATE:
+        elif (
+            t in EVENTS.MESSAGE_CREATE
+            or t in EVENTS.C2C_MESSAGE_CREATE
+            or t in EVENTS.GROUP_AT_MESSAGE_CREATE
+        ):
             if self.msg_treat:
                 raw_msg = d.get("content", "").strip()
                 treated_msg = treat_msg(raw_msg, self.at)
@@ -373,8 +386,18 @@ class BotWs:
             else:
                 treated_msg = ""
             # distribute_commands return True when short circuit
+            print("0")
             if not await self.distribute_commands(data, treated_msg):
-                await self.distribute(self.func_registers["on_msg"], data)
+                print("1")
+                if t in EVENTS.MESSAGE_CREATE:
+                    print("2")
+                    await self.distribute(self.func_registers["on_msg"], data)
+                elif t in EVENTS.C2C_MESSAGE_CREATE:
+                    print("3")
+                    await self.distribute(self.func_registers["on_friend_msg"], data)
+                else:  # t in EVENTS.GROUP_AT_MESSAGE_CREATE
+                    print("4")
+                    await self.distribute(self.func_registers["on_group_msg"], data)
         elif t in EVENTS.MESSAGE_DELETE:
             if self.func_registers["del_is_filter_self"]:
                 target = d.get("message", {}).get("author", {}).get("id")

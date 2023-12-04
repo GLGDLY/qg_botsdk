@@ -23,6 +23,7 @@ security_header = {
 }
 retry_err_code = (
     101,
+    11241,
     11281,
     11252,
     11263,

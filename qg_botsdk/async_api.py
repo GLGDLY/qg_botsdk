@@ -1772,3 +1772,33 @@ class AsyncAPI:
             f"{self._bot_url}/guilds/{guild_id}/api_permission/demand", json=json_
         )
         return await empty_temp(return_)
+
+    async def send_group_msg(
+        self,
+        group_openid: str,
+        content: BaseMessageApiModel,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+    ) -> _api_model.send_msg():
+        """
+        发送群消息的API，请注意机器人是否有权限使用此API
+
+        :param group_openid: 群id
+        :param content: 消息内容
+        :param message_id: 消息id（选填）
+        :param event_id: 事件id（选填）
+        :return: 返回的.data中为解析后的json数据
+        """
+        ret = content.construct(
+            message_id=message_id,
+            event_id=event_id,
+        )
+        if ret.logger_msg:
+            self._logger.warning(ret.logger_msg)
+        if ret.result:
+            return_ = await self._session.post(
+                f"{self._bot_url}/v2/groups/{group_openid}/messages", **ret.kwargs
+            )
+            return await regular_temp(return_)
+        else:
+            return ret.error_ret

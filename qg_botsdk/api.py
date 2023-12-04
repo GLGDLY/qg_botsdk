@@ -1301,3 +1301,27 @@ class API:
             self._api.create_permission_demand(**_args), self._loop
         )
         return future_.result(timeout=self._timeout)
+
+    def send_group_msg(
+        self,
+        group_openid: str,
+        content: BaseMessageApiModel,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+    ) -> _api_model.send_msg():
+        """
+        发送群消息的API，请注意机器人是否有权限使用此API
+
+        :param group_openid: 群id
+        :param content: 消息内容
+        :param message_id: 消息id（选填）
+        :param event_id: 事件id（选填）
+        :return: 返回的.data中为解析后的json数据
+        """
+        _args = locals()
+        _args.pop("self")
+        self.__check_ready()
+        future_ = run_coroutine_threadsafe(
+            self._api.send_group_msg(**_args), self._loop
+        )
+        return future_.result(timeout=self._timeout)

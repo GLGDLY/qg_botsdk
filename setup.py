@@ -13,6 +13,6 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Intended Audience :: Developers",
-        "Topic :: Software Development :: Build Tools"
+        "Topic :: Software Development :: Build Tools",
     ],
 )

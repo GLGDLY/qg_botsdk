@@ -12,7 +12,7 @@ from time import sleep as t_sleep
 from typing import Any, Callable, Iterable, List, Optional, Union
 
 from . import _exception
-from ._api_model import robot_model
+from ._api_model import StrPtr, robot_model
 from ._session import SessionManager
 from ._utils import func_type_checker
 from .api import API
@@ -54,7 +54,7 @@ class BOT:
 
         :param bot_id: 机器人平台后台BotAppID（开发者ID）项，必填
         :param bot_token: 机器人平台后台机器人令牌项，必填
-        :param bot_secret: 机器人平台后台机器人密钥项（已废弃）
+        :param bot_secret: 机器人平台后台机器人密钥项，需要包含此项才可使用群相关接口
         :param is_private: 机器人是否为私域机器人，默认False
         :param is_sandbox: 是否开启沙箱环境，默认False
         :param no_permission_warning: 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启
@@ -71,10 +71,7 @@ class BOT:
         self.logger = Logger(bot_id)
         self.bot_id = bot_id
         self.bot_token = bot_token
-        if bot_secret:
-            raise DeprecationWarning(
-                "bot_secret已被废弃，如需使用安全接口，请通过security_setup()绑定小程序ID和secret"
-            )
+        self.bot_secret = bot_secret
         self.is_private = is_private
         if is_sandbox:
             self.logger.info(
@@ -103,16 +100,18 @@ class BOT:
         self.check_interval = 10
         self.__running = False
         self.__await_closure = False
-        self.auth = f"Bot {bot_id}.{bot_token}"
-        self.bot_headers = {"Authorization": self.auth}
+        self._access_token = StrPtr("")
         self._http_session = Session(
+            bot_id,
+            bot_token,
+            bot_secret,
+            self._access_token,
             self._loop,
             is_retry,
             is_log_error,
             self.logger,
             api_max_concurrency,
             api_timeout,
-            headers=self.bot_headers,
         )
         self.msg_treat = True
         self.dm_treat = False
@@ -610,7 +609,7 @@ class BOT:
 
         def wraps(func):
             func_type_checker(func, Model.GROUP_MESSAGE, is_async=self.is_async)
-            self._func_registers["on_group_event"] = func
+            self._func_registers["on_group_msg"] = func
             self._intents = self._intents | 1 << 25
             self.logger.info("群聊(艾特消息)事件订阅成功")
 
@@ -630,7 +629,7 @@ class BOT:
 
         def wraps(func):
             func_type_checker(func, Model.C2C_MESSAGE, is_async=self.is_async)
-            self._func_registers["on_friend_event"] = func
+            self._func_registers["on_friend_msg"] = func
             self._intents = self._intents | 1 << 25
             self.logger.info("用户单聊C2C事件订阅成功")
 
@@ -719,13 +718,16 @@ class BOT:
                 self.logger.debug("[机器人ws地址] " + url)
                 self.refresh_plugins()
                 self._bot_class = _BotWs(
+                    self.bot_id,
+                    self.bot_token,
+                    self.bot_secret,
                     self._loop,
                     self._http_session,
                     self.logger,
                     self._total_shard,
                     self._shard_no,
                     url,
-                    self.auth,
+                    self._access_token,
                     self._func_registers,
                     self._intents,
                     self.msg_treat,

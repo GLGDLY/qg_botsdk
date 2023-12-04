@@ -1,4 +1,6 @@
 from asyncio import AbstractEventLoop, get_event_loop
+from asyncio import sleep as async_sleep
+from time import time
 from typing import Optional
 
 from aiohttp import (
@@ -86,6 +88,10 @@ class FormData_(FormData):
 class Session:
     def __init__(
         self,
+        bot_id: str,
+        bot_token: str,
+        bot_secret: str,
+        access_token: StrPtr,
         loop: AbstractEventLoop,
         is_retry,
         is_log_error,
@@ -94,6 +100,12 @@ class Session:
         timeout,
         **kwargs,
     ):
+        self._bot_id = bot_id
+        self._bot_token = bot_token
+        self._bot_secret = bot_secret
+        self._access_token = access_token
+        self._access_token_expire = 0
+        self._access_token_last_update = time()
         self._is_retry = is_retry
         self._is_log_error = is_log_error
         self._logger = logger
@@ -115,6 +127,7 @@ class Session:
             loop.run_until_complete(self._check_session())
         else:
             loop.create_task(self._check_session())
+        loop.create_task(self._access_token_loop())
 
     def __del__(self):
         if self._session and not self._session.closed:
@@ -132,9 +145,60 @@ class Session:
         return TCPConnector(*args, **kwargs)
 
     async def _check_session(self):
+        if not self._bot_secret:
+            headers = {"Authorization": f"Bot {self._bot_id}.{self._bot_token}"}
+        else:
+            headers = {
+                "Authorization": self._access_token.value,
+                "X-Union-Appid": self._bot_id,
+            }
         if not self._session or self._session.closed:
-            self._session = ClientSession(timeout=self._timeout, **self._kwargs)
+            self._session = ClientSession(
+                timeout=self._timeout, headers=headers, **self._kwargs
+            )
             self._session.headers.update(general_header)
+
+    async def _access_token_loop(self):
+        if not self._bot_secret:  # 无需获取access_token
+            return
+        self._access_token_last_update = time()
+        while True:
+            if self._access_token_expire > 0:
+                await async_sleep(10)
+                self._access_token_expire -= time() - self._access_token_last_update
+                self._access_token_last_update = time()
+            else:
+                await self._request_access_token()
+
+    async def _request_access_token(self):
+        if not self._bot_secret:  # 无需获取access_token
+            return
+        self._access_token_expire = 30  # if fail, retry after 30s
+        resp = await self.post(
+            "https://bots.qq.com/app/getAppAccessToken",
+            json={"appId": self._bot_id, "clientSecret": self._bot_secret},
+        )
+        if not resp.ok:
+            content = await resp.text()
+            self._logger.warning(
+                f"HTTP API(url:https://bots.qq.com/app/getAppAccessToken)调用错误[{resp.status}]，详情：{content}，"
+                f'trace_id：{resp.headers.get("X-Tps-Trace-Id", None)}'
+            )
+            return
+        json_ = await resp.json()
+        access_token = json_.get("access_token", None)
+        expire = int(json_.get("expires_in", 0))
+        if access_token and expire:
+            self._access_token.value = f"QQBot {access_token}"
+            self._access_token_expire = (
+                expire - 59
+            )  # can get new token 1 min before expire
+            self._session.headers["Authorization"] = self._access_token.value
+        else:
+            self._logger.warning(
+                f"HTTP API(url:https://bots.qq.com/app/getAppAccessToken)调用错误[{resp.status}]，详情：{json_}，"
+                f'trace_id：{resp.headers.get("X-Tps-Trace-Id", None)}'
+            )
 
     async def _warning(self, url, resp):
         self._logger.warning(
@@ -157,6 +221,8 @@ class Session:
 
     async def _request(self, method, url, retry=False, **kwargs):
         await self._check_session()
+        if not self._access_token or self._access_token_expire <= 0:
+            await self._request_access_token()
         resp = await self._session.request(method, url, **kwargs)
         if resp.ok:
             return resp
@@ -171,5 +237,6 @@ class Session:
                 ):
                     await self._warning(url, resp)
                     return resp
+            await async_sleep(0.05)
             return await self._request(method, url, True, **kwargs)
         return resp
