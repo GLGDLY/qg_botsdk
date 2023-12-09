@@ -34,7 +34,7 @@ class BOT:
     def __init__(
         self,
         bot_id: str,
-        bot_token: str,
+        bot_token: Optional[str] = None,
         bot_secret: Optional[str] = None,
         is_private: bool = False,
         is_sandbox: bool = False,
@@ -53,8 +53,8 @@ class BOT:
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
 
         :param bot_id: 机器人平台后台BotAppID（开发者ID）项，必填
-        :param bot_token: 机器人平台后台机器人令牌项，必填
-        :param bot_secret: 机器人平台后台机器人密钥项，需要包含此项才可使用群相关接口
+        :param bot_token: 机器人平台后台机器人令牌项，此项与bot_secret必须拥有任意一项
+        :param bot_secret: 机器人平台后台机器人密钥项，此项与bot_token必须拥有任意一项
         :param is_private: 机器人是否为私域机器人，默认False
         :param is_sandbox: 是否开启沙箱环境，默认False
         :param no_permission_warning: 是否开启当机器人获取疑似权限不足的事件时的警告提示，默认开启
@@ -80,9 +80,9 @@ class BOT:
             self.bot_url = r"https://sandbox.api.sgroup.qq.com"
         else:
             self.bot_url = r"https://api.sgroup.qq.com"
-        if not bot_id or not bot_token:
+        if not bot_id or (not bot_token and not bot_secret):
             raise _exception.IdTokenMissing(
-                "你还没有输入 bot_id 和 bot_token，无法连接使用机器人\n如尚未有相关票据，"
+                "你还没有输入 bot_id 和 bot_token/bot_secret，无法连接使用机器人\n如尚未有相关票据，"
                 "请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情"
             )
         try:

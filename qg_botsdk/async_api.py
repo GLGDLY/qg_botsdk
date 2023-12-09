@@ -1773,25 +1773,124 @@ class AsyncAPI:
         )
         return await empty_temp(return_)
 
-    async def send_group_msg(
+    async def upload_media(
         self,
-        group_openid: str,
-        content: BaseMessageApiModel,
+        file_type: int,
+        url: str,
+        srv_send_msg: bool,
+        file_data=None,
+        user_openid: str = None,
+        group_openid: str = None,
+    ) -> _api_model.upload_media():
+        """
+        上传富媒体文件的 v2 API，仅用于在QQ单聊和QQ群聊内
+
+        :param file_type: 文件类型，1 图片，2 视频，3 语音，4 文件
+        :param url: 需要发送媒体资源的url
+        :param srv_send_msg: 设置 True 会直接发送消息到目标端，且会占用主动消息频次
+        :param file_data: 【暂未支持】
+        :param user_openid: 用户id，此项有值时，group_openid必须为None
+        :param group_openid: 群id，此项有值时，user_openid必须为None
+        """
+        json_ = {
+            "file_type": file_type,
+            "url": url,
+            "srv_send_msg": srv_send_msg,
+            "file_data": file_data,
+        }
+        if user_openid and group_openid:
+            return sdk_error_temp("user_openid和group_openid不能同时有值")
+        elif user_openid:
+            return_ = await self._session.post(
+                f"{self._bot_url}/v2/users/{user_openid}/files", json=json_
+            )
+        else:  # if group_openid
+            return_ = await self._session.post(
+                f"{self._bot_url}/v2/groups/{group_openid}/files", json=json_
+            )
+        return await regular_temp(return_)
+
+    async def send_qq_dm(
+        self,
+        user_openid: str,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
+        media_file_info: Optional[str] = None,
         message_id: Optional[str] = None,
         event_id: Optional[str] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
+        msg_seq: Optional[int] = None,
     ) -> _api_model.send_msg():
         """
-        发送群消息的API，请注意机器人是否有权限使用此API
+        发送qq单聊消息的 v2 API
 
-        :param group_openid: 群id
-        :param content: 消息内容
+        :param user_openid: 用户id
+        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
+        :param media_file_info: v2 qq相关接口使用，传入upload_media()获取的file_info字段
         :param message_id: 消息id（选填）
         :param event_id: 事件id（选填）
-        :return: 返回的.data中为解析后的json数据
+        :param message_reference_id: 引用消息的id（选填）
+        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
+        :param msg_seq: 直接替换ApiModel.Message内部构建递增的消息序号（选填）
         """
+        if not isinstance(content, BaseMessageApiModel):
+            content = ApiModel.Message(
+                content=content,
+                media_file_info=media_file_info,
+                message_reference_id=message_reference_id,
+                ignore_message_reference_error=ignore_message_reference_error,
+            )
         ret = content.construct(
             message_id=message_id,
             event_id=event_id,
+            is_v2=True,
+            msg_seq=msg_seq,
+        )
+        if ret.logger_msg:
+            self._logger.warning(ret.logger_msg)
+        if ret.result:
+            return_ = await self._session.post(
+                f"{self._bot_url}/v2/users/{user_openid}/messages", **ret.kwargs
+            )
+            return await regular_temp(return_)
+        else:
+            return ret.error_ret
+
+    async def send_group_msg(
+        self,
+        group_openid: str,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
+        media_file_info: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
+        msg_seq: Optional[int] = None,
+    ) -> _api_model.send_msg():
+        """
+        发送qq群消息的 v2 API
+
+        :param group_openid: 群id
+        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
+        :param media_file_info: v2 qq相关接口使用，传入upload_media()获取的file_info字段
+        :param message_id: 消息id（选填）
+        :param event_id: 事件id（选填）
+        :param message_reference_id: 引用消息的id（选填）
+        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
+        :param msg_seq: 直接替换ApiModel.Message内部构建递增的消息序号（选填）
+        """
+        if not isinstance(content, BaseMessageApiModel):
+            content = ApiModel.Message(
+                content=content,
+                media_file_info=media_file_info,
+                message_reference_id=message_reference_id,
+                ignore_message_reference_error=ignore_message_reference_error,
+            )
+        ret = content.construct(
+            message_id=message_id,
+            event_id=event_id,
+            is_v2=True,
+            msg_seq=msg_seq,
         )
         if ret.logger_msg:
             self._logger.warning(ret.logger_msg)

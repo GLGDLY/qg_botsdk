@@ -15,6 +15,7 @@ class ApiModel:
             content: Optional[str] = None,
             image: Optional[str] = None,
             file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+            media_file_info: Optional[str] = None,
             message_reference_id: Optional[str] = None,
             ignore_message_reference_error: bool = False,
         ):
@@ -24,62 +25,71 @@ class ApiModel:
             :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
             :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
             :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档，与image同时存在时优先使用此项
+            :param media_file_info: v2 qq相关接口使用，不可与image或file_image同时存在，传入upload_media()获取的file_info字段
             :param message_reference_id: 引用消息的id（选填）
             :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
             """
             super().__init__()
             if content is not None and not isinstance(content, str):
                 content = str(content)
-            self.__content = content
-            self.__image = image
-            self.__file_image = file_image
-            self.__message_reference_id = message_reference_id
+            self._content = content
+            self._image = image
+            self._file_image = file_image
+            self._media_file_info = media_file_info
+            self._message_reference_id = message_reference_id
             if ignore_message_reference_error is None:
                 ignore_message_reference_error = False
-            self.__ignore_message_reference_error = ignore_message_reference_error
+            self._ignore_message_reference_error = ignore_message_reference_error
 
-            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+            self._constructed_obj = self._construct(self._message_id, self._event_id)
 
         def __repr__(self):
             return (
-                f"<Message content={self.__content}, image={self.__image}, file_image={self.__file_image}, "
-                f"message_reference_id={self.__message_reference_id}, "
-                f"ignore_message_reference_error={self.__ignore_message_reference_error}>"
+                f"<Message content={self._content}, image={self._image}, file_image={self._file_image}, "
+                f"media_file_info={self._media_file_info}, message_reference_id={self._message_reference_id}, "
+                f"ignore_message_reference_error={self._ignore_message_reference_error}>"
             )
 
-        def __construct(self, message_id, event_id) -> _MessageConstructRet:
+        def _construct(self, message_id, event_id) -> _MessageConstructRet:
             """
             internal construct method
 
             :return: kwargs for http api request
             """
-            if self.__message_reference_id is not None:
+            if (self._image or self._file_image) and self._media_file_info:
+                return _MessageConstructRet(
+                    result=False,
+                    error_ret=sdk_error_temp("image/file_image与media_file_info不可同时存在"),
+                )
+            if self._message_reference_id is not None:
                 json_ = {
-                    "content": self.__content,
+                    "content": self._content,
                     "msg_id": message_id,
                     "event_id": event_id,
-                    "image": self.__image,
                     "message_reference": {
-                        "message_id": self.__message_reference_id,
-                        "ignore_get_message_error": self.__ignore_message_reference_error,
+                        "message_id": self._message_reference_id,
+                        "ignore_get_message_error": self._ignore_message_reference_error,
                     },
                 }
             else:
                 json_ = {
-                    "content": self.__content,
+                    "content": self._content,
                     "msg_id": message_id,
                     "event_id": event_id,
-                    "image": self.__image,
                 }
-            if self.__file_image is not None:
-                if isinstance(self.__file_image, BufferedReader):
-                    self.__file_image = self.__file_image.read()
-                elif isinstance(self.__file_image, str):
-                    if exists(self.__file_image):
-                        with open(self.__file_image, "rb") as img:
-                            self.__file_image = img.read()
+            if self._media_file_info is not None:
+                json_["media"] = {"file_info": self._media_file_info}
+            elif self._image is not None:
+                json_["image"] = self._image
+            elif self._file_image is not None:
+                if isinstance(self._file_image, BufferedReader):
+                    self._file_image = self._file_image.read()
+                elif isinstance(self._file_image, str):
+                    if exists(self._file_image):
+                        with open(self._file_image, "rb") as img:
+                            self._file_image = img.read()
                     else:
-                        if self.__file_image.startswith("http"):
+                        if self._file_image.startswith("http"):
                             return _MessageConstructRet(
                                 result=False,
                                 error_ret=sdk_error_temp(
@@ -89,21 +99,20 @@ class ApiModel:
                         return _MessageConstructRet(
                             result=False, error_ret=sdk_error_temp("目标图片路径不存在，无法发送")
                         )
-                elif not isinstance(self.__file_image, bytes):
+                elif not isinstance(self._file_image, bytes):
                     return _MessageConstructRet(
                         result=False,
                         error_ret=sdk_error_temp(
-                            f"file_image不支持{type(self.__file_image)}的内容"
+                            f"file_image不支持{type(self._file_image)}的内容"
                         ),
                     )
-                json_["file_image"] = self.__file_image
+                json_["file_image"] = self._file_image
                 data_ = FormData_()
                 for keys, values in json_.items():
                     if values is not None and keys != "image":
                         data_.add_field(keys, values)
                 return _MessageConstructRet(result=True, kwargs={"data": data_})
-            else:
-                return _MessageConstructRet(result=True, kwargs={"json": json_})
+            return _MessageConstructRet(result=True, kwargs={"json": json_})
 
     class MessageEmbed(BaseMessageApiModel):
         def __init__(
@@ -122,20 +131,21 @@ class ApiModel:
             :param prompt: 消息弹窗通知的文本内容（选填）
             """
             super().__init__()
-            self.__title = title
-            self.__content = content
-            self.__image = image
-            self.__prompt = prompt
+            self._title = title
+            self._content = content
+            self._image = image
+            self._prompt = prompt
+            self._msg_type = 4
 
-            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+            self._constructed_obj = self._construct(self._message_id, self._event_id)
 
         def __repr__(self):
             return (
-                f"<MessageEmbed title={self.__title}, content={self.__content}, image={self.__image}, "
-                f"prompt={self.__prompt}>"
+                f"<MessageEmbed title={self._title}, content={self._content}, image={self._image}, "
+                f"prompt={self._prompt}>"
             )
 
-        def __construct(self, message_id, event_id) -> _MessageConstructRet:
+        def _construct(self, message_id, event_id) -> _MessageConstructRet:
             """
             internal construct method
 
@@ -143,16 +153,16 @@ class ApiModel:
             """
             json_ = {
                 "embed": {
-                    "title": self.__title,
-                    "prompt": self.__prompt,
-                    "thumbnail": {"url": self.__image},
+                    "title": self._title,
+                    "prompt": self._prompt,
+                    "thumbnail": {"url": self._image},
                     "fields": [],
                 },
                 "msg_id": message_id,
                 "event_id": event_id,
             }
-            if self.__content is not None:
-                for items in self.__content:
+            if self._content is not None:
+                for items in self._content:
                     json_["embed"]["fields"].append({"name": str(items)})
             return _MessageConstructRet(result=True, kwargs={"json": json_})
 
@@ -173,26 +183,27 @@ class ApiModel:
             :param prompt: 消息弹窗通知的文本内容（选填）
             """
             super().__init__()
-            self.__content = content
-            self.__link = link
-            self.__desc = desc
-            self.__prompt = prompt
+            self._content = content
+            self._link = link
+            self._desc = desc
+            self._prompt = prompt
+            self._msg_type = 3
 
-            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+            self._constructed_obj = self._construct(self._message_id, self._event_id)
 
         def __repr__(self):
             return (
-                f"<MessageArk23 content={self.__content}, link={self.__link}, desc={self.__desc}, "
-                f"prompt={self.__prompt}>"
+                f"<MessageArk23 content={self._content}, link={self._link}, desc={self._desc}, "
+                f"prompt={self._prompt}>"
             )
 
-        def __construct(self, message_id, event_id) -> _MessageConstructRet:
+        def _construct(self, message_id, event_id) -> _MessageConstructRet:
             """
             internal construct method
 
             :return: kwargs for http api request
             """
-            if len(self.__content) != len(self.__link):
+            if len(self._content) != len(self._link):
                 return _MessageConstructRet(
                     result=False, error_ret=sdk_error_temp("注意内容列表长度应与链接列表长度一致")
                 )
@@ -200,15 +211,15 @@ class ApiModel:
                 "ark": {
                     "template_id": 23,
                     "kv": [
-                        {"key": "#DESC#", "value": self.__desc},
-                        {"key": "#PROMPT#", "value": self.__prompt},
+                        {"key": "#DESC#", "value": self._desc},
+                        {"key": "#PROMPT#", "value": self._prompt},
                         {"key": "#LIST#", "obj": []},
                     ],
                 },
                 "msg_id": message_id,
                 "event_id": event_id,
             }
-            for _link, _content in zip(self.__link, self.__content):
+            for _link, _content in zip(self._link, self._content):
                 if _content is not None and not isinstance(_content, str):
                     _content = str(_content)
                 if _link is not None and not isinstance(_link, str):
@@ -246,23 +257,24 @@ class ApiModel:
             :param prompt: 消息弹窗通知的文本内容（选填）
             """
             super().__init__()
-            self.__title = title
-            self.__content = content
-            self.__subtitile = subtitile
-            self.__link = link
-            self.__image = image
-            self.__desc = desc
-            self.__prompt = prompt
+            self._title = title
+            self._content = content
+            self._subtitile = subtitile
+            self._link = link
+            self._image = image
+            self._desc = desc
+            self._prompt = prompt
+            self._msg_type = 3
 
-            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+            self._constructed_obj = self._construct(self._message_id, self._event_id)
 
         def __repr__(self):
             return (
-                f"<MessageArk24 title={self.__title}, content={self.__content}, subtitile={self.__subtitile}, "
-                f"link={self.__link}, image={self.__image}, desc={self.__desc}, prompt={self.__prompt}>"
+                f"<MessageArk24 title={self._title}, content={self._content}, subtitile={self._subtitile}, "
+                f"link={self._link}, image={self._image}, desc={self._desc}, prompt={self._prompt}>"
             )
 
-        def __construct(self, message_id, event_id) -> _MessageConstructRet:
+        def _construct(self, message_id, event_id) -> _MessageConstructRet:
             """
             internal construct method
 
@@ -272,13 +284,13 @@ class ApiModel:
                 "ark": {
                     "template_id": 24,
                     "kv": [
-                        {"key": "#DESC#", "value": self.__desc},
-                        {"key": "#PROMPT#", "value": self.__prompt},
-                        {"key": "#TITLE#", "value": self.__title},
-                        {"key": "#METADESC#", "value": self.__content},
-                        {"key": "#IMG#", "value": self.__image},
-                        {"key": "#LINK#", "value": self.__link},
-                        {"key": "#SUBTITLE#", "value": self.__subtitile},
+                        {"key": "#DESC#", "value": self._desc},
+                        {"key": "#PROMPT#", "value": self._prompt},
+                        {"key": "#TITLE#", "value": self._title},
+                        {"key": "#METADESC#", "value": self._content},
+                        {"key": "#IMG#", "value": self._image},
+                        {"key": "#LINK#", "value": self._link},
+                        {"key": "#SUBTITLE#", "value": self._subtitile},
                     ],
                 },
                 "msg_id": message_id,
@@ -305,30 +317,31 @@ class ApiModel:
             :param prompt: 消息弹窗通知的文本内容（选填）
             """
             super().__init__()
-            self.__title = title
-            self.__content = content
-            self.__link = link
-            self.__image = image
-            self.__prompt = prompt
+            self._title = title
+            self._content = content
+            self._link = link
+            self._image = image
+            self._prompt = prompt
+            self._msg_type = 3
 
-            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+            self._constructed_obj = self._construct(self._message_id, self._event_id)
 
         def __repr__(self):
             return (
-                f"<MessageArk37 title={self.__title}, content={self.__content}, link={self.__link}, "
-                f"image={self.__image}, prompt={self.__prompt}>"
+                f"<MessageArk37 title={self._title}, content={self._content}, link={self._link}, "
+                f"image={self._image}, prompt={self._prompt}>"
             )
 
-        def __construct(self, message_id, event_id) -> _MessageConstructRet:
+        def _construct(self, message_id, event_id) -> _MessageConstructRet:
             json_ = {
                 "ark": {
                     "template_id": 37,
                     "kv": [
-                        {"key": "#PROMPT#", "value": self.__prompt},
-                        {"key": "#METATITLE#", "value": self.__title},
-                        {"key": "#METASUBTITLE#", "value": self.__content},
-                        {"key": "#METACOVER#", "value": self.__image},
-                        {"key": "#METAURL#", "value": self.__link},
+                        {"key": "#PROMPT#", "value": self._prompt},
+                        {"key": "#METATITLE#", "value": self._title},
+                        {"key": "#METASUBTITLE#", "value": self._content},
+                        {"key": "#METACOVER#", "value": self._image},
+                        {"key": "#METAURL#", "value": self._link},
                     ],
                 },
                 "msg_id": message_id,
@@ -360,56 +373,57 @@ class ApiModel:
             :param keyboard_content: 原生 keyboard 内容（选填，与keyboard_id不可同时存在）
             """
             super().__init__()
-            self.__template_id = template_id
-            self.__key_values = key_values
-            self.__content = content
-            self.__keyboard_id = keyboard_id
-            self.__keyboard_content = keyboard_content
+            self._template_id = template_id
+            self._key_values = key_values
+            self._content = content
+            self._keyboard_id = keyboard_id
+            self._keyboard_content = keyboard_content
+            self._msg_type = 2
 
-            self._constructed_obj = self.__construct(self._message_id, self._event_id)
+            self._constructed_obj = self._construct(self._message_id, self._event_id)
 
         def __repr__(self):
             return (
-                f"<MessageMarkdown template_id={self.__template_id}, key_values={self.__key_values}, "
-                f"content={self.__content}, keyboard_id={self.__keyboard_id}, "
-                f"keyboard_content={self.__keyboard_content}>"
+                f"<MessageMarkdown template_id={self._template_id}, key_values={self._key_values}, "
+                f"content={self._content}, keyboard_id={self._keyboard_id}, "
+                f"keyboard_content={self._keyboard_content}>"
             )
 
-        def __construct(self, message_id, event_id) -> _MessageConstructRet:
+        def _construct(self, message_id, event_id) -> _MessageConstructRet:
             """
             internal construct method
 
             :return: kwargs for http api request
             """
             logger_msg = None
-            if self.__keyboard_content:
-                if self.__keyboard_id:
+            if self._keyboard_content:
+                if self._keyboard_id:
                     logger_msg = "注意keyboard_id与keyboard_content不可同时存在，注意系统已根据优先级仅保留keyboard_content"
-                keyboard = {"content": self.__keyboard_content}
-            elif self.__keyboard_id:
-                keyboard = {"id": self.__keyboard_id}
+                keyboard = {"content": self._keyboard_content}
+            elif self._keyboard_id:
+                keyboard = {"id": self._keyboard_id}
             else:
                 keyboard = None
-            if self.__content:
-                if self.__template_id:
+            if self._content:
+                if self._template_id:
                     logger_msg = "注意content与template_id不可同时存在，注意系统已根据优先级仅保留content"
                 json_ = {
-                    "markdown": {"content": self.__content},
+                    "markdown": {"content": self._content},
                     "msg_id": message_id,
                     "event_id": event_id,
                     "keyboard": keyboard,
                 }
             else:
-                if not self.__template_id or not self.__key_values:
+                if not self._template_id or not self._key_values:
                     return _MessageConstructRet(
                         result=False,
                         error_ret=sdk_error_temp(
                             "注意content与template_id必须存在任意一个，否则消息无法下发！"
                         ),
                     )
-                if isinstance(self.__key_values, dict):
+                if isinstance(self._key_values, dict):
                     params = []
-                    for k, v in self.__key_values.items():
+                    for k, v in self._key_values.items():
                         if isinstance(v, list) or isinstance(v, tuple):
                             v = list(v)
                         else:
@@ -417,7 +431,7 @@ class ApiModel:
                         params.append({"key": k, "values": v})
                 else:
                     try:
-                        params = list(self.__key_values)
+                        params = list(self._key_values)
                         for items in params:
                             for k, v in items.items():
                                 if isinstance(v, list) or isinstance(v, tuple):
@@ -433,7 +447,7 @@ class ApiModel:
                         )
                 json_ = {
                     "markdown": {
-                        "custom_template_id": self.__template_id,
+                        "custom_template_id": self._template_id,
                         "params": params,
                     },
                     "msg_id": message_id,

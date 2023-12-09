@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
 
@@ -989,6 +990,20 @@ def create_permission_demand():
     return CreatePermissionDemand
 
 
+def upload_media():
+    class UploadMedia(object_class):
+        class data:
+            file_uuid: str
+            file_info: str
+            ttl: int
+
+        http_code: int
+        trace_id: str
+        result: bool
+
+    return UploadMedia
+
+
 # API related
 class StrPtr:
     def __init__(self, value: Optional[str] = None):
@@ -1015,18 +1030,71 @@ class MessageConstructRet:
         self.kwargs = kwargs
 
 
-class BaseMessageApiModel:
+class BaseMessageApiModel(ABC):
     def __init__(self):
         self._message_id, self._event_id = StrPtr(), StrPtr()
-        self._constructed_obj = None
+        self._msg_seq = 0
+        self._msg_type = 0
+        self._constructed_obj: Optional[MessageConstructRet] = None
 
+    def update(self, **kwargs):
+        for k, v in kwargs.items():
+            print(k, v)
+            k = f"_{k}"
+            print(hasattr(self, k))
+            if hasattr(self, k):
+                setattr(self, k, v)
+            else:
+                raise AttributeError(f"BaseMessageApiModel has no attribute {k}")
+        self._constructed_obj = self._construct(self._message_id, self._event_id)
+
+    @abstractmethod
     def __repr__(self):
         return "<BaseMessage abstract class>"
 
-    def __construct(self, message_id, event_id) -> MessageConstructRet:
+    @abstractmethod
+    def _construct(self, message_id, event_id) -> MessageConstructRet:
         pass
 
-    def construct(self, message_id, event_id) -> MessageConstructRet:
+    def get_msg_seq(self):
+        """
+        获取消息序号（仅qq单聊或群消息等v2消息API）
+        """
+        return self._msg_seq
+
+    def construct(
+        self, message_id, event_id, is_v2: bool = False, msg_seq: Optional[int] = None
+    ) -> MessageConstructRet:
         self._message_id.value = message_id
         self._event_id.value = event_id
+        if is_v2 and self._constructed_obj and self._constructed_obj.kwargs:
+            k = None
+            for _k in self._constructed_obj.kwargs.keys():
+                k = _k
+                break
+            if k:
+                params = {}
+                if msg_seq is not None and isinstance(msg_seq, int):
+                    self._msg_seq = msg_seq
+                else:
+                    self._msg_seq += 1
+                params["msg_seq"] = self._msg_seq
+                if (
+                    self._msg_type == 0
+                    and hasattr(self, "_media_file_info")
+                    and self._media_file_info
+                ):
+                    params["msg_type"] = 7
+                else:
+                    params["msg_type"] = self._msg_type
+
+                if isinstance(self._constructed_obj.kwargs[k], dict):
+                    for _k, _v in params.items():
+                        self._constructed_obj.kwargs[k][_k] = _v
+                else:
+                    try:
+                        for _k, _v in params.items():
+                            self._constructed_obj.kwargs[k].add_field(_k, str(_v))
+                    except Exception:
+                        pass
         return self._constructed_obj

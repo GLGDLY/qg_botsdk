@@ -174,7 +174,7 @@ class Session:
         if not self._bot_secret:  # 无需获取access_token
             return
         self._access_token_expire = 30  # if fail, retry after 30s
-        resp = await self.post(
+        resp = await self._session.post(
             "https://bots.qq.com/app/getAppAccessToken",
             json={"appId": self._bot_id, "clientSecret": self._bot_secret},
         )
@@ -221,7 +221,9 @@ class Session:
 
     async def _request(self, method, url, retry=False, **kwargs):
         await self._check_session()
-        if not self._access_token or self._access_token_expire <= 0:
+        if self._bot_secret and (
+            not self._access_token.value or self._access_token_expire <= 0
+        ):
             await self._request_access_token()
         resp = await self._session.request(method, url, **kwargs)
         if resp.ok:

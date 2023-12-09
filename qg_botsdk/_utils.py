@@ -13,6 +13,7 @@ from typing import BinaryIO, Callable, Dict, Iterable, Optional, Union
 from aiohttp import ContentTypeError
 
 from ._api_model import BaseMessageApiModel, object_class, send_msg
+from ._statics import EVENTS
 from .version import __version__
 
 general_header = {"User-Agent": f"qg-botsdk v{__version__}"}
@@ -45,22 +46,13 @@ retry_err_code = (
     304082,
     304083,
 )
-msg_t = ("MESSAGE_CREATE", "AT_MESSAGE_CREATE", "DIRECT_MESSAGE_CREATE")
-event_t = (
-    "GUILD_MEMBER_ADD",
-    "GUILD_MEMBER_UPDATE",
-    "GUILD_MEMBER_REMOVE",
-    "MESSAGE_REACTION_ADD",
-    "MESSAGE_REACTION_REMOVE",
-    "FORUM_THREAD_CREATE",
-    "FORUM_THREAD_UPDATE",
-    "FORUM_THREAD_DELETE",
-    "FORUM_POST_CREATE",
-    "FORUM_POST_DELETE",
-    "FORUM_REPLY_CREATE",
-    "FORUM_REPLY_DELETE",
-    "INTERACTION_CREATE",
+msg_t = (
+    EVENTS.MESSAGE_CREATE
+    + EVENTS.DM_CREATE
+    + EVENTS.GROUP_AT_MESSAGE_CREATE
+    + EVENTS.C2C_MESSAGE_CREATE
 )
+event_t = EVENTS.GUILD_MEMBER + EVENTS.REACTION + EVENTS.FORUM + EVENTS.INTERACTION
 
 _reply_args = (
     "content",
@@ -99,6 +91,12 @@ class event_class(object_class):
         if "DIRECT_MESSAGE" in t:
             kwargs["guild_id"] = getattr(self, "guild_id", None)
             return getattr(self, "api").send_dm(**kwargs)
+        # elif "C2C_MESSAGE" in t:
+        #     kwargs["user_openid"] = getattr(getattr(self, "author", object()), "user_openid", None)
+        #     return getattr(self, "api").send_c2c_msg(**kwargs)
+        # elif "GROUP_AT_MESSAGE" in t:
+        #     kwargs["group_openid"] = getattr(self, "group_openid", None)
+        #     return getattr(self, "api").send_group_msg(**kwargs)
         else:
             kwargs["channel_id"] = (
                 self.channel_id
@@ -136,6 +134,12 @@ class async_event_class(object_class):
         if "DIRECT_MESSAGE" in t:
             kwargs["guild_id"] = getattr(self, "guild_id", None)
             return await getattr(self, "api").send_dm(**kwargs)
+        # elif "C2C_MESSAGE" in t:
+        #     kwargs["user_openid"] = getattr(getattr(self, "author", object()), "user_openid", None)
+        #     return await getattr(self, "api").send_c2c_msg(**kwargs)
+        # elif "GROUP_AT_MESSAGE" in t:
+        #     kwargs["group_openid"] = getattr(self, "group_openid", None)
+        #     return await getattr(self, "api").send_group_msg(**kwargs)
         else:
             kwargs["channel_id"] = (
                 self.channel_id
