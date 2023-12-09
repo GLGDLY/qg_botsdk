@@ -559,7 +559,7 @@ class BOT:
 
     def bind_group_event(
         self,
-        callback: Callable[[Model.GROUP_ALL_EVENTS], Any] = None,
+        callback: Callable[[Model.GROUP_EVENTS], Any] = None,
     ):
         """
         用作群聊事件的回调函数
@@ -568,7 +568,7 @@ class BOT:
         """
 
         def wraps(func):
-            func_type_checker(func, Model.GROUP_ALL_EVENTS, is_async=self.is_async)
+            func_type_checker(func, Model.GROUP_EVENTS, is_async=self.is_async)
             self._func_registers["on_group_event"] = func
             self._intents = self._intents | 1 << 25
             self.logger.info("群聊事件订阅成功")
@@ -579,7 +579,7 @@ class BOT:
 
     def bind_friend_event(
         self,
-        callback: Callable[[Model.FRIEND_ALL_EVENTS], Any] = None,
+        callback: Callable[[Model.FRIEND_EVENTS], Any] = None,
     ):
         """
         用作用户事件的回调函数
@@ -588,7 +588,7 @@ class BOT:
         """
 
         def wraps(func):
-            func_type_checker(func, Model.FRIEND_ALL_EVENTS, is_async=self.is_async)
+            func_type_checker(func, Model.FRIEND_EVENTS, is_async=self.is_async)
             self._func_registers["on_group_event"] = func
             self._intents = self._intents | 1 << 25
             self.logger.info("用户事件订阅成功")

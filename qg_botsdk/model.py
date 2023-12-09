@@ -505,7 +505,7 @@ class Model:
         t: str
         event_id: str
 
-    class GROUP_ALL_EVENTS(_AbstractEventClass):
+    class GROUP_EVENTS(_AbstractEventClass):
         """
         群聊机器人加入/退出群聊以及群聊拒绝/接受机器人主动消息的事件模型, 可从t字段判断具体事件, 其中包含:
         - GROUP_ADD_ROBOT  - 机器人加入群聊
@@ -524,7 +524,7 @@ class Model:
         op_member_openid: str
         timestamp: str
 
-    class FRIEND_ALL_EVENTS(_AbstractEventClass):
+    class FRIEND_EVENTS(_AbstractEventClass):
         """
         用户添加/删除机器人以及用户拒绝/接受机器人主动消息的事件模型, 可从t字段判断具体事件, 其中包含:
         - FRIEND_ADD - 用户添加机器人
@@ -568,6 +568,7 @@ class Model:
         content: str
         attachments = List[__MsgAttachments]
         timestamp: str
+        treated_msg: Union[str, Tuple]
 
     class C2C_MESSAGE(_AbstractEventClass):
         """
@@ -594,6 +595,7 @@ class Model:
         content: str
         attachments = List[__MsgAttachments]
         timestamp: str
+        treated_msg: Union[str, Tuple]
 
 
 class Scope(Enum):

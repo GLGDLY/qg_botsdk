@@ -1039,9 +1039,9 @@ class BaseMessageApiModel(ABC):
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
-            print(k, v)
+            # print(k, v)
             k = f"_{k}"
-            print(hasattr(self, k))
+            # print(hasattr(self, k))
             if hasattr(self, k):
                 setattr(self, k, v)
             else:

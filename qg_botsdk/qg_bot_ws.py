@@ -362,7 +362,7 @@ class BotWs:
 
     @exception_processor
     async def data_process(self, data: Dict):
-        print(data)
+        # print(data)
         # initialize values
         t = data.get("t")
         d = data.get("d", {})
@@ -386,17 +386,17 @@ class BotWs:
             else:
                 treated_msg = ""
             # distribute_commands return True when short circuit
-            print("0")
+            # print("0")
             if not await self.distribute_commands(data, treated_msg):
-                print("1")
+                # print("1")
                 if t in EVENTS.MESSAGE_CREATE:
-                    print("2")
+                    # print("2")
                     await self.distribute(self.func_registers["on_msg"], data)
                 elif t in EVENTS.C2C_MESSAGE_CREATE:
-                    print("3")
+                    # print("3")
                     await self.distribute(self.func_registers["on_friend_msg"], data)
                 else:  # t in EVENTS.GROUP_AT_MESSAGE_CREATE
-                    print("4")
+                    # print("4")
                     await self.distribute(self.func_registers["on_group_msg"], data)
         elif t in EVENTS.MESSAGE_DELETE:
             if self.func_registers["del_is_filter_self"]:
