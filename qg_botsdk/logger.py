@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from functools import wraps
+from io import StringIO
 from logging import FileHandler, Formatter, StreamHandler, getLogger
 from os import PathLike, getcwd, makedirs, sep
 from os.path import exists, isdir, join
@@ -20,13 +21,13 @@ except (ImportError, ModuleNotFoundError):
 
 def _log_wrapper(func):
     @wraps(func)
-    def wrap(self, msg):
+    def wrap(self, *args, **kwargs):
         str_time = strftime("%m-%d", localtime())
         if str_time != self._previous_time:
             self._logger.removeHandler(self._logh)
             self._new_logh(str_time)
         try:
-            func(self, msg)
+            func(self, *args, **kwargs)
         except UnicodeDecodeError:
             pass
 
@@ -168,18 +169,28 @@ class Logger:
         self._logh.setFormatter(Formatter(self._format, self._date_format))
         self._logger.addHandler(self._logh)
 
-    @_log_wrapper
-    def debug(self, msg):
-        self._logger.debug(str(msg))
+    @staticmethod
+    def __print_args_to_str(*args, **kwargs):
+        buf = StringIO()
+        kwargs["end"] = kwargs.get("end", "")
+        kwargs["file"] = buf
+        print(*args, **kwargs)
+        ret = buf.getvalue()
+        buf.close()
+        return ret
 
     @_log_wrapper
-    def info(self, msg):
-        self._logger.info(str(msg))
+    def debug(self, *args, **kwargs):
+        self._logger.debug(self.__print_args_to_str(*args, **kwargs))
 
     @_log_wrapper
-    def warning(self, msg):
-        self._logger.warning(str(msg))
+    def info(self, *args, **kwargs):
+        self._logger.info(self.__print_args_to_str(*args, **kwargs))
 
     @_log_wrapper
-    def error(self, msg):
-        self._logger.error(str(msg))
+    def warning(self, *args, **kwargs):
+        self._logger.warning(self.__print_args_to_str(*args, **kwargs))
+
+    @_log_wrapper
+    def error(self, *args, **kwargs):
+        self._logger.error(self.__print_args_to_str(*args, **kwargs))

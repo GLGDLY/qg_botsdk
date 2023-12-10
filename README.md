@@ -30,8 +30,6 @@
 
 ##### -   两种应用层开发方式（threading、asyncio），可根据自己的喜好选择，而底层均为asyncio实现，保持高并发能力
 
-##### -   高覆盖率的单元测试，保证SDK的稳定性
-
 ##### -   灵活的构建方式，即使官方删除或新增字段，SDK也不会规范于原来的数据格式，而会把真实数据反馈给你
 
 ##### -   轻量，简洁，统一的代码结构，通过录入回调函数处理不同事件，10行即可构建一个简单的程序
@@ -40,9 +38,9 @@
 
 ##### -   保留官方http API中Json数据的结构字段，带你学习官方结构，日后可自行开发适合自己的SDK
 
-##### -   迅速的更新速度，跟上最新潮流（v2.5.5已更新音视频/直播子频道成员进出事件、公域论坛事件）
-
 ##### -   简单易用的plugins编写与加载，使用例子可参阅 [example_13(装饰器).py](./example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py)
+
+##### -   方便多场景（频道+群等）构建机器人的抽象化封装，使用例子可参阅 [example_16(Q群简单工作流).py](./example/example_16(Q%E7%BE%A4%E7%AE%80%E5%8D%95%E5%B7%A5%E4%BD%9C%E6%B5%81).py)
 
 * * *
 
@@ -167,6 +165,9 @@ if __name__ == '__main__':
 -   delete_thread
 -   get_guild_permissions
 -   create_permission_demand
+-   upload_media
+-   send_qq_dm
+-   send_group_msg
 
 ### 特殊功能
 

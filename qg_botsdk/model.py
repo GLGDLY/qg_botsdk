@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from abc import ABC, abstractmethod
 from enum import Enum
 from re import Pattern
 from re import compile as re_compile
@@ -16,20 +17,21 @@ from typing import (
     Union,
 )
 
-from ._api_model import send_msg
+from ._api_model import BaseMessageApiModel, send_msg
 
 
-class _AbstractEventClass:
+class _AbstractEventClass(ABC):
+    @abstractmethod
     def reply(
         self,
-        content: Optional[str] = None,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
         message_reference_id: Optional[str] = None,
         ignore_message_reference_error: Optional[bool] = None,
     ) -> send_msg():
         """
-        目前支持reply()发送被动消息的事件类型有:
+        直接回复相应事件的API，目前支持reply()发送被动消息的事件类型有:
 
         GUILD_MEMBER_ADD GUILD_MEMBER_UPDATE GUILD_MEMBER_REMOVE MESSAGE_REACTION_ADD MESSAGE_REACTION_REMOVE
         FORUM_THREAD_CREATE FORUM_THREAD_UPDATE FORUM_THREAD_DELETE FORUM_POST_CREATE FORUM_POST_DELETE
@@ -47,6 +49,28 @@ class _AbstractEventClass:
         ...
 
 
+class _AbstractV2EventClass(ABC):
+    @abstractmethod
+    def reply(
+        self,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
+        media_file_info: Optional[str] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
+        msg_seq: Optional[int] = None,
+    ) -> send_msg():
+        """
+        直接回复相应事件的qq单聊、群事件 v2 API
+
+        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
+        :param media_file_info: v2 qq相关接口使用，传入upload_media()获取的file_info字段
+        :param message_reference_id: 引用消息的id（选填）
+        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
+        :param msg_seq: 直接替换ApiModel.Message内部构建递增的消息序号（选填）
+        """
+        ...
+
+
 class Model:
     """
     使用此Model库可用作验证事件数据的准确性，目前可用的模型如下：
@@ -55,7 +79,7 @@ class Model:
     GUILD_MEMBERS -
     """
 
-    class GUILDS(_AbstractEventClass):
+    class GUILDS(_AbstractEventClass, ABC):
         """
         频道事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -80,7 +104,7 @@ class Model:
         t: str
         event_id: str
 
-    class CHANNELS(_AbstractEventClass):
+    class CHANNELS(_AbstractEventClass, ABC):
         """
         子频道事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -109,7 +133,7 @@ class Model:
         t: str
         event_id: str
 
-    class GUILD_MEMBERS(_AbstractEventClass):
+    class GUILD_MEMBERS(_AbstractEventClass, ABC):
         """
         频道成员事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -136,7 +160,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE(_AbstractEventClass):
+    class MESSAGE(_AbstractEventClass, ABC):
         """
         消息事件的数据模，可从t字段判断具体事件，其中包含：
 
@@ -197,7 +221,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE_DELETE(_AbstractEventClass):
+    class MESSAGE_DELETE(_AbstractEventClass, ABC):
         """
         消息撤回事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -229,7 +253,7 @@ class Model:
         t: str
         event_id: str
 
-    class DIRECT_MESSAGE(_AbstractEventClass):
+    class DIRECT_MESSAGE(_AbstractEventClass, ABC):
         """
         私信消息事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -274,7 +298,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE_AUDIT(_AbstractEventClass):
+    class MESSAGE_AUDIT(_AbstractEventClass, ABC):
         """
         主动消息审核事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -298,7 +322,7 @@ class Model:
         t: str
         event_id: str
 
-    class FORUMS_EVENT(_AbstractEventClass):
+    class FORUMS_EVENT(_AbstractEventClass, ABC):
         """
         论坛事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -386,7 +410,7 @@ class Model:
         t: str
         event_id: str
 
-    class OPEN_FORUMS(_AbstractEventClass):
+    class OPEN_FORUMS(_AbstractEventClass, ABC):
         """
         公域论坛事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -407,7 +431,7 @@ class Model:
         t: str
         event_id: str
 
-    class AUDIO_ACTION(_AbstractEventClass):
+    class AUDIO_ACTION(_AbstractEventClass, ABC):
         """
         音频事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -431,7 +455,7 @@ class Model:
         t: str
         event_id: str
 
-    class REACTION(_AbstractEventClass):
+    class REACTION(_AbstractEventClass, ABC):
         """
         表情表态事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -457,7 +481,7 @@ class Model:
         t: str
         event_id: str
 
-    class INTERACTION(_AbstractEventClass):
+    class INTERACTION(_AbstractEventClass, ABC):
         """
         互动事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -486,7 +510,7 @@ class Model:
         t: str
         event_id: str
 
-    class LIVE_CHANNEL_MEMBER(_AbstractEventClass):
+    class LIVE_CHANNEL_MEMBER(_AbstractEventClass, ABC):
         """
         音视频/直播子频道成员进出事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -505,7 +529,7 @@ class Model:
         t: str
         event_id: str
 
-    class GROUP_EVENTS(_AbstractEventClass):
+    class GROUP_EVENTS(_AbstractV2EventClass, ABC):
         """
         群聊机器人加入/退出群聊以及群聊拒绝/接受机器人主动消息的事件模型, 可从t字段判断具体事件, 其中包含:
         - GROUP_ADD_ROBOT  - 机器人加入群聊
@@ -524,7 +548,7 @@ class Model:
         op_member_openid: str
         timestamp: str
 
-    class FRIEND_EVENTS(_AbstractEventClass):
+    class FRIEND_EVENTS(_AbstractV2EventClass, ABC):
         """
         用户添加/删除机器人以及用户拒绝/接受机器人主动消息的事件模型, 可从t字段判断具体事件, 其中包含:
         - FRIEND_ADD - 用户添加机器人
@@ -542,7 +566,7 @@ class Model:
         openid: str
         timestamp: str
 
-    class GROUP_MESSAGE(_AbstractEventClass):
+    class GROUP_MESSAGE(_AbstractV2EventClass, ABC):
         """
         用户在群内@机器人发动的消息的事件模型, 可从t字段判断具体事件, 其中包含:
         - GROUP_AT_MESSAGE_CREATE - 用户在群聊@机器人发送消息
@@ -570,7 +594,7 @@ class Model:
         timestamp: str
         treated_msg: Union[str, Tuple]
 
-    class C2C_MESSAGE(_AbstractEventClass):
+    class C2C_MESSAGE(_AbstractV2EventClass, ABC):
         """
         用户在单聊发送消息给机器人的事件模型, 可从t字段判断具体事件, 其中包含:
         - C2C_MESSAGE_CREATE - 用户在群聊@机器人发送消息
@@ -602,6 +626,7 @@ class Scope(Enum):
     USER = "USER"  # 代表只在当前用户有效
     GUILD = "GUILD"  # 代表只在当前频道有效
     CHANNEL = "CHANNEL"  # 代表只在当前子频道有效
+    GROUP = "GROUP"  # 代表只在当前qq群聊有效
     GLOBAL = "GLOBAL"  # 代表在全局有效
 
 
@@ -643,6 +668,23 @@ class SessionObject:
         )
 
 
+class CommandValidScenes:
+    """
+    机器人命令的有效场景，用于限制机器人命令的有效场景，可传入多个场景，如 CommandValidScenes.GUILD | CommandValidScenes.DM
+
+    - GUILD - 代表只在频道有效
+    - DM - 代表只在频道私信有效
+    - GROUP - 代表只在qq群聊场景有效
+    - C2C - 代表只在qq私聊场景有效
+    """
+
+    GUILD = 1
+    DM = 2
+    GROUP = 4
+    C2C = 8
+    ALL = GUILD | DM | GROUP | C2C
+
+
 class BotCommandObject:
     """
     机器人的on_command命令对象，用于存储机器人命令的数据
@@ -656,19 +698,23 @@ class BotCommandObject:
     :param is_custom_short_circuit: 如果触发指令成功而回调函数返回True则不运行后续指令，存在时优先于short_circuit
     :param admin: 是否要求频道主或或管理才可触发指令
     :param admin_error_msg: 当admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
+    :param valid_scenes: 此机器人命令的有效场景，可传入多个场景，如 CommandValidScenes.GUILD|CommandValidScenes.DM，默认全部
     """
 
     def __init__(
         self,
         command: Iterable[str] = None,
         regex: Iterable[Pattern] = None,
-        func: Callable[[Model.MESSAGE], Any] = None,
+        func: Callable[
+            [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
+        ] = None,
         treat: bool = True,
         at: bool = False,
         short_circuit: bool = True,
         is_custom_short_circuit: bool = False,
         admin: bool = False,
         admin_error_msg: Optional[str] = None,
+        valid_scenes: CommandValidScenes = CommandValidScenes.ALL,
     ):
         # type checking for user input, not included items are not important(for wait_for api)
         if command is not None:
@@ -706,19 +752,22 @@ class BotCommandObject:
         # init
         self.command: Iterable[str] = command
         self.regex: Iterable[Pattern] = _regex
-        self.func: Callable[[Model.MESSAGE], Any] = func
+        self.func: Callable[
+            [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
+        ] = func
         self.treat: bool = treat
         self.at: bool = at
         self.short_circuit: bool = short_circuit
         self.is_custom_short_circuit: bool = is_custom_short_circuit
         self.admin: bool = admin
         self.admin_error_msg: Optional[str] = admin_error_msg
+        self.valid_scenes: CommandValidScenes = valid_scenes
 
     def __repr__(self):
         if self.command:
-            return f"<BotCommandObject command={self.command} func={self.func}>"
+            return f"<BotCommandObject command={self.command} func={self.func} valid_scenes={self.valid_scenes}>"
         else:
-            return f"<BotCommandObject regex={self.regex} func={self.func}>"
+            return f"<BotCommandObject regex={self.regex} func={self.func} valid_scenes={self.valid_scenes}>"
 
 
 class AnnounceRecommendChannels:

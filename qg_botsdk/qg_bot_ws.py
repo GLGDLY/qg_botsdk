@@ -12,12 +12,12 @@ from typing import Any, Callable, Dict, List, Union
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 
 from ._api_model import StrPtr
+from ._event import object_class
 from ._session import SessionManager
 from ._statics import EVENTS
 from ._utils import (
     exception_handler,
     exception_processor,
-    object_class,
     objectize,
     treat_msg,
     treat_thread,
@@ -26,7 +26,7 @@ from .api import API
 from .async_api import AsyncAPI
 from .http import Session
 from .logger import Logger
-from .model import BotCommandObject, Model
+from .model import BotCommandObject, CommandValidScenes, Model
 
 Op9RetryTime = 2
 
@@ -55,7 +55,14 @@ class BotWs:
         max_workers: int,
         api: Union[AsyncAPI, API],
         commands: List[BotCommandObject],
-        preprocessors: List[Callable[[Model.MESSAGE], Any]],
+        preprocessors: Dict[
+            CommandValidScenes,
+            List[
+                Callable[
+                    [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
+                ]
+            ],
+        ],
         disable_reconnect_on_not_recv_msg: float,
         session_manager: SessionManager,
     ):
@@ -122,6 +129,8 @@ class BotWs:
                     ["on_live_channel_member"] * len(EVENTS.ALC_MEMBER),
                 )
             ),
+            **dict(zip(EVENTS.GROUP, ["on_group_event"] * len(EVENTS.GROUP))),
+            **dict(zip(EVENTS.FRIEND, ["on_friend_event"] * len(EVENTS.FRIEND))),
         }
         self.threads = ThreadPoolExecutor(max_workers) if not self.is_async else None
         self.api = api
@@ -296,52 +305,66 @@ class BotWs:
             r = task.result()
             return r  # True or False
 
-    def process_wait_for_commands(self, objectized_data, msg, treated_msg):
+    def process_wait_for_commands(
+        self, current_scene: CommandValidScenes, objectized_data, msg, treated_msg
+    ):
         try:
             wait_for_commands = self.session_manager.wait_for_message_checker(
                 objectized_data
             )
+            for x in wait_for_commands:
+                if x.command.valid_scenes & current_scene == 0:
+                    continue
+                commands = x.command.command
+                regexs = x.command.regex
+                if commands:
+                    for command in commands:
+                        if command in msg and (not x.command.at or self.at in msg):
+                            if x.command.treat:
+                                objectized_data = self.treat_command(
+                                    objectized_data, treated_msg, command=command
+                                )
+                            x.callback(objectized_data)
+                            if x.command.short_circuit:
+                                return True
+                            break
+                else:
+                    for regex in regexs:
+                        regex = regex.search(msg)
+                        if regex and (not x.command.at or self.at in msg):
+                            if x.command.treat:
+                                objectized_data = self.treat_command(
+                                    objectized_data, treated_msg, regex=regex
+                                )
+                            x.callback(objectized_data)
+                            if x.command.short_circuit:
+                                return True
+                            break
         except Exception:
-            return False
-        for x in wait_for_commands:
-            commands = x.command.command
-            regexs = x.command.regex
-            if commands:
-                for command in commands:
-                    if command in msg and (not x.command.at or self.at in msg):
-                        if x.command.treat:
-                            objectized_data = self.treat_command(
-                                objectized_data, treated_msg, command=command
-                            )
-                        x.callback(objectized_data)
-                        if x.command.short_circuit:
-                            return True
-                        break
-            else:
-                for regex in regexs:
-                    regex = regex.search(msg)
-                    if regex and (not x.command.at or self.at in msg):
-                        if x.command.treat:
-                            objectized_data = self.treat_command(
-                                objectized_data, treated_msg, regex=regex
-                            )
-                        x.callback(objectized_data)
-                        if x.command.short_circuit:
-                            return True
-                        break
+            pass
         return False
 
     @exception_processor
-    async def distribute_commands(self, data: Dict, treated_msg: str):
+    async def distribute_commands(
+        self, current_scene: CommandValidScenes, data: Dict, treated_msg: str
+    ):
         objectized_data = objectize(data.get("d", {}), self.api, self.is_async)
         # run preprocessors
-        for func in self.preprocessors:
-            await self.distribute(func, objectized_data=objectized_data)
+        for scene, funcs in self.preprocessors.items():
+            if scene & current_scene == 0:
+                continue
+            for func in funcs:
+                await self.distribute(func, objectized_data=objectized_data)
         # check commands
         msg = data.get("d", {}).get("content", "")
-        if self.process_wait_for_commands(objectized_data, msg, treated_msg):
+        if self.process_wait_for_commands(
+            current_scene, objectized_data, msg, treated_msg
+        ):
             return True
+
         for items in self.commands:
+            if items.valid_scenes & current_scene == 0:
+                continue
             commands = items.command
             regexs = items.regex
             if commands:
@@ -362,7 +385,6 @@ class BotWs:
 
     @exception_processor
     async def data_process(self, data: Dict):
-        # print(data)
         # initialize values
         t = data.get("t")
         d = data.get("d", {})
@@ -376,6 +398,7 @@ class BotWs:
             await self.distribute(self.func_registers[_key], data)
         elif (
             t in EVENTS.MESSAGE_CREATE
+            or t in EVENTS.DM_CREATE
             or t in EVENTS.C2C_MESSAGE_CREATE
             or t in EVENTS.GROUP_AT_MESSAGE_CREATE
         ):
@@ -386,17 +409,25 @@ class BotWs:
             else:
                 treated_msg = ""
             # distribute_commands return True when short circuit
-            # print("0")
-            if not await self.distribute_commands(data, treated_msg):
-                # print("1")
-                if t in EVENTS.MESSAGE_CREATE:
-                    # print("2")
+            if t in EVENTS.MESSAGE_CREATE:
+                if not await self.distribute_commands(
+                    CommandValidScenes.GUILD, data, treated_msg
+                ):
                     await self.distribute(self.func_registers["on_msg"], data)
-                elif t in EVENTS.C2C_MESSAGE_CREATE:
-                    # print("3")
+            elif t in EVENTS.DM_CREATE:
+                if not await self.distribute_commands(
+                    CommandValidScenes.DM, data, treated_msg
+                ):
+                    await self.distribute(self.func_registers["on_dm"], data)
+            elif t in EVENTS.C2C_MESSAGE_CREATE:
+                if not await self.distribute_commands(
+                    CommandValidScenes.C2C, data, treated_msg
+                ):
                     await self.distribute(self.func_registers["on_friend_msg"], data)
-                else:  # t in EVENTS.GROUP_AT_MESSAGE_CREATE
-                    # print("4")
+            else:  # t in EVENTS.GROUP_AT_MESSAGE_CREATE
+                if not await self.distribute_commands(
+                    CommandValidScenes.GROUP, data, treated_msg
+                ):
                     await self.distribute(self.func_registers["on_group_msg"], data)
         elif t in EVENTS.MESSAGE_DELETE:
             if self.func_registers["del_is_filter_self"]:
@@ -405,11 +436,6 @@ class BotWs:
                 if op_user == target:
                     return
             await self.distribute(self.func_registers["on_delete"], data)
-        elif t in EVENTS.DM_CREATE:
-            if self.dm_treat:
-                raw_msg = d.get("content", "").strip()
-                data["d"]["treated_msg"] = treat_msg(raw_msg, self.at)
-            await self.distribute(self.func_registers["on_dm"], data)
         elif t in EVENTS.FORUM:
             treat_thread(data)
             await self.distribute(self.func_registers["on_forum"], data)

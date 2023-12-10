@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from abc import ABC, abstractmethod
 from typing import Dict, Hashable, Optional
 
 from ._statics import TraceNames
@@ -7,7 +8,7 @@ from ._utils import TraceCallerData, stack_exception_handler
 from .model import Scope, SessionObject, SessionStatus
 
 
-class AbstractSessionManager:
+class AbstractSessionManager(ABC):
     """
     Session Manager用于管理在不同作用域（scope）下的 sessions，主要用处为存储运行时的临时数据。
 
@@ -15,6 +16,7 @@ class AbstractSessionManager:
     """
 
     # -*- session manage methods -*-
+    @abstractmethod
     def new(
         self,
         scope: Scope,
@@ -42,6 +44,7 @@ class AbstractSessionManager:
         """
         ...
 
+    @abstractmethod
     def get(
         self,
         scope: Scope,
@@ -61,6 +64,7 @@ class AbstractSessionManager:
         """
         ...
 
+    @abstractmethod
     def update(
         self,
         scope: Scope,
@@ -80,6 +84,7 @@ class AbstractSessionManager:
         """
         ...
 
+    @abstractmethod
     def remove(
         self, scope: Scope = None, identify: Hashable = None, key: Hashable = None
     ):
@@ -94,6 +99,7 @@ class AbstractSessionManager:
         """
         ...
 
+    @abstractmethod
     def end(
         self, scope: Scope, key, inactive_gc_timeout: Optional[float] = 0
     ) -> SessionObject:
@@ -106,12 +112,14 @@ class AbstractSessionManager:
         """
         ...
 
+    @abstractmethod
     def get_all(self) -> Dict:
         """
         获取所有session
         """
         ...
 
+    @abstractmethod
     def set_status(
         self,
         scope: Scope,
@@ -129,6 +137,7 @@ class AbstractSessionManager:
         """
         ...
 
+    @abstractmethod
     def get_status(
         self, scope: Scope, key: Hashable, identify: Hashable = None
     ) -> SessionStatus:
@@ -144,6 +153,7 @@ class AbstractSessionManager:
         ...
 
     # -*- fetch/commit data methods -*-
+    @abstractmethod
     def fetch_data(self, is_info: bool = True):
         """
         从数据库（默认为session_data文件夹）中获取session数据，更新相应session的存储数据，具体表现为dict.update()
@@ -152,6 +162,7 @@ class AbstractSessionManager:
         """
         ...
 
+    @abstractmethod
     def commit_data(self, is_info: bool = True):
         """
         将session数据保存到数据库（默认为session_data文件夹）
@@ -160,6 +171,7 @@ class AbstractSessionManager:
         """
         ...
 
+    @abstractmethod
     def set_auto_commit(self, is_auto_commit: bool):
         """
         设置是否自动保存session数据到数据库（默认为session_data文件夹）
@@ -168,6 +180,7 @@ class AbstractSessionManager:
         """
         ...
 
+    @abstractmethod
     def set_commit_path(self, commit_path: str):
         """
         设置保存session数据的数据库路径
@@ -177,7 +190,7 @@ class AbstractSessionManager:
         ...
 
 
-class SessionPatcher(AbstractSessionManager):
+class SessionPatcher:
     """
     Patcher for session manager, currying data from stack and pass to actual function on session manager.
     """

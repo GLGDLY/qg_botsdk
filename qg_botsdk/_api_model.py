@@ -3,22 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
-
-class object_class:
-    def __init__(self, _static_copy, _data):
-        self.__dict__.update(_data)
-        self._static_copy = _static_copy
-
-    def __doc__(self):
-        return self._static_copy
-
-    def __repr__(self):
-        return self._static_copy
-
-    @property
-    def dict(self):
-        return self._static_copy
-
+from ._event import object_class
 
 apis = {
     ("获取用户ID", "get_bot_id"): [False, "此API不需要请求权限"],

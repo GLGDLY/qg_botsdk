@@ -9,6 +9,7 @@ example/session_data
 update.txt
 build
 dist
+whl
 qg_botsdk.egg-info
 docs/.vscode
 log

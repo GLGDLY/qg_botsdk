@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from asyncio import Lock as ALock
 from asyncio import get_event_loop, new_event_loop
+from copy import deepcopy
 from importlib.machinery import SourceFileLoader
 from os import getpid
 from os.path import exists
@@ -9,17 +10,17 @@ from os.path import split as path_split
 from re import Pattern
 from threading import Lock as TLock
 from time import sleep as t_sleep
-from typing import Any, Callable, Iterable, List, Optional, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Union
 
 from . import _exception
 from ._api_model import StrPtr, robot_model
 from ._session import SessionManager
-from ._utils import func_type_checker
+from ._utils import func_type_checker, union_type_checker
 from .api import API
 from .async_api import AsyncAPI
 from .http import Session
 from .logger import Logger
-from .model import BotCommandObject, Model
+from .model import BotCommandObject, CommandValidScenes, Model
 from .plugins import Plugins
 from .qg_bot_ws import BotWs as _BotWs
 from .session import AbstractSessionManager, SessionPatcher
@@ -138,7 +139,14 @@ class BOT:
             self.lock = ALock()
         self.__task = None
         self._commands: List[BotCommandObject] = []
-        self._preprocessors: List[Callable[[Model.MESSAGE], Any]] = []
+        self._preprocessors: Dict[
+            CommandValidScenes,
+            List[
+                Callable[
+                    [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
+                ]
+            ],
+        ] = {1 << x: [] for x in range(CommandValidScenes.ALL.bit_count())}
         self.session: AbstractSessionManager = SessionPatcher()
         self.disable_reconnect_on_not_recv_msg = disable_reconnect_on_not_recv_msg
 
@@ -165,7 +173,9 @@ class BOT:
         if "__sdk_default_logger" in Plugins.get_preprocessor_names():
             return
 
-        def __sdk_default_logger(data: Model.MESSAGE):
+        def __sdk_default_logger(
+            data: Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]
+        ):
             self.logger.info(
                 f"收到频道 {data.guild_id} 用户 {data.author.username}({data.author.id}) "
                 f"的消息：{data.treated_msg}"
@@ -173,35 +183,67 @@ class BOT:
 
         Plugins.before_command()(__sdk_default_logger)
 
-    def __register_msg_intents(self, is_log=True):
-        if not self._intents >> 9 & 1 and not self._intents >> 30 & 1:
-            if self.is_private:
-                self._intents = self._intents | 1 << 9
+    def __register_msg_intents(self, valid_scenes, is_log=True):
+        if valid_scenes & CommandValidScenes.GUILD:
+            if not self._intents >> 9 & 1 and not self._intents >> 30 & 1:
+                if self.is_private:
+                    self._intents = self._intents | 1 << 9
+                    if is_log:
+                        self.logger.info("消息（所有消息）接收函数订阅成功")
+                else:
+                    self._intents = self._intents | 1 << 30
+                    if is_log:
+                        self.logger.info("消息（艾特消息）接收函数订阅成功")
+        if valid_scenes & CommandValidScenes.DM:
+            if not self._intents >> 12 & 1:
+                self._intents = self._intents | 1 << 12
                 if is_log:
-                    self.logger.info("消息（所有消息）接收函数订阅成功")
-            else:
-                self._intents = self._intents | 1 << 30
+                    self.logger.info("私信接收函数订阅成功")
+        if (valid_scenes & CommandValidScenes.GROUP) or (
+            valid_scenes & CommandValidScenes.C2C
+        ):
+            if not self._intents >> 25 & 1:
+                self._intents = self._intents | 1 << 25
                 if is_log:
-                    self.logger.info("消息（艾特消息）接收函数订阅成功")
+                    self.logger.info("qq群及好友相关事件订阅成功")
 
     def _retrieve_new_plugins(self):
         commands, preprocessors = Plugins()
         if commands:
+            valid_scenes = 0
             for items in commands:
-                func_type_checker(items.func, Model.MESSAGE, is_async=self.is_async)
-            self.__register_msg_intents()
-        for func in preprocessors:
-            func_type_checker(func, Model.MESSAGE, is_async=self.is_async)
+                func_type_checker(
+                    items.func,
+                    union_type_checker(
+                        Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE
+                    ),
+                    is_async=self.is_async,
+                )
+                valid_scenes |= items.valid_scenes
+            self.__register_msg_intents(valid_scenes)
+        for _, funcs in preprocessors.items():
+            for func in funcs:
+                func_type_checker(
+                    func,
+                    union_type_checker(
+                        Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE
+                    ),
+                    is_async=self.is_async,
+                )
         return commands, preprocessors
 
     def refresh_plugins(self):
         commands, preprocessors = self._retrieve_new_plugins()
         self._commands.extend(commands)
-        self._preprocessors.extend(preprocessors)
+        for bit in range(CommandValidScenes.ALL.bit_count()):
+            current_bit = 1 << bit
+            self._preprocessors[current_bit].extend(preprocessors[current_bit])
 
     def clear_current_plugins(self):
         self._commands.clear()
-        self._preprocessors.clear()
+        self._preprocessors = {
+            1 << x: [] for x in range(CommandValidScenes.ALL.bit_count())
+        }
 
     def remove_command(self, command_obj: BotCommandObject):
         if command_obj in self._commands:
@@ -210,18 +252,29 @@ class BOT:
             raise ValueError(f"未找到指定的command {command_obj}")
 
     def remove_preprocessors(self, preprocessor: Callable[[Model.MESSAGE], Any]):
-        if preprocessor in self._preprocessors:
-            self._preprocessors.remove(preprocessor)
-        else:
-            raise ValueError(f"未找到指定的preprocessor {preprocessor}")
+        for bit in range(CommandValidScenes.ALL.bit_count()):
+            current_bit = 1 << bit
+            if preprocessor in self._preprocessors[current_bit]:
+                self._preprocessors[current_bit].remove(preprocessor)
+                return
+        raise ValueError(f"未找到指定的preprocessor {preprocessor}")
 
     @property
     def get_current_commands(self) -> List[BotCommandObject]:
         return self._commands[:]
 
     @property
-    def get_current_preprocessors(self) -> List[Callable[[Model.MESSAGE], Any]]:
-        return self._preprocessors[:]
+    def get_current_preprocessors(
+        self,
+    ) -> Dict[
+        CommandValidScenes,
+        List[
+            Callable[
+                [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
+            ]
+        ],
+    ]:
+        return deepcopy(self._preprocessors)
 
     def load_plugins(self, path_to_plugins: str):
         """
@@ -242,13 +295,19 @@ class BOT:
         if self._bot_class and self._bot_class.running:
             self.refresh_plugins()
 
-    def before_command(self):
+    def before_command(self, valid_scenes: CommandValidScenes = CommandValidScenes.ALL):
         """
         注册预处理器，将在检查所有commands前执行
+
+        :param valid_scenes: 此处理器的有效场景，可传入多个场景，如 CommandValidScenes.GUILD|CommandValidScenes.DM，默认全部
         """
 
-        def wrap(func: Callable[[Model.MESSAGE], Any]):
-            Plugins.before_command()(func)
+        def wrap(
+            func: Callable[
+                [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
+            ]
+        ):
+            Plugins.before_command(valid_scenes)(func)
             if self._bot_class and self._bot_class.running:
                 self.refresh_plugins()
             return func
@@ -265,6 +324,7 @@ class BOT:
         is_custom_short_circuit: bool = False,
         is_require_admin: bool = False,
         admin_error_msg: Optional[str] = None,
+        valid_scenes: CommandValidScenes = CommandValidScenes.ALL,
     ):
         """
         指令装饰器。用于快速注册消息事件，当连同bind_msg使用时，如没有触发短路，bind_msg注册的函数将在最后被调用
@@ -277,9 +337,14 @@ class BOT:
         :param is_custom_short_circuit: 如果触发指令成功而回调函数返回True则不运行后续指令，存在时优先于is_short_circuit，默认否
         :param is_require_admin: 是否要求频道主或或管理才可触发指令，默认否
         :param admin_error_msg: 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
+        :param valid_scenes: 此机器人命令的有效场景，可传入多个场景，如 CommandValidScenes.GUILD|CommandValidScenes.DM，默认全部
         """
 
-        def wrap(callback: Callable[[Model.MESSAGE], Any]):
+        def wrap(
+            callback: Callable[
+                [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
+            ]
+        ):
             Plugins.on_command(
                 command,
                 regex,
@@ -289,6 +354,7 @@ class BOT:
                 is_custom_short_circuit,
                 is_require_admin,
                 admin_error_msg,
+                valid_scenes,
             )(callback)
             if self._bot_class and self._bot_class.running:
                 self.refresh_plugins()
@@ -316,7 +382,7 @@ class BOT:
             if not treated_data:
                 self.msg_treat = False
             if all_msg is None:
-                self.__register_msg_intents()
+                self.__register_msg_intents(CommandValidScenes.GUILD)
             elif all_msg:
                 self._intents = self._intents | 1 << 9
                 self.logger.info("消息（所有消息）接收函数订阅成功")
@@ -570,8 +636,9 @@ class BOT:
         def wraps(func):
             func_type_checker(func, Model.GROUP_EVENTS, is_async=self.is_async)
             self._func_registers["on_group_event"] = func
-            self._intents = self._intents | 1 << 25
-            self.logger.info("群聊事件订阅成功")
+            if not self._intents >> 25 & 1:
+                self._intents = self._intents | 1 << 25
+                self.logger.info("qq群及好友相关事件订阅成功")
 
         if not callback:
             return wraps
@@ -589,9 +656,10 @@ class BOT:
 
         def wraps(func):
             func_type_checker(func, Model.FRIEND_EVENTS, is_async=self.is_async)
-            self._func_registers["on_group_event"] = func
-            self._intents = self._intents | 1 << 25
-            self.logger.info("用户事件订阅成功")
+            self._func_registers["on_friend_event"] = func
+            if not self._intents >> 25 & 1:
+                self._intents = self._intents | 1 << 25
+                self.logger.info("qq群及好友相关事件订阅成功")
 
         if not callback:
             return wraps
@@ -610,8 +678,9 @@ class BOT:
         def wraps(func):
             func_type_checker(func, Model.GROUP_MESSAGE, is_async=self.is_async)
             self._func_registers["on_group_msg"] = func
-            self._intents = self._intents | 1 << 25
-            self.logger.info("群聊(艾特消息)事件订阅成功")
+            if not self._intents >> 25 & 1:
+                self._intents = self._intents | 1 << 25
+                self.logger.info("qq群及好友相关事件订阅成功")
 
         if not callback:
             return wraps
@@ -630,8 +699,9 @@ class BOT:
         def wraps(func):
             func_type_checker(func, Model.C2C_MESSAGE, is_async=self.is_async)
             self._func_registers["on_friend_msg"] = func
-            self._intents = self._intents | 1 << 25
-            self.logger.info("用户单聊C2C事件订阅成功")
+            if not self._intents >> 25 & 1:
+                self._intents = self._intents | 1 << 25
+                self.logger.info("qq群及好友相关事件订阅成功")
 
         if not callback:
             return wraps

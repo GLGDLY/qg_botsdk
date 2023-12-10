@@ -3,17 +3,17 @@
 from asyncio import iscoroutinefunction
 from functools import wraps
 from inspect import Signature, signature, stack
-from json import dumps, loads
+from json import loads
 from json.decoder import JSONDecodeError
+from pathlib import Path
 from sys import exc_info
 from time import localtime, strftime
 from traceback import extract_tb
-from typing import BinaryIO, Callable, Dict, Iterable, Optional, Union
+from typing import Callable, Dict, Iterable, Union
 
 from aiohttp import ContentTypeError
 
-from ._api_model import BaseMessageApiModel, object_class, send_msg
-from ._statics import EVENTS
+from ._event import objectize
 from .version import __version__
 
 general_header = {"User-Agent": f"qg-botsdk v{__version__}"}
@@ -46,139 +46,6 @@ retry_err_code = (
     304082,
     304083,
 )
-msg_t = (
-    EVENTS.MESSAGE_CREATE
-    + EVENTS.DM_CREATE
-    + EVENTS.GROUP_AT_MESSAGE_CREATE
-    + EVENTS.C2C_MESSAGE_CREATE
-)
-event_t = EVENTS.GUILD_MEMBER + EVENTS.REACTION + EVENTS.FORUM + EVENTS.INTERACTION
-
-_reply_args = (
-    "content",
-    "image",
-    "file_image",
-    "message_reference_id",
-    "ignore_message_reference_error",
-)
-
-
-class event_class(object_class):
-    def reply(
-        self,
-        content: Optional[Union[str, BaseMessageApiModel]] = None,
-        image: Optional[str] = None,
-        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-        message_reference_id: Optional[str] = None,
-        ignore_message_reference_error: Optional[bool] = None,
-    ) -> send_msg():
-        """
-        回复消息
-
-        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
-        :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
-        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档，与image同时存在时优先使用此项
-        :param message_reference_id: 引用消息的id（选填）
-        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
-        """
-        raw_args = locals()
-        kwargs = {arg: raw_args[arg] for arg in _reply_args}
-        t = getattr(self, "t", None)
-        if t in msg_t:
-            kwargs["message_id"] = getattr(self, "id", None)
-        elif t in event_t:
-            kwargs["message_id"] = getattr(self, "event_id", None)
-        if "DIRECT_MESSAGE" in t:
-            kwargs["guild_id"] = getattr(self, "guild_id", None)
-            return getattr(self, "api").send_dm(**kwargs)
-        # elif "C2C_MESSAGE" in t:
-        #     kwargs["user_openid"] = getattr(getattr(self, "author", object()), "user_openid", None)
-        #     return getattr(self, "api").send_c2c_msg(**kwargs)
-        # elif "GROUP_AT_MESSAGE" in t:
-        #     kwargs["group_openid"] = getattr(self, "group_openid", None)
-        #     return getattr(self, "api").send_group_msg(**kwargs)
-        else:
-            kwargs["channel_id"] = (
-                self.channel_id
-                if hasattr(self, "channel_id")
-                else getattr(self, "id", None)
-            )
-            return getattr(self, "api").send_msg(**kwargs)
-
-
-class async_event_class(object_class):
-    async def reply(
-        self,
-        content: Optional[Union[str, BaseMessageApiModel]] = None,
-        image: Optional[str] = None,
-        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-        message_reference_id: Optional[str] = None,
-        ignore_message_reference_error: Optional[bool] = None,
-    ) -> send_msg():
-        """
-        回复消息
-
-        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
-        :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
-        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档，与image同时存在时优先使用此项
-        :param message_reference_id: 引用消息的id（选填）
-        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
-        """
-        raw_args = locals()
-        kwargs = {arg: raw_args[arg] for arg in _reply_args}
-        t = getattr(self, "t", None)
-        if t in msg_t:
-            kwargs["message_id"] = getattr(self, "id", None)
-        elif t in event_t:
-            kwargs["message_id"] = getattr(self, "event_id", None)
-        if "DIRECT_MESSAGE" in t:
-            kwargs["guild_id"] = getattr(self, "guild_id", None)
-            return await getattr(self, "api").send_dm(**kwargs)
-        # elif "C2C_MESSAGE" in t:
-        #     kwargs["user_openid"] = getattr(getattr(self, "author", object()), "user_openid", None)
-        #     return await getattr(self, "api").send_c2c_msg(**kwargs)
-        # elif "GROUP_AT_MESSAGE" in t:
-        #     kwargs["group_openid"] = getattr(self, "group_openid", None)
-        #     return await getattr(self, "api").send_group_msg(**kwargs)
-        else:
-            kwargs["channel_id"] = (
-                self.channel_id
-                if hasattr(self, "channel_id")
-                else getattr(self, "id", None)
-            )
-            return await getattr(self, "api").send_msg(**kwargs)
-
-
-def objectize(
-    data, api=None, is_async=False
-):  # if api is not None, the event is a resp class
-    if isinstance(data, dict):
-        try:
-            _static_copy = dumps(data)
-        except (TypeError, JSONDecodeError):
-            _static_copy = str(data)
-        # main func to process data
-        for keys, values in data.items():
-            if keys.isnumeric():
-                return data
-            if isinstance(values, dict):
-                data[keys] = objectize(values)
-            elif isinstance(values, list):
-                for i, items in enumerate(values):
-                    if isinstance(items, dict):
-                        data[keys][i] = objectize(items)
-        if api:
-            data["api"] = api
-            object_data = (
-                async_event_class(_static_copy, data)
-                if is_async
-                else event_class(_static_copy, data)
-            )
-        else:
-            object_data = object_class(_static_copy, data)
-        return object_data
-    else:
-        return data
 
 
 def template_wrapper(func):
@@ -232,7 +99,17 @@ def stack_exception_handler(error, stack_no: int = 1):
 
 
 def exception_handler(error):
-    error_info = extract_tb(exc_info()[-1])[-1]
+    tb = extract_tb(exc_info()[-1])
+    tb_index = -1
+    error_info = tb[tb_index]
+    # if error tb path is inside current package, then traceback to the last tb path outside current package
+    current = Path(__file__).parent
+    try:
+        while current in Path(error_info.filename).parents:
+            tb_index -= 1
+            error_info = tb[tb_index]
+    except IndexError:
+        pass
     return '[error:{}] File "{}", line {}, in {}'.format(
         error.__repr__(), *error_info[:3]
     )
@@ -347,6 +224,23 @@ def sdk_error_temp(message):
             "result": False,
         }
     )
+
+
+class union_type_checker:
+    def __init__(self, *args):
+        self.types = args
+
+    def __repr__(self):
+        return f"Union[{', '.join([t.__name__ for t in self.types])}]"
+
+    def __eq__(self, other):
+        if getattr(other, "__origin__", None) is Union:
+            if all([t in self.types for t in other.__args__]):
+                return True
+        for t in self.types:
+            if other == t:
+                return True
+        return False
 
 
 def func_type_checker(func, *args, is_async: bool = False):

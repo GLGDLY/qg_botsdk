@@ -22,6 +22,7 @@ from .api_model import ApiModel
 from .logger import Logger
 from .model import (
     BotCommandObject,
+    CommandValidScenes,
     EmojiID,
     EmojiString,
     Model,
@@ -55,6 +56,7 @@ __all__ = (
     "SessionObject",
     "SessionStatus",
     "BotCommandObject",
+    "CommandValidScenes",
     "EmojiID",
     "EmojiString",
     "Logger",

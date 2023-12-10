@@ -24,7 +24,7 @@ from .model import (
     WaifForCommandCallback,
 )
 
-_AllScopeStr = ("USER", "GUILD", "CHANNEL", "GLOBAL")
+_AllScopeStr = ("USER", "GUILD", "CHANNEL", "GROUP", "GLOBAL")
 ScopeRegisterKey = namedtuple("ScopeRegisterKey", _AllScopeStr)
 
 
@@ -226,6 +226,8 @@ class SessionManager:
             identify = self.__get_guild_id(data)
         elif scope == Scope.CHANNEL or scope == "CHANNEL":
             identify = self.__get_channel_id(data)
+        elif scope == Scope.GROUP or scope == "GROUP":
+            identify = self.__get_group_openid(data)
         else:
             identify = None
         return identify
@@ -248,6 +250,14 @@ class SessionManager:
         t = data.t
         if t in EVENTS.MESSAGE_CREATE or t in EVENTS.DM_CREATE:
             return data.author.id
+        elif t in EVENTS.GROUP_AT_MESSAGE_CREATE:
+            return data.author.member_openid
+        elif t in EVENTS.C2C_MESSAGE_CREATE:
+            return data.author.user_openid
+        elif t in EVENTS.GROUP:
+            return data.group_openid
+        elif t in EVENTS.FRIEND:
+            return data.openid
         elif t in EVENTS.GUILD or t in EVENTS.CHANNEL:
             return data.op_user_id
         elif t in EVENTS.GUILD_MEMBER:
@@ -260,8 +270,7 @@ class SessionManager:
             return data.user_id
         elif t in EVENTS.INTERACTION:
             return data.data.resolved.user_id
-        else:
-            raise ValueError(f"当前事件{data.t}不支持使用user scope")
+        return 0
 
     @staticmethod
     def __get_guild_id(data) -> Hashable:
@@ -284,8 +293,7 @@ class SessionManager:
             return data.id
         elif t in EVENTS.MESSAGE_DELETE:
             return data.message.guild_id
-        else:
-            raise ValueError(f"当前事件{data.t}不支持使用guild scope")
+        return 0
 
     @staticmethod
     def __get_channel_id(data) -> Hashable:
@@ -305,8 +313,16 @@ class SessionManager:
             return data.id
         elif t in EVENTS.MESSAGE_DELETE:
             return data.message.channel_id
-        else:
-            raise ValueError(f"当前事件{data.t}不支持使用channel scope")
+        return 0
+
+    @staticmethod
+    def __get_group_openid(data) -> Hashable:
+        t = data.t
+        if t in EVENTS.GROUP_AT_MESSAGE_CREATE:
+            return data.group_openid
+        elif t in EVENTS.GROUP:
+            return data.id
+        return 0
 
     def __check_and_get_target_session(self, obj, scope, key, identify):
         if not identify:
