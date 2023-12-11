@@ -5,7 +5,6 @@ import pickle
 from asyncio import AbstractEventLoop, sleep
 from collections import namedtuple
 from copy import deepcopy
-from threading import Thread
 from time import time
 from typing import Dict, Hashable, Iterable, List, Optional, Union
 from weakref import finalize
@@ -13,6 +12,7 @@ from weakref import finalize
 from ._statics import EVENTS, EventIDEvents, MsgIDEvents
 from ._utils import exception_handler
 from .api import API
+from .api_model import BaseMessageApiModel
 from .async_api import AsyncAPI
 from .logger import Logger
 from .model import (
@@ -135,6 +135,11 @@ class SessionManager:
         _change = False
         gc_keys = []
         for k, v in session.items():
+            if not isinstance(
+                v, _SessionObject
+            ):  # prevent dead loop on non valid object
+                gc_keys.append(k)
+                continue
             if (
                 v.status == SessionStatus.ACTIVE
                 and v.timeout is not None
@@ -144,17 +149,22 @@ class SessionManager:
                     try:
                         if time_now > v.timeout_reply_message_id_expire:
                             del v.timeout_reply_params["message_id"]
+                        elif (
+                            v.timeout_reply_api == "send_group_msg"
+                            or v.timeout_reply_api == "send_qq_dm"
+                        ):
+                            v.timeout_reply_params[
+                                "msg_seq"
+                            ] = 999999999  # 保证消息不会因为这破msg_seq而被忽略
                         _params = {"content": v.timeout_reply, **v.timeout_reply_params}
                         if isinstance(self.api, AsyncAPI):
                             loop.create_task(
                                 getattr(self.api, v.timeout_reply_api)(**_params)
                             )
                         elif isinstance(self.api, API):
-                            Thread(
-                                target=getattr(self.api, v.timeout_reply_api),
-                                kwargs=_params,
-                                daemon=True,
-                            ).start()
+                            loop.create_task(
+                                getattr(self.api._api, v.timeout_reply_api)(**_params)
+                            )
                     except Exception as e:
                         self.__logger.error(
                             f"Session({scope}::{k}) 超时回调错误：{e.__repr__()}"
@@ -179,7 +189,7 @@ class SessionManager:
 
     async def __manager_loop(self, loop: AbstractEventLoop):
         while True:
-            await sleep(0.1)
+            await sleep(0.5)
             change = False
             try:
                 time_now = time()
@@ -297,6 +307,8 @@ class SessionManager:
             target_sessions = self.__sessions["GUILD"]
         elif scope == Scope.CHANNEL or scope == "CHANNEL":
             target_sessions = self.__sessions["CHANNEL"]
+        elif scope == Scope.GROUP or scope == "GROUP":
+            target_sessions = self.__sessions["GROUP"]
         else:
             target_sessions = self.__sessions["GLOBAL"]
         return target_sessions
@@ -405,7 +417,7 @@ class SessionManager:
         identify: Hashable = None,
         is_replace: bool = True,
         timeout: Optional[float] = None,
-        timeout_reply: str = None,
+        timeout_reply: Optional[Union[str, BaseMessageApiModel]] = None,
         inactive_gc_timeout: Optional[float] = 0,
     ) -> SessionObject:
         if not identify:
