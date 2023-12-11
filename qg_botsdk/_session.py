@@ -10,7 +10,7 @@ from time import time
 from typing import Dict, Hashable, Iterable, List, Optional, Union
 from weakref import finalize
 
-from ._statics import EVENTS
+from ._statics import EVENTS, EventIDEvents, MsgIDEvents
 from ._utils import exception_handler
 from .api import API
 from .async_api import AsyncAPI
@@ -38,6 +38,7 @@ class _SessionObject:
         timeout_reply: str = None,
         inactive_gc_timeout: Optional[float] = None,
         gc_timeout_stamp: Optional[float] = None,
+        timeout_reply_api: Optional[str] = None,
         timeout_reply_params: Dict = None,
         timeout_reply_message_id_expire: float = None,
     ):
@@ -48,6 +49,7 @@ class _SessionObject:
         self.timeout_reply = timeout_reply
         self.inactive_gc_timeout = inactive_gc_timeout  # 处于INACTIVE的session在相隔这段时间后被回收
         self.gc_timeout_stamp = gc_timeout_stamp  # 处于INACTIVE的session在此时间后被回收
+        self.timeout_reply_api = timeout_reply_api  # 超时回复的消息API
         self.timeout_reply_params = timeout_reply_params  # 超时回复的消息默认参数
         self.timeout_reply_message_id_expire = (
             timeout_reply_message_id_expire  # 超时回复的消息ID过期时间
@@ -144,14 +146,15 @@ class SessionManager:
                             del v.timeout_reply_params["message_id"]
                         _params = {"content": v.timeout_reply, **v.timeout_reply_params}
                         if isinstance(self.api, AsyncAPI):
-                            loop.create_task(self.api.send_msg(**_params))
-
+                            loop.create_task(
+                                getattr(self.api, v.timeout_reply_api)(**_params)
+                            )
                         elif isinstance(self.api, API):
                             Thread(
-                                target=self.api.send_msg, kwargs=_params, daemon=True
+                                target=getattr(self.api, v.timeout_reply_api),
+                                kwargs=_params,
+                                daemon=True,
                             ).start()
-                        else:
-                            pass
                     except Exception as e:
                         self.__logger.error(
                             f"Session({scope}::{k}) 超时回调错误：{e.__repr__()}"
@@ -231,6 +234,59 @@ class SessionManager:
         else:
             identify = None
         return identify
+
+    def __get_reply_params(self, data) -> Dict:
+        timeout_reply_api = None
+        timeout_reply_params = {}
+
+        try:
+            t = data.t
+            if t in MsgIDEvents:
+                timeout_reply_params = {"message_id": getattr(data, "id", None)}
+            elif t in EventIDEvents:
+                timeout_reply_params = {"message_id": getattr(data, "event_id", None)}
+
+            if (
+                t in EVENTS.MESSAGE_CREATE
+                or t in EVENTS.REACTION
+                or t in EVENTS.INTERACTION
+                or t in EVENTS.AUDIT
+                or t in EVENTS.AUDIO
+                or t in EVENTS.ALC_MEMBER
+            ):
+                timeout_reply_params["channel_id"] = data.channel_id
+                timeout_reply_api = "send_msg"
+            elif t in EVENTS.DM_CREATE:
+                timeout_reply_params["guild_id"] = data.guild_id
+                timeout_reply_api = "send_dm"
+            elif t in EVENTS.GROUP_AT_MESSAGE_CREATE or t in EVENTS.GROUP:
+                timeout_reply_params["group_openid"] = data.group_openid
+                timeout_reply_api = "send_group_msg"
+            elif t in EVENTS.C2C_MESSAGE_CREATE:
+                timeout_reply_params["user_openid"] = data.author.user_openid
+                timeout_reply_api = "send_qq_dm"
+            elif t in EVENTS.MESSAGE_DELETE:
+                if t in t in ("MESSAGE_DELETE", "PUBLIC_MESSAGE_DELETE"):
+                    timeout_reply_params["channel_id"] = data.message.channel_id
+                    timeout_reply_api = "send_msg"
+                else:  # DIRECT_MESSAGE_DELETE
+                    timeout_reply_params["guild_id"] = data.message.guild_id
+                    timeout_reply_api = "send_dm"
+            elif t in EVENTS.CHANNEL:
+                timeout_reply_params["channel_id"] = data.id
+                timeout_reply_api = "send_msg"
+            elif t in EVENTS.FRIEND:
+                timeout_reply_params["user_openid"] = data.openid
+                timeout_reply_api = "send_qq_dm"
+            # not support event: FORUM, GUILD, GUILD_MEMBER, OPEN_FORUM
+        except Exception as e:
+            self.__logger.error(f"Session Manager 获取回复参数时出现错误：{e.__repr__()}")
+            self.__logger.error(exception_handler(e))
+
+        return {
+            "timeout_reply_api": timeout_reply_api,
+            "timeout_reply_params": timeout_reply_params,
+        }
 
     def __check_scope(
         self, scope: Union[Scope, str]
@@ -372,8 +428,8 @@ class SessionManager:
             last_operate=time(),
             timeout_reply=timeout_reply,
             inactive_gc_timeout=inactive_gc_timeout,
-            timeout_reply_params={"message_id": obj.id, "channel_id": obj.channel_id},
             timeout_reply_message_id_expire=time() + 300,
+            **self.__get_reply_params(obj),
         )
         if self.__is_auto_commit:
             self.commit_data(is_info=False)

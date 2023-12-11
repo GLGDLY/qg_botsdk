@@ -51,3 +51,13 @@ class EVENTS:
 
 
 TraceNames = ("start_callback_task", "async_start_callback_task")
+
+MsgIDEvents = (
+    EVENTS.MESSAGE_CREATE
+    + EVENTS.DM_CREATE
+    + EVENTS.GROUP_AT_MESSAGE_CREATE
+    + EVENTS.C2C_MESSAGE_CREATE
+)
+EventIDEvents = (
+    EVENTS.GUILD_MEMBER + EVENTS.REACTION + EVENTS.FORUM + EVENTS.INTERACTION
+)

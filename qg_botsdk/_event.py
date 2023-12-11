@@ -1,15 +1,7 @@
 from json import JSONDecodeError, dumps
 from typing import Callable, Dict
 
-from ._statics import EVENTS
-
-msg_t = (
-    EVENTS.MESSAGE_CREATE
-    + EVENTS.DM_CREATE
-    + EVENTS.GROUP_AT_MESSAGE_CREATE
-    + EVENTS.C2C_MESSAGE_CREATE
-)
-event_t = EVENTS.GUILD_MEMBER + EVENTS.REACTION + EVENTS.FORUM + EVENTS.INTERACTION
+from ._statics import EventIDEvents, MsgIDEvents
 
 v1_reply_args = (
     "content",
@@ -50,9 +42,9 @@ def _event_class_reply_get_api(
 ) -> Callable:
     t = getattr(obj, "t", None)
 
-    if t in msg_t:
+    if t in MsgIDEvents:
         kwargs["message_id"] = getattr(obj, "id", None)
-    elif t in event_t:
+    elif t in EventIDEvents:
         kwargs["message_id"] = getattr(obj, "event_id", None)
 
     if "DIRECT_MESSAGE" in t:
