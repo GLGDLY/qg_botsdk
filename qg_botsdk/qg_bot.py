@@ -146,7 +146,7 @@ class BOT:
                     [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
                 ]
             ],
-        ] = {1 << x: [] for x in range(CommandValidScenes.ALL.bit_count())}
+        ] = {1 << x: [] for x in range(CommandValidScenes.ALL.bit_length())}
         self.session: AbstractSessionManager = SessionPatcher()
         self.disable_reconnect_on_not_recv_msg = disable_reconnect_on_not_recv_msg
 
@@ -235,14 +235,14 @@ class BOT:
     def refresh_plugins(self):
         commands, preprocessors = self._retrieve_new_plugins()
         self._commands.extend(commands)
-        for bit in range(CommandValidScenes.ALL.bit_count()):
+        for bit in range(CommandValidScenes.ALL.bit_length()):
             current_bit = 1 << bit
             self._preprocessors[current_bit].extend(preprocessors[current_bit])
 
     def clear_current_plugins(self):
         self._commands.clear()
         self._preprocessors = {
-            1 << x: [] for x in range(CommandValidScenes.ALL.bit_count())
+            1 << x: [] for x in range(CommandValidScenes.ALL.bit_length())
         }
 
     def remove_command(self, command_obj: BotCommandObject):
@@ -252,7 +252,7 @@ class BOT:
             raise ValueError(f"未找到指定的command {command_obj}")
 
     def remove_preprocessors(self, preprocessor: Callable[[Model.MESSAGE], Any]):
-        for bit in range(CommandValidScenes.ALL.bit_count()):
+        for bit in range(CommandValidScenes.ALL.bit_length()):
             current_bit = 1 << bit
             if preprocessor in self._preprocessors[current_bit]:
                 self._preprocessors[current_bit].remove(preprocessor)

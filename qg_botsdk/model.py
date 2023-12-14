@@ -668,7 +668,7 @@ class SessionObject:
         )
 
 
-class CommandValidScenes:
+class CommandValidScenes(int):
     """
     机器人命令的有效场景，用于限制机器人命令的有效场景，可传入多个场景，如 CommandValidScenes.GUILD | CommandValidScenes.DM
 

@@ -21,7 +21,7 @@ class Plugins:
                 [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
             ]
         ],
-    ] = {1 << x: [] for x in range(CommandValidScenes.ALL.bit_count())}
+    ] = {1 << x: [] for x in range(CommandValidScenes.ALL.bit_length())}
     api: Union[API, AsyncAPI] = TraceCallerData(TraceNames, ("self", "api"))
     logger: Logger = TraceCallerData(TraceNames, ("self", "logger"))
     session: AbstractSessionManager = SessionPatcher()
@@ -34,7 +34,7 @@ class Plugins:
     ) -> Tuple[List, Dict[CommandValidScenes, List]]:
         commands, preprocessors = cls._commands, cls._preprocessors
         cls._commands, cls._preprocessors = [], {
-            1 << x: [] for x in range(CommandValidScenes.ALL.bit_count())
+            1 << x: [] for x in range(CommandValidScenes.ALL.bit_length())
         }
         return commands, preprocessors
 
@@ -62,7 +62,7 @@ class Plugins:
             ]
         ):
             # cls._preprocessors.append(func)
-            for bit in range(CommandValidScenes.ALL.bit_count()):
+            for bit in range(CommandValidScenes.ALL.bit_length()):
                 current_bit = 1 << bit
                 if current_bit & valid_scenes:
                     cls._preprocessors[current_bit].append(func)
