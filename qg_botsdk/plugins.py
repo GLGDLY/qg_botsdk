@@ -15,7 +15,7 @@ from .session import AbstractSessionManager, SessionPatcher
 class Plugins:
     _commands: List[BotCommandObject] = []
     _preprocessors: Dict[
-        CommandValidScenes,
+        int,
         List[
             Callable[
                 [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
@@ -31,7 +31,7 @@ class Plugins:
         bot_id=None,
         api=None,
         logger=None,
-    ) -> Tuple[List, Dict[CommandValidScenes, List]]:
+    ) -> Tuple[List, Dict[int, List]]:
         commands, preprocessors = cls._commands, cls._preprocessors
         cls._commands, cls._preprocessors = [], {
             1 << x: [] for x in range(CommandValidScenes.ALL.bit_length())
@@ -49,11 +49,15 @@ class Plugins:
         return (x.func.__name__ for x in cls._commands)
 
     @classmethod
-    def before_command(cls, valid_scenes: CommandValidScenes = CommandValidScenes.ALL):
+    def before_command(
+        cls,
+        valid_scenes: CommandValidScenes = CommandValidScenes.GUILD
+        | CommandValidScenes.DM,
+    ):
         """
         注册plugins预处理器，将在检查所有commands前执行
 
-        :param valid_scenes: 此处理器的有效场景，可传入多个场景，如 CommandValidScenes.GUILD|CommandValidScenes.DM，默认全部
+        :param valid_scenes: 此处理器的有效场景，可传入多个场景，默认 CommandValidScenes.GUILD|CommandValidScenes.DM
         """
 
         def wrap(
@@ -81,7 +85,8 @@ class Plugins:
         is_custom_short_circuit: bool = False,
         is_require_admin: bool = False,
         admin_error_msg: Optional[str] = None,
-        valid_scenes: CommandValidScenes = CommandValidScenes.ALL,
+        valid_scenes: CommandValidScenes = CommandValidScenes.GUILD
+        | CommandValidScenes.DM,
     ):
         """
         注册plugins指令装饰器，可用于分割式编写指令并注册进机器人
@@ -94,7 +99,7 @@ class Plugins:
         :param is_custom_short_circuit: 如果触发指令成功而回调函数返回True则不运行后续指令，存在时优先于is_short_circuit，默认否
         :param is_require_admin: 是否要求频道主或或管理才可触发指令，默认否
         :param admin_error_msg: 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
-        :param valid_scenes: 此机器人命令的有效场景，可传入多个场景，如 CommandValidScenes.GUILD|CommandValidScenes.DM，默认全部
+        :param valid_scenes: 此机器人命令的有效场景，可传入多个场景，默认 CommandValidScenes.GUILD|CommandValidScenes.DM
         """
 
         def wrap(

@@ -69,7 +69,13 @@ class BOT:
         :param api_timeout: API请求的超时设置。默认20
         :param disable_reconnect_on_not_recv_msg: 当机器人长时间未收到消息后进行连接而非重连。默认1000秒
         """
+        try:
+            self._loop = get_event_loop()
+        except RuntimeError:
+            self._loop = new_event_loop()
+
         self.logger = Logger(bot_id)
+        self._loop.create_task(self.logger.start())
         self.bot_id = bot_id
         self.bot_token = bot_token
         self.bot_secret = bot_secret
@@ -86,10 +92,6 @@ class BOT:
                 "你还没有输入 bot_id 和 bot_token/bot_secret，无法连接使用机器人\n如尚未有相关票据，"
                 "请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情"
             )
-        try:
-            self._loop = get_event_loop()
-        except RuntimeError:
-            self._loop = new_event_loop()
         self._intents = 0
         self._shard_no = shard_no
         self._total_shard = total_shard
@@ -140,7 +142,7 @@ class BOT:
         self.__task = None
         self._commands: List[BotCommandObject] = []
         self._preprocessors: Dict[
-            CommandValidScenes,
+            int,
             List[
                 Callable[
                     [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
@@ -295,11 +297,15 @@ class BOT:
         if self._bot_class and self._bot_class.running:
             self.refresh_plugins()
 
-    def before_command(self, valid_scenes: CommandValidScenes = CommandValidScenes.ALL):
+    def before_command(
+        self,
+        valid_scenes: CommandValidScenes = CommandValidScenes.GUILD
+        | CommandValidScenes.DM,
+    ):
         """
         注册预处理器，将在检查所有commands前执行
 
-        :param valid_scenes: 此处理器的有效场景，可传入多个场景，如 CommandValidScenes.GUILD|CommandValidScenes.DM，默认全部
+        :param valid_scenes: 此处理器的有效场景，可传入多个场景，默认 CommandValidScenes.GUILD|CommandValidScenes.DM
         """
 
         def wrap(
@@ -324,7 +330,8 @@ class BOT:
         is_custom_short_circuit: bool = False,
         is_require_admin: bool = False,
         admin_error_msg: Optional[str] = None,
-        valid_scenes: CommandValidScenes = CommandValidScenes.ALL,
+        valid_scenes: CommandValidScenes = CommandValidScenes.GUILD
+        | CommandValidScenes.DM,
     ):
         """
         指令装饰器。用于快速注册消息事件，当连同bind_msg使用时，如没有触发短路，bind_msg注册的函数将在最后被调用
@@ -337,7 +344,7 @@ class BOT:
         :param is_custom_short_circuit: 如果触发指令成功而回调函数返回True则不运行后续指令，存在时优先于is_short_circuit，默认否
         :param is_require_admin: 是否要求频道主或或管理才可触发指令，默认否
         :param admin_error_msg: 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
-        :param valid_scenes: 此机器人命令的有效场景，可传入多个场景，如 CommandValidScenes.GUILD|CommandValidScenes.DM，默认全部
+        :param valid_scenes: 此机器人命令的有效场景，可传入多个场景，默认 CommandValidScenes.GUILD|CommandValidScenes.DM
         """
 
         def wrap(

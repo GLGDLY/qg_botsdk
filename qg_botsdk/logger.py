@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from functools import wraps
+from __future__ import annotations
+
+import typing
+from asyncio import Queue as AsyncQueue
 from io import StringIO
 from logging import FileHandler, Formatter, StreamHandler, getLogger
 from os import PathLike, getcwd, makedirs, sep
 from os.path import exists, isdir, join
 from re import split as re_split
 from time import localtime, strftime
-from typing import Dict, List, Union
 
 try:
     from colorama import init as color_init
@@ -17,21 +19,6 @@ except (ImportError, ModuleNotFoundError):
     from os import system
 
     system("")
-
-
-def _log_wrapper(func):
-    @wraps(func)
-    def wrap(self, *args, **kwargs):
-        str_time = strftime("%m-%d", localtime())
-        if str_time != self._previous_time:
-            self._logger.removeHandler(self._logh)
-            self._new_logh(str_time)
-        try:
-            func(self, *args, **kwargs)
-        except UnicodeDecodeError:
-            pass
-
-    return wrap
 
 
 class Logger:
@@ -50,8 +37,8 @@ class Logger:
     def __init__(
         self,
         bot_app_id: str,
-        file_path: Union[str, PathLike] = None,
-        disable_logger: List[str] = None,
+        file_path: typing.Union[str, PathLike] = None,
+        disable_logger: typing.List[str] = None,
     ):
         """
         用作logging输出的类，支持不同level的颜色log输出，可自定义格式
@@ -89,7 +76,9 @@ class Logger:
         self._logh = None
         self._new_logh(strftime("%m-%d", localtime()))
         self._logger.addHandler(self._cmdh)
-        self._previous_time = strftime("%m-%d", localtime())
+        # self._previous_time = strftime("%m-%d", localtime())
+        self._previous_time = "12-16"
+        self.event_queue = AsyncQueue()
 
     class _Stream_Formatter(Formatter):
         FORMATS = {
@@ -98,7 +87,7 @@ class Logger:
             40: "\033[1;31m[%(asctime)s] [%(levelname)s]\033[0m %(message)s",
         }
 
-        def __init__(self, formats: Dict = None, date_format: str = None):
+        def __init__(self, formats: typing.Dict = None, date_format: str = None):
             super().__init__()
             if formats is not None:
                 self.FORMATS[20] = formats.get(20, None) or self.FORMATS[20]
@@ -111,7 +100,11 @@ class Logger:
             formatter = Formatter(log_fmt, self._date_format)
             return formatter.format(record)
 
-    def setLevel(self, level: Union[int, str]):
+    def setLevel(
+        self,
+        level: typing.Union[int, str],
+        logger: typing.Literal["console", "file"] = "console",
+    ):
         """
         用于设置logger的level，同logging.logger.setLevel()
 
@@ -119,6 +112,7 @@ class Logger:
         <https://docs.python.org/zh-cn/3.10/library/logging.html#logging.Logger.setLevel>`_
 
         :param level: level必须是int或str
+        :param logger: 需要设置level的logger，允许传值为'console'或'file'，默认为'console'
         """
         self._logger.setLevel(level)
 
@@ -150,13 +144,13 @@ class Logger:
         self._logh.setFormatter(Formatter(self._format, self._date_format))
 
     @staticmethod
-    def disable_logger(loggers: Union[str, List[str]]):
+    def disable_logger(loggers: typing.Union[str, typing.List[str]]):
         """
         用于disable禁用logger
 
         :param loggers: 需要禁用的logger名称或名称列
         """
-        if isinstance(loggers, list):
+        if isinstance(loggers, typing.List):
             for items in loggers:
                 getLogger(items).disabled = True
         else:
@@ -179,18 +173,35 @@ class Logger:
         buf.close()
         return ret
 
-    @_log_wrapper
+    async def start(self):
+        while True:
+            func, args, kwargs = await self.event_queue.get()
+            str_time = strftime("%m-%d", localtime())
+            if str_time != self._previous_time:
+                self._previous_time = str_time
+                self._logger.removeHandler(self._logh)
+                self._new_logh(str_time)
+            try:
+                getattr(self._logger, func)(*args, **kwargs)
+                while (
+                    not self.event_queue.empty()
+                ):  # no need check logh update again before all queued tasks are done
+                    func, args, kwargs = self.event_queue.get_nowait()
+                    getattr(self._logger, func)(*args, **kwargs)
+            except UnicodeDecodeError:
+                pass
+
+    def __queue_task(self, func: str, *args, **kwargs):
+        self.event_queue.put_nowait((func, args, kwargs))
+
     def debug(self, *args, **kwargs):
-        self._logger.debug(self.__print_args_to_str(*args, **kwargs))
+        self.__queue_task("debug", self.__print_args_to_str(*args, **kwargs))
 
-    @_log_wrapper
     def info(self, *args, **kwargs):
-        self._logger.info(self.__print_args_to_str(*args, **kwargs))
+        self.__queue_task("info", self.__print_args_to_str(*args, **kwargs))
 
-    @_log_wrapper
     def warning(self, *args, **kwargs):
-        self._logger.warning(self.__print_args_to_str(*args, **kwargs))
+        self.__queue_task("warning", self.__print_args_to_str(*args, **kwargs))
 
-    @_log_wrapper
     def error(self, *args, **kwargs):
-        self._logger.error(self.__print_args_to_str(*args, **kwargs))
+        self.__queue_task("error", self.__print_args_to_str(*args, **kwargs))
