@@ -158,7 +158,7 @@ class BotWs:
         self.is_first_run = True
         self.robot = await self.get_robot_info()
         self.at = self.at % self.robot.id
-        self.logger.info(f"机器人频道用户ID：{self.robot.id}")
+        self.logger.info(f"当前机器人ID：{self.robot.id}")
         if self.on_start_function is not None:
             if self.is_async:
                 self.loop.create_task(
@@ -210,7 +210,7 @@ class BotWs:
             if not retry:
                 return self.get_robot_info(retry)
             else:
-                self.logger.error("当前获取机器人信息失败，机器人启动失败，程序将退出运行（可重试）")
+                self.logger.error("获取当前机器人信息失败，机器人启动失败，程序将退出运行（可重试）")
                 exit()
         return objectize(robot_info)
 

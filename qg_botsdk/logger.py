@@ -76,8 +76,8 @@ class Logger:
         self._logh = None
         self._new_logh(strftime("%m-%d", localtime()))
         self._logger.addHandler(self._cmdh)
-        # self._previous_time = strftime("%m-%d", localtime())
-        self._previous_time = "12-16"
+        self._previous_time = strftime("%m-%d", localtime())
+        # self._previous_time = "12-16"
         self.event_queue = AsyncQueue()
 
     class _Stream_Formatter(Formatter):
