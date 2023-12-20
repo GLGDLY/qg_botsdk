@@ -501,14 +501,16 @@ class Model:
 
             type: int
 
-        application_id: str
-        channel_id: str
-        guild_id: str
-        id: str
-        type: int
-        version: int
         t: str
         event_id: str
+        id: str
+        type: int
+        chat_type: int
+        guild_id: str
+        channel_id: str
+        group_open_id: str
+        version: int
+        application_id: str
 
     class LIVE_CHANNEL_MEMBER(_AbstractEventClass, ABC):
         """
