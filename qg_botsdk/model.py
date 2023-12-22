@@ -496,8 +496,9 @@ class Model:
             class resolved:
                 button_data: str
                 button_id: str
-                message_id: str
                 user_id: str
+                feature_id: str
+                message_id: str
 
             type: int
 

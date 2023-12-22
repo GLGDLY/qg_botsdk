@@ -14,7 +14,7 @@ from .async_api import AsyncAPI
 
 class API:
     def __init__(
-        self, api: AsyncAPI, loop: AbstractEventLoop, timeout: int, session_manager
+            self, api: AsyncAPI, loop: AbstractEventLoop, timeout: int, session_manager
     ):
         self._api = api
         self._loop = loop
@@ -24,10 +24,10 @@ class API:
 
     # sdk internal api
     def wait_for(
-        self,
-        scope: Union[model.Scope, Iterable[model.Scope]],
-        command_obj: model.BotCommandObject,
-        timeout: int = None,
+            self,
+            scope: Union[model.Scope, Iterable[model.Scope]],
+            command_obj: model.BotCommandObject,
+            timeout: int = None,
     ) -> model.Model.MESSAGE:
         """
         等待指定的command被触发
@@ -81,7 +81,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.security_check(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     @staticmethod
     def get_bot_id():
@@ -95,7 +95,7 @@ class API:
         """
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_bot_info(), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_bot_guilds(self) -> _api_model.get_bot_guilds():
         """
@@ -105,7 +105,7 @@ class API:
         """
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_bot_guilds(), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_guild_info(self, guild_id: str) -> _api_model.get_guild_info():
         """
@@ -120,7 +120,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_info(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_guild_channels(self, guild_id: str) -> _api_model.get_guild_channels():
         """
@@ -135,7 +135,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_channels(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_channels_info(self, channel_id: str) -> _api_model.get_channels_info():
         """
@@ -150,20 +150,20 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_channels_info(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def create_channels(
-        self,
-        guild_id: str,
-        name: str,
-        type_: int,
-        position: int,
-        parent_id: str = None,
-        sub_type: int = None,
-        private_type: int = None,
-        private_user_ids: List[str] = None,
-        speak_permission: int = None,
-        application_id: Optional[str] = None,
+            self,
+            guild_id: str,
+            name: str,
+            type_: int,
+            position: int,
+            parent_id: str = None,
+            sub_type: int = None,
+            private_type: int = None,
+            private_user_ids: List[str] = None,
+            speak_permission: int = None,
+            application_id: Optional[str] = None,
     ) -> _api_model.create_channels():
         """
         用于在 guild_id 指定的频道下创建一个子频道，一般仅私域机器人可用
@@ -186,16 +186,16 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_channels(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def patch_channels(
-        self,
-        channel_id: str,
-        name: Optional[str] = None,
-        position: Optional[int] = None,
-        parent_id: Optional[str] = None,
-        private_type: Optional[int] = None,
-        speak_permission: Optional[int] = None,
+            self,
+            channel_id: str,
+            name: Optional[str] = None,
+            position: Optional[int] = None,
+            parent_id: Optional[str] = None,
+            private_type: Optional[int] = None,
+            speak_permission: Optional[int] = None,
     ) -> _api_model.patch_channels():
         """
         用于修改 channel_id 指定的子频道的信息，需要修改哪个字段，就传递哪个字段即可
@@ -214,7 +214,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.patch_channels(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_channels(self, channel_id) -> _api_model.delete_channels():
         """
@@ -229,7 +229,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.delete_channels(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_online_nums(self, channel_id: str) -> _api_model.get_online_nums():
         """
@@ -244,7 +244,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_online_nums(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_guild_members(self, guild_id: str) -> _api_model.get_guild_members():
         """
@@ -259,10 +259,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_members(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_role_members(
-        self, guild_id: str, role_id: str
+            self, guild_id: str, role_id: str
     ) -> _api_model.get_role_members():
         """
         用于获取 guild_id 频道中指定 role_id 身份组下所有成员的详情列表
@@ -277,10 +277,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_role_members(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_member_info(
-        self, guild_id: str, user_id: str
+            self, guild_id: str, user_id: str
     ) -> _api_model.get_member_info():
         """
         用于获取 guild_id 指定的频道中 user_id 对应成员的详细信息
@@ -295,14 +295,14 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_member_info(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_member(
-        self,
-        guild_id: str,
-        user_id: str,
-        add_blacklist: bool = False,
-        delete_history_msg_days: int = 0,
+            self,
+            guild_id: str,
+            user_id: str,
+            add_blacklist: bool = False,
+            delete_history_msg_days: int = 0,
     ) -> _api_model.delete_member():
         """
         用于删除 guild_id 指定的频道下的成员 user_id
@@ -317,7 +317,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_member(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_guild_roles(self, guild_id: str) -> _api_model.get_guild_roles():
         """
@@ -332,14 +332,14 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_roles(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def create_role(
-        self,
-        guild_id: str,
-        name: Optional[str] = None,
-        hoist: Optional[bool] = None,
-        color: Optional[Union[str, Tuple[int, int, int]]] = None,
+            self,
+            guild_id: str,
+            name: Optional[str] = None,
+            hoist: Optional[bool] = None,
+            color: Optional[Union[str, Tuple[int, int, int]]] = None,
     ) -> _api_model.create_role():
         """
         用于在 guild_id 指定的频道下创建一个身份组
@@ -354,15 +354,15 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.create_role(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def patch_role(
-        self,
-        guild_id: str,
-        role_id: str,
-        name: Optional[str] = None,
-        hoist: Optional[bool] = None,
-        color: Optional[Union[str, Tuple[int, int, int]]] = None,
+            self,
+            guild_id: str,
+            role_id: str,
+            name: Optional[str] = None,
+            hoist: Optional[bool] = None,
+            color: Optional[Union[str, Tuple[int, int, int]]] = None,
     ) -> _api_model.patch_role():
         """
         用于修改频道 guild_id 下 role_id 指定的身份组
@@ -378,7 +378,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.patch_role(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_role(self, guild_id: str, role_id: str) -> _api_model.delete_role():
         """
@@ -392,14 +392,14 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_role(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def create_role_member(
-        self,
-        user_id: str,
-        guild_id: str,
-        role_id: str,
-        channel_id: Optional[str] = None,
+            self,
+            user_id: str,
+            guild_id: str,
+            role_id: str,
+            channel_id: Optional[str] = None,
     ) -> _api_model.role_members():
         """
         为频道指定成员添加指定身份组
@@ -416,14 +416,14 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_role_member(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_role_member(
-        self,
-        user_id: str,
-        guild_id: str,
-        role_id: str,
-        channel_id: Optional[str] = None,
+            self,
+            user_id: str,
+            guild_id: str,
+            role_id: str,
+            channel_id: Optional[str] = None,
     ) -> _api_model.role_members():
         """
         删除频道指定成员的指定身份组
@@ -440,10 +440,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.delete_role_member(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_channel_member_permission(
-        self, channel_id: str, user_id: str
+            self, channel_id: str, user_id: str
     ) -> _api_model.get_channel_member_permission():
         """
         用于获取 子频道 channel_id 下用户 user_id 的权限
@@ -458,14 +458,14 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_channel_member_permission(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def put_channel_member_permission(
-        self,
-        channel_id: str,
-        user_id: str,
-        add: Optional[str] = None,
-        remove: Optional[str] = None,
+            self,
+            channel_id: str,
+            user_id: str,
+            add: Optional[str] = None,
+            remove: Optional[str] = None,
     ) -> _api_model.put_channel_mr_permission():
         """
         用于修改子频道 channel_id 下用户 user_id 的权限
@@ -482,10 +482,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.put_channel_member_permission(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_channel_role_permission(
-        self, channel_id: str, role_id: str
+            self, channel_id: str, role_id: str
     ) -> _api_model.get_channel_role_permission():
         """
         用于获取 子频道 channel_id 下身份组 role_id 的权限
@@ -500,14 +500,14 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_channel_role_permission(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def put_channel_role_permission(
-        self,
-        channel_id: str,
-        role_id: str,
-        add: Optional[str] = None,
-        remove: Optional[str] = None,
+            self,
+            channel_id: str,
+            role_id: str,
+            add: Optional[str] = None,
+            remove: Optional[str] = None,
     ) -> _api_model.put_channel_mr_permission():
         """
         用于修改子频道 channel_id 下身份组 role_id 的权限
@@ -524,10 +524,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.put_channel_role_permission(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_message_info(
-        self, channel_id: str, message_id: str
+            self, channel_id: str, message_id: str
     ) -> _api_model.get_message_info():
         """
         用于获取子频道 channel_id 下的消息 message_id 的详情
@@ -542,18 +542,18 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_message_info(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def send_msg(
-        self,
-        channel_id: str,
-        content: Optional[Union[str, BaseMessageApiModel]] = None,
-        image: Optional[str] = None,
-        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-        message_id: Optional[str] = None,
-        event_id: Optional[str] = None,
-        message_reference_id: Optional[str] = None,
-        ignore_message_reference_error: Optional[bool] = None,
+            self,
+            channel_id: str,
+            content: Optional[Union[str, BaseMessageApiModel]] = None,
+            image: Optional[str] = None,
+            file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+            message_id: Optional[str] = None,
+            event_id: Optional[str] = None,
+            message_reference_id: Optional[str] = None,
+            ignore_message_reference_error: Optional[bool] = None,
     ) -> _api_model.send_msg():
         """
         发送普通消息的API
@@ -572,17 +572,17 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_msg(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def send_embed(
-        self,
-        channel_id: str,
-        title: Optional[str] = None,
-        content: Optional[List[str]] = None,
-        image: Optional[str] = None,
-        prompt: Optional[str] = None,
-        message_id: Optional[str] = None,
-        event_id: Optional[str] = None,
+            self,
+            channel_id: str,
+            title: Optional[str] = None,
+            content: Optional[List[str]] = None,
+            image: Optional[str] = None,
+            prompt: Optional[str] = None,
+            message_id: Optional[str] = None,
+            event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
         """
         发送embed模板消息的API
@@ -600,17 +600,17 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_embed(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def send_ark_23(
-        self,
-        channel_id: str,
-        content: List[str],
-        link: List[str],
-        desc: Optional[str] = None,
-        prompt: Optional[str] = None,
-        message_id: Optional[str] = None,
-        event_id: Optional[str] = None,
+            self,
+            channel_id: str,
+            content: List[str],
+            link: List[str],
+            desc: Optional[str] = None,
+            prompt: Optional[str] = None,
+            message_id: Optional[str] = None,
+            event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
         """
         发送ark（id=23）模板消息的API，请注意机器人是否有权限使用此API
@@ -628,20 +628,20 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_ark_23(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def send_ark_24(
-        self,
-        channel_id: str,
-        title: Optional[str] = None,
-        content: Optional[str] = None,
-        subtitile: Optional[str] = None,
-        link: Optional[str] = None,
-        image: Optional[str] = None,
-        desc: Optional[str] = None,
-        prompt: Optional[str] = None,
-        message_id: Optional[str] = None,
-        event_id: Optional[str] = None,
+            self,
+            channel_id: str,
+            title: Optional[str] = None,
+            content: Optional[str] = None,
+            subtitile: Optional[str] = None,
+            link: Optional[str] = None,
+            image: Optional[str] = None,
+            desc: Optional[str] = None,
+            prompt: Optional[str] = None,
+            message_id: Optional[str] = None,
+            event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
         """
         发送ark（id=24）模板消息的API，请注意机器人是否有权限使用此API
@@ -662,18 +662,18 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_ark_24(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def send_ark_37(
-        self,
-        channel_id: str,
-        title: Optional[str] = None,
-        content: Optional[str] = None,
-        link: Optional[str] = None,
-        image: Optional[str] = None,
-        prompt: Optional[str] = None,
-        message_id: Optional[str] = None,
-        event_id: Optional[str] = None,
+            self,
+            channel_id: str,
+            title: Optional[str] = None,
+            content: Optional[str] = None,
+            link: Optional[str] = None,
+            image: Optional[str] = None,
+            prompt: Optional[str] = None,
+            message_id: Optional[str] = None,
+            event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
         """
         发送ark（id=37）模板消息的API，请注意机器人是否有权限使用此API
@@ -692,22 +692,22 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_ark_37(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def send_markdown(
-        self,
-        channel_id: str,
-        template_id: Optional[str] = None,
-        key_values: Optional[
-            Union[
-                List[Dict[str, Union[str, List[str]]]], Dict[str, Union[str, List[str]]]
-            ]
-        ] = None,
-        content: Optional[str] = None,
-        keyboard_id: Optional[str] = None,
-        keyboard_content: Optional[Dict] = None,
-        message_id: Optional[str] = None,
-        event_id: Optional[str] = None,
+            self,
+            channel_id: str,
+            template_id: Optional[str] = None,
+            key_values: Optional[
+                Union[
+                    List[Dict[str, Union[str, List[str]]]], Dict[str, Union[str, List[str]]]
+                ]
+            ] = None,
+            content: Optional[str] = None,
+            keyboard_id: Optional[str] = None,
+            keyboard_content: Optional[Dict] = None,
+            message_id: Optional[str] = None,
+            event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
         """
         发送markdown消息的API，请注意机器人是否有权限使用此API
@@ -726,10 +726,10 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_markdown(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_msg(
-        self, channel_id: str, message_id: str, hidetip: bool = False
+            self, channel_id: str, message_id: str, hidetip: bool = False
     ) -> _api_model.delete_msg():
         """
         撤回消息的API，注意一般情况下仅私域可以使用
@@ -743,7 +743,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_msg(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_guild_setting(self, guild_id: str) -> _api_model.get_guild_setting():
         """
@@ -758,10 +758,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_setting(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def create_dm_guild(
-        self, target_id: str, guild_id: str
+            self, target_id: str, guild_id: str
     ) -> _api_model.create_dm_guild():
         """
         当机器人主动跟用户私信时，创建并获取一个虚拟频道id的API
@@ -776,18 +776,18 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_dm_guild(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def send_dm(
-        self,
-        guild_id: str,
-        content: Optional[Union[str, BaseMessageApiModel]] = None,
-        image: Optional[str] = None,
-        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-        message_id: Optional[str] = None,
-        event_id: Optional[str] = None,
-        message_reference_id: Optional[str] = None,
-        ignore_message_reference_error: Optional[bool] = None,
+            self,
+            guild_id: str,
+            content: Optional[Union[str, BaseMessageApiModel]] = None,
+            image: Optional[str] = None,
+            file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+            message_id: Optional[str] = None,
+            event_id: Optional[str] = None,
+            message_reference_id: Optional[str] = None,
+            ignore_message_reference_error: Optional[bool] = None,
     ) -> _api_model.send_msg():
         """
         私信用户的API
@@ -806,10 +806,10 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_dm(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_dm_msg(
-        self, guild_id: str, message_id: str, hidetip: bool = False
+            self, guild_id: str, message_id: str, hidetip: bool = False
     ) -> _api_model.delete_msg():
         """
         用于撤回私信频道 guild_id 中 message_id 指定的私信消息。只能用于撤回机器人自己发送的私信
@@ -823,13 +823,13 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_dm_msg(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def mute_all_member(
-        self,
-        guild_id: str,
-        mute_end_timestamp: Optional[str] = None,
-        mute_seconds: Optional[str] = None,
+            self,
+            guild_id: str,
+            mute_end_timestamp: Optional[str] = None,
+            mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_member():
         """
         用于将频道的全体成员（非管理员）禁言
@@ -845,14 +845,14 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.mute_all_member(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def mute_member(
-        self,
-        guild_id: str,
-        user_id: str,
-        mute_end_timestamp: Optional[str] = None,
-        mute_seconds: Optional[str] = None,
+            self,
+            guild_id: str,
+            user_id: str,
+            mute_end_timestamp: Optional[str] = None,
+            mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_member():
         """
         用于禁言频道 guild_id 下的成员 user_id
@@ -867,14 +867,14 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.mute_member(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def mute_members(
-        self,
-        guild_id: str,
-        user_id: List[str],
-        mute_end_timestamp: Optional[str] = None,
-        mute_seconds: Optional[str] = None,
+            self,
+            guild_id: str,
+            user_id: List[str],
+            mute_end_timestamp: Optional[str] = None,
+            mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_members():
         """
         用于将频道的指定批量成员（非管理员）禁言
@@ -889,17 +889,17 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.mute_members(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def create_announce(
-        self,
-        guild_id: str,
-        channel_id: Optional[str] = None,
-        message_id: Optional[str] = None,
-        announces_type: Optional[int] = None,
-        recommend_channels: Optional[List[model.AnnounceRecommendChannels]] = None,
-        recommend_channels_id: Optional[List[str]] = None,
-        recommend_channels_introduce: Optional[List[str]] = None,
+            self,
+            guild_id: str,
+            channel_id: Optional[str] = None,
+            message_id: Optional[str] = None,
+            announces_type: Optional[int] = None,
+            recommend_channels: Optional[List[model.AnnounceRecommendChannels]] = None,
+            recommend_channels_id: Optional[List[str]] = None,
+            recommend_channels_introduce: Optional[List[str]] = None,
     ) -> _api_model.create_announce():
         """
         用于创建频道全局公告，公告类型分为 消息类型的频道公告 和 推荐子频道类型的频道公告
@@ -919,10 +919,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_announce(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_announce(
-        self, guild_id: str, message_id: str = "all"
+            self, guild_id: str, message_id: str = "all"
     ) -> _api_model.delete_announce():
         """
         用于删除频道 guild_id 下指定 message_id 的全局公告
@@ -937,7 +937,7 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.delete_announce(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def create_pinmsg(self, channel_id: str, message_id: str) -> _api_model.pinmsg():
         """
@@ -951,10 +951,10 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.create_pinmsg(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_pinmsg(
-        self, channel_id: str, message_id: str
+            self, channel_id: str, message_id: str
     ) -> _api_model.delete_pinmsg():
         """
         用于删除子频道 channel_id 下指定 message_id 的精华消息
@@ -967,7 +967,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_pinmsg(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_pinmsg(self, channel_id: str) -> _api_model.pinmsg():
         """
@@ -980,10 +980,10 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_pinmsg(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_schedules(
-        self, channel_id: str, since: Optional[int] = None
+            self, channel_id: str, since: Optional[int] = None
     ) -> _api_model.get_schedules():
         """
         用于获取channel_id指定的子频道中当天的日程列表
@@ -996,10 +996,10 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_schedules(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_schedule_info(
-        self, channel_id: str, schedule_id: str
+            self, channel_id: str, schedule_id: str
     ) -> _api_model.schedule_info():
         """
         获取日程子频道 channel_id 下 schedule_id 指定的的日程的详情
@@ -1014,16 +1014,16 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_schedule_info(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def create_schedule(
-        self,
-        channel_id: str,
-        schedule_name: str,
-        start_timestamp: str,
-        end_timestamp: str,
-        jump_channel_id: str,
-        remind_type: str,
+            self,
+            channel_id: str,
+            schedule_name: str,
+            start_timestamp: str,
+            end_timestamp: str,
+            jump_channel_id: str,
+            remind_type: str,
     ) -> _api_model.schedule_info():
         """
         用于在 channel_id 指定的日程子频道下创建一个日程
@@ -1042,17 +1042,17 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_schedule(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def patch_schedule(
-        self,
-        channel_id: str,
-        schedule_id: str,
-        schedule_name: str,
-        start_timestamp: str,
-        end_timestamp: str,
-        jump_channel_id: str,
-        remind_type: str,
+            self,
+            channel_id: str,
+            schedule_id: str,
+            schedule_name: str,
+            start_timestamp: str,
+            end_timestamp: str,
+            jump_channel_id: str,
+            remind_type: str,
     ) -> _api_model.schedule_info():
         """
         用于修改日程子频道 channel_id 下 schedule_id 指定的日程的详情
@@ -1072,10 +1072,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.patch_schedule(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_schedule(
-        self, channel_id: str, schedule_id: str
+            self, channel_id: str, schedule_id: str
     ) -> _api_model.delete_schedule():
         """
         用于删除日程子频道 channel_id 下 schedule_id 指定的日程
@@ -1090,10 +1090,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.delete_schedule(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def create_reaction(
-        self, channel_id: str, message_id: str, type_: str, id_: str
+            self, channel_id: str, message_id: str, type_: str, id_: str
     ) -> _api_model.reactions():
         """
         对message_id指定的消息进行表情表态
@@ -1110,10 +1110,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_reaction(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_reaction(
-        self, channel_id: str, message_id: str, type_: str, id_: str
+            self, channel_id: str, message_id: str, type_: str, id_: str
     ) -> _api_model.reactions():
         """
         删除自己对message_id指定消息的表情表态
@@ -1130,10 +1130,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.delete_reaction(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_reaction_users(
-        self, channel_id: str, message_id: str, type_: str, id_: str
+            self, channel_id: str, message_id: str, type_: str, id_: str
     ) -> _api_model.get_reaction_users():
         """
         拉取对消息 message_id 指定表情表态的用户列表
@@ -1150,14 +1150,14 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_reaction_users(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def control_audio(
-        self,
-        channel_id: str,
-        status: int,
-        audio_url: Optional[str] = None,
-        text: Optional[str] = None,
+            self,
+            channel_id: str,
+            status: int,
+            audio_url: Optional[str] = None,
+            text: Optional[str] = None,
     ) -> _api_model.audio():
         """
         用于控制子频道 channel_id 下的音频
@@ -1172,7 +1172,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.control_audio(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def bot_on_mic(self, channel_id: str) -> _api_model.audio():
         """
@@ -1185,7 +1185,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.bot_on_mic(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def bot_off_mic(self, channel_id: str) -> _api_model.audio():
         """
@@ -1198,7 +1198,7 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.bot_off_mic(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_threads(self, channel_id: str) -> _api_model.get_threads():
         """
@@ -1211,10 +1211,10 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.get_threads(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_thread_info(
-        self, channel_id: str, thread_id: str
+            self, channel_id: str, thread_id: str
     ) -> _api_model.get_thread_info():
         """
         获取子频道下的帖子详情
@@ -1229,10 +1229,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_thread_info(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def create_thread(
-        self, channel_id: str, title: str, content: Union[str, Dict], format_: int
+            self, channel_id: str, title: str, content: Union[str, Dict], format_: int
     ) -> _api_model.create_thread():
         """
         创建帖子，创建成功后，返回创建成功的任务ID
@@ -1247,10 +1247,10 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.create_thread(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def delete_thread(
-        self, channel_id: str, thread_id: str
+            self, channel_id: str, thread_id: str
     ) -> _api_model.delete_thread():
         """
         删除指定子频道下的某个帖子
@@ -1263,10 +1263,10 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.delete_thread(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def get_guild_permissions(
-        self, guild_id: str
+            self, guild_id: str
     ) -> _api_model.get_guild_permissions():
         """
         获取机器人在频道 guild_id 内可以使用的权限列表
@@ -1280,10 +1280,10 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.get_guild_permissions(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def create_permission_demand(
-        self, guild_id: str, channel_id: str, api: str, desc: Optional[str]
+            self, guild_id: str, channel_id: str, api: str, desc: Optional[str]
     ) -> _api_model.create_permission_demand():
         """
         发送频道API接口权限授权链接到频道
@@ -1300,16 +1300,16 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.create_permission_demand(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def upload_media(
-        self,
-        file_type: int,
-        url: str,
-        srv_send_msg: bool,
-        file_data=None,
-        user_openid: str = None,
-        group_openid: str = None,
+            self,
+            file_type: int,
+            url: str,
+            srv_send_msg: bool,
+            file_data = None,
+            user_openid: str = None,
+            group_openid: str = None,
     ) -> _api_model.upload_media():
         """
         上传富媒体文件的 v2 API，仅用于在QQ单聊和QQ群聊内
@@ -1325,18 +1325,18 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.upload_media(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def send_qq_dm(
-        self,
-        user_openid: str,
-        content: Optional[Union[str, BaseMessageApiModel]] = None,
-        media_file_info: Optional[str] = None,
-        message_id: Optional[str] = None,
-        event_id: Optional[str] = None,
-        message_reference_id: Optional[str] = None,
-        ignore_message_reference_error: Optional[bool] = None,
-        msg_seq: Optional[int] = None,
+            self,
+            user_openid: str,
+            content: Optional[Union[str, BaseMessageApiModel]] = None,
+            media_file_info: Optional[str] = None,
+            message_id: Optional[str] = None,
+            event_id: Optional[str] = None,
+            message_reference_id: Optional[str] = None,
+            ignore_message_reference_error: Optional[bool] = None,
+            msg_seq: Optional[int] = None,
     ) -> _api_model.send_msg():
         """
         发送qq单聊消息的 v2 API
@@ -1354,18 +1354,18 @@ class API:
         _args.pop("self")
         self.__check_ready()
         future_ = run_coroutine_threadsafe(self._api.send_qq_dm(**_args), self._loop)
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
 
     def send_group_msg(
-        self,
-        group_openid: str,
-        content: Optional[Union[str, BaseMessageApiModel]] = None,
-        media_file_info: Optional[str] = None,
-        message_id: Optional[str] = None,
-        event_id: Optional[str] = None,
-        message_reference_id: Optional[str] = None,
-        ignore_message_reference_error: Optional[bool] = None,
-        msg_seq: Optional[int] = None,
+            self,
+            group_openid: str,
+            content: Optional[Union[str, BaseMessageApiModel]] = None,
+            media_file_info: Optional[str] = None,
+            message_id: Optional[str] = None,
+            event_id: Optional[str] = None,
+            message_reference_id: Optional[str] = None,
+            ignore_message_reference_error: Optional[bool] = None,
+            msg_seq: Optional[int] = None,
     ) -> _api_model.send_msg():
         """
         发送qq群消息的 v2 API
@@ -1385,4 +1385,18 @@ class API:
         future_ = run_coroutine_threadsafe(
             self._api.send_group_msg(**_args), self._loop
         )
-        return future_.result(timeout=self._timeout)
+        return future_.result(timeout = self._timeout)
+
+    def callback_interactions(self, interaction_id: str, code: int = 0) -> _api_model.callback_interactions():
+        """
+        机器人按钮事件回调, 该接口需单独申请使用
+
+        :param interaction_id: 互动事件id
+        :param code: 互动事件回调请求参数: 0 成功/1 操作失败/2 操作频繁/3 重复操作/4 没有权限/5 仅管理员操作, 默认是0成功
+        :return: 返回的.result显示是否成功
+        """
+        _args = locals()
+        _args.pop("self")
+        self.__check_ready()
+        future_ = run_coroutine_threadsafe(self._api.callback_interactions(**_args), self._loop)
+        return future_.result(timeout = self._timeout)
