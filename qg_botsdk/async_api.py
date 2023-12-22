@@ -38,10 +38,10 @@ class AsyncAPI:
 
     # sdk api
     async def wait_for(
-            self,
-            scope: Union[model.Scope, Iterable[model.Scope]],
-            command_obj: model.BotCommandObject,
-            timeout: int = None,
+        self,
+        scope: Union[model.Scope, Iterable[model.Scope]],
+        command_obj: model.BotCommandObject,
+        timeout: int = None,
     ) -> model.Model.MESSAGE:
         """
         等待指定的command被触发
@@ -107,8 +107,8 @@ class AsyncAPI:
             await self.__security_check_code()
         return_ = await self._session.post(
             f"https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self._security_code}",
-            json = {"content": content},
-            headers = security_header,
+            json={"content": content},
+            headers=security_header,
         )
         check = await return_.json()
         self._logger.debug(f"[安全接口] {check}")
@@ -116,8 +116,8 @@ class AsyncAPI:
             await self.__security_check_code()
             return_ = await self._session.post(
                 f"https://api.q.qq.com/api/json/security/MsgSecCheck?access_token={self._security_code}",
-                json = {"content": content},
-                headers = security_header,
+                json={"content": content},
+                headers=security_header,
             )
             check = await return_.json()
             self._logger.debug(f"[安全接口] {check}")
@@ -191,7 +191,7 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def get_guild_channels(
-            self, guild_id: str
+        self, guild_id: str
     ) -> _api_model.get_guild_channels():
         """
         获取频道的所有子频道列表数据
@@ -203,7 +203,7 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def get_channels_info(
-            self, channel_id: str
+        self, channel_id: str
     ) -> _api_model.get_channels_info():
         """
         获取子频道数据
@@ -215,17 +215,17 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def create_channels(
-            self,
-            guild_id: str,
-            name: str,
-            type_: int,
-            position: int,
-            parent_id: str = None,
-            sub_type: int = None,
-            private_type: int = None,
-            private_user_ids: List[str] = None,
-            speak_permission: int = None,
-            application_id: Optional[str] = None,
+        self,
+        guild_id: str,
+        name: str,
+        type_: int,
+        position: int,
+        parent_id: str = None,
+        sub_type: int = None,
+        private_type: int = None,
+        private_user_ids: List[str] = None,
+        speak_permission: int = None,
+        application_id: Optional[str] = None,
     ) -> _api_model.create_channels():
         """
         用于在 guild_id 指定的频道下创建一个子频道，一般仅私域机器人可用
@@ -255,18 +255,18 @@ class AsyncAPI:
             "application_id": application_id,
         }
         return_ = await self._session.post(
-            f"{self._bot_url}/guilds/{guild_id}/channels", json = json_
+            f"{self._bot_url}/guilds/{guild_id}/channels", json=json_
         )
         return await regular_temp(return_)
 
     async def patch_channels(
-            self,
-            channel_id: str,
-            name: Optional[str] = None,
-            position: Optional[int] = None,
-            parent_id: Optional[str] = None,
-            private_type: Optional[int] = None,
-            speak_permission: Optional[int] = None,
+        self,
+        channel_id: str,
+        name: Optional[str] = None,
+        position: Optional[int] = None,
+        parent_id: Optional[str] = None,
+        private_type: Optional[int] = None,
+        speak_permission: Optional[int] = None,
     ) -> _api_model.patch_channels():
         """
         用于修改 channel_id 指定的子频道的信息，需要修改哪个字段，就传递哪个字段即可
@@ -292,7 +292,7 @@ class AsyncAPI:
         if speak_permission is not None:
             json_["speak_permission"] = speak_permission
         return_ = await self._session.patch(
-            f"{self._bot_url}/channels/{channel_id}", json = json_
+            f"{self._bot_url}/channels/{channel_id}", json=json_
         )
         return await regular_temp(return_)
 
@@ -385,7 +385,7 @@ class AsyncAPI:
             )
 
     async def get_role_members(
-            self, guild_id: str, role_id: str
+        self, guild_id: str, role_id: str
     ) -> _api_model.get_role_members():
         """
         用于获取 guild_id 频道中指定 role_id 身份组下所有成员的详情列表
@@ -452,7 +452,7 @@ class AsyncAPI:
             )
 
     async def get_member_info(
-            self, guild_id: str, user_id: str
+        self, guild_id: str, user_id: str
     ) -> _api_model.get_member_info():
         """
         用于获取 guild_id 指定的频道中 user_id 对应成员的详细信息
@@ -467,11 +467,11 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def delete_member(
-            self,
-            guild_id: str,
-            user_id: str,
-            add_blacklist: bool = False,
-            delete_history_msg_days: int = 0,
+        self,
+        guild_id: str,
+        user_id: str,
+        add_blacklist: bool = False,
+        delete_history_msg_days: int = 0,
     ) -> _api_model.delete_member():
         """
         用于删除 guild_id 指定的频道下的成员 user_id
@@ -490,7 +490,7 @@ class AsyncAPI:
             "delete_history_msg_days": delete_history_msg_days,
         }
         return_ = await self._session.delete(
-            f"{self._bot_url}/guilds/{guild_id}/members/{user_id}", json = json_
+            f"{self._bot_url}/guilds/{guild_id}/members/{user_id}", json=json_
         )
         return await http_temp(return_, 204)
 
@@ -505,11 +505,11 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def create_role(
-            self,
-            guild_id: str,
-            name: Optional[str] = None,
-            hoist: Optional[bool] = None,
-            color: Optional[Union[str, Tuple[int, int, int]]] = None,
+        self,
+        guild_id: str,
+        name: Optional[str] = None,
+        hoist: Optional[bool] = None,
+        color: Optional[Union[str, Tuple[int, int, int]]] = None,
     ) -> _api_model.create_role():
         """
         用于在 guild_id 指定的频道下创建一个身份组
@@ -533,17 +533,17 @@ class AsyncAPI:
             color_ = None
         json_ = {"name": name, "color": color_, "hoist": hoist_}
         return_ = await self._session.post(
-            f"{self._bot_url}/guilds/{guild_id}/roles", json = json_
+            f"{self._bot_url}/guilds/{guild_id}/roles", json=json_
         )
         return await regular_temp(return_)
 
     async def patch_role(
-            self,
-            guild_id: str,
-            role_id: str,
-            name: Optional[str] = None,
-            hoist: Optional[bool] = None,
-            color: Optional[Union[str, Tuple[int, int, int]]] = None,
+        self,
+        guild_id: str,
+        role_id: str,
+        name: Optional[str] = None,
+        hoist: Optional[bool] = None,
+        color: Optional[Union[str, Tuple[int, int, int]]] = None,
     ) -> _api_model.patch_role():
         """
         用于修改频道 guild_id 下 role_id 指定的身份组
@@ -568,12 +568,12 @@ class AsyncAPI:
             color_ = None
         json_ = {"name": name, "color": color_, "hoist": hoist_}
         return_ = await self._session.patch(
-            f"{self._bot_url}/guilds/{guild_id}/roles/{role_id}", json = json_
+            f"{self._bot_url}/guilds/{guild_id}/roles/{role_id}", json=json_
         )
         return await regular_temp(return_)
 
     async def delete_role(
-            self, guild_id: str, role_id: str
+        self, guild_id: str, role_id: str
     ) -> _api_model.delete_role():
         """
         用于删除频道 guild_id下 role_id 对应的身份组
@@ -588,11 +588,11 @@ class AsyncAPI:
         return await http_temp(return_, 204)
 
     async def create_role_member(
-            self,
-            user_id: str,
-            guild_id: str,
-            role_id: str,
-            channel_id: Optional[str] = None,
+        self,
+        user_id: str,
+        guild_id: str,
+        role_id: str,
+        channel_id: Optional[str] = None,
     ) -> _api_model.role_members():
         """
         为频道指定成员添加指定身份组
@@ -608,7 +608,7 @@ class AsyncAPI:
                 return_ = await self._session.put(
                     f"{self._bot_url}/guilds/{guild_id}/members/{user_id}/roles/"
                     f"{role_id}",
-                    json = {"channel": {"id": channel_id}},
+                    json={"channel": {"id": channel_id}},
                 )
             else:
                 return sdk_error_temp(
@@ -621,11 +621,11 @@ class AsyncAPI:
         return await http_temp(return_, 204)
 
     async def delete_role_member(
-            self,
-            user_id: str,
-            guild_id: str,
-            role_id: str,
-            channel_id: Optional[str] = None,
+        self,
+        user_id: str,
+        guild_id: str,
+        role_id: str,
+        channel_id: Optional[str] = None,
     ) -> _api_model.role_members():
         """
         删除频道指定成员的指定身份组
@@ -641,7 +641,7 @@ class AsyncAPI:
                 return_ = await self._session.delete(
                     f"{self._bot_url}/guilds/{guild_id}/members/{user_id}/roles/"
                     f"{role_id}",
-                    json = {"channel": {"id": channel_id}},
+                    json={"channel": {"id": channel_id}},
                 )
             else:
                 return sdk_error_temp(
@@ -654,7 +654,7 @@ class AsyncAPI:
         return await http_temp(return_, 204)
 
     async def get_channel_member_permission(
-            self, channel_id: str, user_id: str
+        self, channel_id: str, user_id: str
     ) -> _api_model.get_channel_member_permission():
         """
         用于获取 子频道 channel_id 下用户 user_id 的权限
@@ -669,11 +669,11 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def put_channel_member_permission(
-            self,
-            channel_id: str,
-            user_id: str,
-            add: Optional[str] = None,
-            remove: Optional[str] = None,
+        self,
+        channel_id: str,
+        user_id: str,
+        add: Optional[str] = None,
+        remove: Optional[str] = None,
     ) -> _api_model.put_channel_mr_permission():
         """
         用于修改子频道 channel_id 下用户 user_id 的权限
@@ -692,12 +692,12 @@ class AsyncAPI:
         json_ = {"add": str(add), "remove": str(remove)}
         return_ = await self._session.put(
             f"{self._bot_url}/channels/{channel_id}/members/{user_id}/permissions",
-            json = json_,
+            json=json_,
         )
         return await http_temp(return_, 204)
 
     async def get_channel_role_permission(
-            self, channel_id: str, role_id: str
+        self, channel_id: str, role_id: str
     ) -> _api_model.get_channel_role_permission():
         """
         用于获取 子频道 channel_id 下身份组 role_id 的权限
@@ -712,11 +712,11 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def put_channel_role_permission(
-            self,
-            channel_id: str,
-            role_id: str,
-            add: Optional[str] = None,
-            remove: Optional[str] = None,
+        self,
+        channel_id: str,
+        role_id: str,
+        add: Optional[str] = None,
+        remove: Optional[str] = None,
     ) -> _api_model.put_channel_mr_permission():
         """
         用于修改子频道 channel_id 下身份组 role_id 的权限
@@ -735,12 +735,12 @@ class AsyncAPI:
         json_ = {"add": str(add), "remove": str(remove)}
         return_ = await self._session.put(
             f"{self._bot_url}/channels/{channel_id}/roles/{role_id}/permissions",
-            json = json_,
+            json=json_,
         )
         return await http_temp(return_, 204)
 
     async def get_message_info(
-            self, channel_id: str, message_id: str
+        self, channel_id: str, message_id: str
     ) -> _api_model.get_message_info():
         """
         用于获取子频道 channel_id 下的消息 message_id 的详情
@@ -755,15 +755,15 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def send_msg(
-            self,
-            channel_id: str,
-            content: Optional[Union[str, BaseMessageApiModel]] = None,
-            image: Optional[str] = None,
-            file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-            message_id: Optional[str] = None,
-            event_id: Optional[str] = None,
-            message_reference_id: Optional[str] = None,
-            ignore_message_reference_error: Optional[bool] = None,
+        self,
+        channel_id: str,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
+        image: Optional[str] = None,
+        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
     ) -> _api_model.send_msg():
         """
         发送普通消息的API
@@ -780,15 +780,15 @@ class AsyncAPI:
         """
         if not isinstance(content, BaseMessageApiModel):
             content = ApiModel.Message(
-                content = content,
-                image = image,
-                file_image = file_image,
-                message_reference_id = message_reference_id,
-                ignore_message_reference_error = ignore_message_reference_error,
+                content=content,
+                image=image,
+                file_image=file_image,
+                message_reference_id=message_reference_id,
+                ignore_message_reference_error=ignore_message_reference_error,
             )
         ret = content.construct(
-            message_id = message_id,
-            event_id = event_id,
+            message_id=message_id,
+            event_id=event_id,
         )
         if ret.logger_msg:
             self._logger.warning(ret.logger_msg)
@@ -801,14 +801,14 @@ class AsyncAPI:
             return ret.error_ret
 
     async def send_embed(
-            self,
-            channel_id: str,
-            title: Optional[str] = None,
-            content: Optional[List[str]] = None,
-            image: Optional[str] = None,
-            prompt: Optional[str] = None,
-            message_id: Optional[str] = None,
-            event_id: Optional[str] = None,
+        self,
+        channel_id: str,
+        title: Optional[str] = None,
+        content: Optional[List[str]] = None,
+        image: Optional[str] = None,
+        prompt: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
         """
         发送embed模板消息的API
@@ -823,27 +823,27 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         msg = ApiModel.MessageEmbed(
-            title = title,
-            content = content,
-            image = image,
-            prompt = prompt,
+            title=title,
+            content=content,
+            image=image,
+            prompt=prompt,
         )
         self._logger.warning(
             "Deprecated warning: 此发送方式即将废弃，请使用send_msg()并传入msg_model中的消息对象"
         )
         return await self.send_msg(
-            channel_id = channel_id, content = msg, message_id = message_id, event_id = event_id
+            channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
         )
 
     async def send_ark_23(
-            self,
-            channel_id: str,
-            content: List[str],
-            link: List[str],
-            desc: Optional[str] = None,
-            prompt: Optional[str] = None,
-            message_id: Optional[str] = None,
-            event_id: Optional[str] = None,
+        self,
+        channel_id: str,
+        content: List[str],
+        link: List[str],
+        desc: Optional[str] = None,
+        prompt: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
         """
         发送ark（id=23）模板消息的API，请注意机器人是否有权限使用此API
@@ -858,30 +858,30 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         msg = ApiModel.MessageArk23(
-            content = content,
-            link = link,
-            desc = desc,
-            prompt = prompt,
+            content=content,
+            link=link,
+            desc=desc,
+            prompt=prompt,
         )
         self._logger.warning(
             "Deprecated warning: 此发送方式即将废弃，请使用send_msg()并传入msg_model中的消息对象"
         )
         return await self.send_msg(
-            channel_id = channel_id, content = msg, message_id = message_id, event_id = event_id
+            channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
         )
 
     async def send_ark_24(
-            self,
-            channel_id: str,
-            title: Optional[str] = None,
-            content: Optional[str] = None,
-            subtitile: Optional[str] = None,
-            link: Optional[str] = None,
-            image: Optional[str] = None,
-            desc: Optional[str] = None,
-            prompt: Optional[str] = None,
-            message_id: Optional[str] = None,
-            event_id: Optional[str] = None,
+        self,
+        channel_id: str,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        subtitile: Optional[str] = None,
+        link: Optional[str] = None,
+        image: Optional[str] = None,
+        desc: Optional[str] = None,
+        prompt: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
         """
         发送ark（id=24）模板消息的API，请注意机器人是否有权限使用此API
@@ -899,28 +899,28 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         msg = ApiModel.MessageArk24(
-            title = title,
-            content = content,
-            subtitile = subtitile,
-            link = link,
-            image = image,
-            desc = desc,
-            prompt = prompt,
+            title=title,
+            content=content,
+            subtitile=subtitile,
+            link=link,
+            image=image,
+            desc=desc,
+            prompt=prompt,
         )
         return await self.send_msg(
-            channel_id = channel_id, content = msg, message_id = message_id, event_id = event_id
+            channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
         )
 
     async def send_ark_37(
-            self,
-            channel_id: str,
-            title: Optional[str] = None,
-            content: Optional[str] = None,
-            link: Optional[str] = None,
-            image: Optional[str] = None,
-            prompt: Optional[str] = None,
-            message_id: Optional[str] = None,
-            event_id: Optional[str] = None,
+        self,
+        channel_id: str,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        link: Optional[str] = None,
+        image: Optional[str] = None,
+        prompt: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
         """
         发送ark（id=37）模板消息的API，请注意机器人是否有权限使用此API
@@ -936,30 +936,30 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         msg = ApiModel.MessageArk37(
-            title = title,
-            content = content,
-            link = link,
-            image = image,
-            prompt = prompt,
+            title=title,
+            content=content,
+            link=link,
+            image=image,
+            prompt=prompt,
         )
         return await self.send_msg(
-            channel_id = channel_id, content = msg, message_id = message_id, event_id = event_id
+            channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
         )
 
     async def send_markdown(
-            self,
-            channel_id: str,
-            template_id: Optional[str] = None,
-            key_values: Optional[
-                Union[
-                    List[Dict[str, Union[str, List[str]]]], Dict[str, Union[str, List[str]]]
-                ]
-            ] = None,
-            content: Optional[str] = None,
-            keyboard_id: Optional[str] = None,
-            keyboard_content: Optional[Dict] = None,
-            message_id: Optional[str] = None,
-            event_id: Optional[str] = None,
+        self,
+        channel_id: str,
+        template_id: Optional[str] = None,
+        key_values: Optional[
+            Union[
+                List[Dict[str, Union[str, List[str]]]], Dict[str, Union[str, List[str]]]
+            ]
+        ] = None,
+        content: Optional[str] = None,
+        keyboard_id: Optional[str] = None,
+        keyboard_content: Optional[Dict] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
     ) -> _api_model.send_msg():
         """
         发送markdown消息的API，请注意机器人是否有权限使用此API
@@ -975,18 +975,18 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据
         """
         msg = ApiModel.MessageMarkdown(
-            template_id = template_id,
-            key_values = key_values,
-            content = content,
-            keyboard_id = keyboard_id,
-            keyboard_content = keyboard_content,
+            template_id=template_id,
+            key_values=key_values,
+            content=content,
+            keyboard_id=keyboard_id,
+            keyboard_content=keyboard_content,
         )
         return await self.send_msg(
-            channel_id = channel_id, content = msg, message_id = message_id, event_id = event_id
+            channel_id=channel_id, content=msg, message_id=message_id, event_id=event_id
         )
 
     async def delete_msg(
-            self, channel_id: str, message_id: str, hidetip: bool = False
+        self, channel_id: str, message_id: str, hidetip: bool = False
     ) -> _api_model.delete_msg():
         """
         撤回消息的API，注意一般情况下仅私域可以使用
@@ -1016,7 +1016,7 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def create_dm_guild(
-            self, target_id: str, guild_id: str
+        self, target_id: str, guild_id: str
     ) -> _api_model.create_dm_guild():
         """
         当机器人主动跟用户私信时，创建并获取一个虚拟频道id的API
@@ -1026,19 +1026,19 @@ class AsyncAPI:
         :return: 返回的.data中为解析后的json数据，注意发送私信仅需要使用guild_id这一项虚拟频道id的数据
         """
         json_ = {"recipient_id": str(target_id), "source_guild_id": str(guild_id)}
-        return_ = await self._session.post(f"{self._bot_url}/users/@me/dms", json = json_)
+        return_ = await self._session.post(f"{self._bot_url}/users/@me/dms", json=json_)
         return await regular_temp(return_)
 
     async def send_dm(
-            self,
-            guild_id: str,
-            content: Optional[Union[str, BaseMessageApiModel]] = None,
-            image: Optional[str] = None,
-            file_image: Optional[Union[bytes, BinaryIO, str]] = None,
-            message_id: Optional[str] = None,
-            event_id: Optional[str] = None,
-            message_reference_id: Optional[str] = None,
-            ignore_message_reference_error: Optional[bool] = None,
+        self,
+        guild_id: str,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
+        image: Optional[str] = None,
+        file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
     ) -> _api_model.send_msg():
         """
         私信用户的API
@@ -1055,15 +1055,15 @@ class AsyncAPI:
         """
         if not isinstance(content, BaseMessageApiModel):
             content = ApiModel.Message(
-                content = content,
-                image = image,
-                file_image = file_image,
-                message_reference_id = message_reference_id,
-                ignore_message_reference_error = ignore_message_reference_error,
+                content=content,
+                image=image,
+                file_image=file_image,
+                message_reference_id=message_reference_id,
+                ignore_message_reference_error=ignore_message_reference_error,
             )
         ret = content.construct(
-            message_id = message_id,
-            event_id = event_id,
+            message_id=message_id,
+            event_id=event_id,
         )
         if ret.logger_msg:
             self._logger.warning(ret.logger_msg)
@@ -1076,7 +1076,7 @@ class AsyncAPI:
             return ret.error_ret
 
     async def delete_dm_msg(
-            self, guild_id: str, message_id: str, hidetip: bool = False
+        self, guild_id: str, message_id: str, hidetip: bool = False
     ) -> _api_model.delete_msg():
         """
         用于撤回私信频道 guild_id 中 message_id 指定的私信消息。只能用于撤回机器人自己发送的私信
@@ -1094,10 +1094,10 @@ class AsyncAPI:
         return await http_temp(return_, 200)
 
     async def mute_all_member(
-            self,
-            guild_id: str,
-            mute_end_timestamp: Optional[str] = None,
-            mute_seconds: Optional[str] = None,
+        self,
+        guild_id: str,
+        mute_end_timestamp: Optional[str] = None,
+        mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_member():
         """
         用于将频道的全体成员（非管理员）禁言
@@ -1114,16 +1114,16 @@ class AsyncAPI:
             "mute_seconds": str(mute_seconds) if mute_seconds is not None else None,
         }
         return_ = await self._session.patch(
-            f"{self._bot_url}/guilds/{guild_id}/mute", json = json_
+            f"{self._bot_url}/guilds/{guild_id}/mute", json=json_
         )
         return await http_temp(return_, 204)
 
     async def mute_member(
-            self,
-            guild_id: str,
-            user_id: str,
-            mute_end_timestamp: Optional[str] = None,
-            mute_seconds: Optional[str] = None,
+        self,
+        guild_id: str,
+        user_id: str,
+        mute_end_timestamp: Optional[str] = None,
+        mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_member():
         """
         用于禁言频道 guild_id 下的成员 user_id
@@ -1141,16 +1141,16 @@ class AsyncAPI:
             "mute_seconds": str(mute_seconds) if mute_seconds is not None else None,
         }
         return_ = await self._session.patch(
-            f"{self._bot_url}/guilds/{guild_id}/members/{user_id}/mute", json = json_
+            f"{self._bot_url}/guilds/{guild_id}/members/{user_id}/mute", json=json_
         )
         return await http_temp(return_, 204)
 
     async def mute_members(
-            self,
-            guild_id: str,
-            user_id: List[str],
-            mute_end_timestamp: Optional[str] = None,
-            mute_seconds: Optional[str] = None,
+        self,
+        guild_id: str,
+        user_id: List[str],
+        mute_end_timestamp: Optional[str] = None,
+        mute_seconds: Optional[str] = None,
     ) -> _api_model.mute_members():
         """
         用于将频道的指定批量成员（非管理员）禁言
@@ -1169,7 +1169,7 @@ class AsyncAPI:
             "user_ids": user_id,
         }
         return_ = await self._session.patch(
-            f"{self._bot_url}/guilds/{guild_id}/mute", json = json_
+            f"{self._bot_url}/guilds/{guild_id}/mute", json=json_
         )
         trace_id = (
             return_.headers.get("X-Tps-Trace-Id", None)
@@ -1202,14 +1202,14 @@ class AsyncAPI:
             )
 
     async def create_announce(
-            self,
-            guild_id: str,
-            channel_id: Optional[str] = None,
-            message_id: Optional[str] = None,
-            announces_type: Optional[int] = None,
-            recommend_channels: Optional[List[model.AnnounceRecommendChannels]] = None,
-            recommend_channels_id: Optional[List[str]] = None,
-            recommend_channels_introduce: Optional[List[str]] = None,
+        self,
+        guild_id: str,
+        channel_id: Optional[str] = None,
+        message_id: Optional[str] = None,
+        announces_type: Optional[int] = None,
+        recommend_channels: Optional[List[model.AnnounceRecommendChannels]] = None,
+        recommend_channels_id: Optional[List[str]] = None,
+        recommend_channels_introduce: Optional[List[str]] = None,
     ) -> _api_model.create_announce():
         """
         用于创建频道全局公告，公告类型分为 消息类型的频道公告 和 推荐子频道类型的频道公告
@@ -1230,28 +1230,28 @@ class AsyncAPI:
             "recommend_channels": recommend_channels,
         }
         if (
-                recommend_channels_id
-                and recommend_channels_introduce
-                and not recommend_channels
+            recommend_channels_id
+            and recommend_channels_introduce
+            and not recommend_channels
         ):
             if recommend_channels_id is not None and recommend_channels_id:
                 if len(recommend_channels_id) == len(recommend_channels_introduce):
                     for i, items in enumerate(recommend_channels_id):
                         json_["recommend_channels"].append(
                             model.AnnounceRecommendChannels(
-                                channel_id = items,
-                                introduce = recommend_channels_introduce[i],
+                                channel_id=items,
+                                introduce=recommend_channels_introduce[i],
                             )
                         )
                 else:
                     return sdk_error_temp("注意推荐子频道ID列表长度，应与推荐子频道推荐语列表长度一致")
         return_ = await self._session.post(
-            f"{self._bot_url}/guilds/{guild_id}/announces", json = json_
+            f"{self._bot_url}/guilds/{guild_id}/announces", json=json_
         )
         return await regular_temp(return_)
 
     async def delete_announce(
-            self, guild_id: str, message_id: str = "all"
+        self, guild_id: str, message_id: str = "all"
     ) -> _api_model.delete_announce():
         """
         用于删除频道 guild_id 下指定 message_id 的全局公告
@@ -1266,7 +1266,7 @@ class AsyncAPI:
         return await http_temp(return_, 204)
 
     async def create_pinmsg(
-            self, channel_id: str, message_id: str
+        self, channel_id: str, message_id: str
     ) -> _api_model.pinmsg():
         """
         用于添加子频道 channel_id 内的精华消息
@@ -1281,7 +1281,7 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def delete_pinmsg(
-            self, channel_id: str, message_id: str
+        self, channel_id: str, message_id: str
     ) -> _api_model.delete_pinmsg():
         """
         用于删除子频道 channel_id 下指定 message_id 的精华消息
@@ -1306,7 +1306,7 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def get_schedules(
-            self, channel_id: str, since: Optional[int] = None
+        self, channel_id: str, since: Optional[int] = None
     ) -> _api_model.get_schedules():
         """
         用于获取channel_id指定的子频道中当天的日程列表
@@ -1317,12 +1317,12 @@ class AsyncAPI:
         """
         json_ = {"since": since}
         return_ = await self._session.get(
-            f"{self._bot_url}/channels/{channel_id}/schedules", json = json_
+            f"{self._bot_url}/channels/{channel_id}/schedules", json=json_
         )
         return await regular_temp(return_)
 
     async def get_schedule_info(
-            self, channel_id: str, schedule_id: str
+        self, channel_id: str, schedule_id: str
     ) -> _api_model.schedule_info():
         """
         获取日程子频道 channel_id 下 schedule_id 指定的的日程的详情
@@ -1337,13 +1337,13 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def create_schedule(
-            self,
-            channel_id: str,
-            schedule_name: str,
-            start_timestamp: str,
-            end_timestamp: str,
-            jump_channel_id: str,
-            remind_type: str,
+        self,
+        channel_id: str,
+        schedule_name: str,
+        start_timestamp: str,
+        end_timestamp: str,
+        jump_channel_id: str,
+        remind_type: str,
     ) -> _api_model.schedule_info():
         """
         用于在 channel_id 指定的日程子频道下创建一个日程
@@ -1366,19 +1366,19 @@ class AsyncAPI:
             }
         }
         return_ = await self._session.post(
-            f"{self._bot_url}/channels/{channel_id}/schedules", json = json_
+            f"{self._bot_url}/channels/{channel_id}/schedules", json=json_
         )
         return await regular_temp(return_)
 
     async def patch_schedule(
-            self,
-            channel_id: str,
-            schedule_id: str,
-            schedule_name: str,
-            start_timestamp: str,
-            end_timestamp: str,
-            jump_channel_id: str,
-            remind_type: str,
+        self,
+        channel_id: str,
+        schedule_id: str,
+        schedule_name: str,
+        start_timestamp: str,
+        end_timestamp: str,
+        jump_channel_id: str,
+        remind_type: str,
     ) -> _api_model.schedule_info():
         """
         用于修改日程子频道 channel_id 下 schedule_id 指定的日程的详情
@@ -1402,12 +1402,12 @@ class AsyncAPI:
             }
         }
         return_ = await self._session.patch(
-            f"{self._bot_url}/channels/{channel_id}/schedules/{schedule_id}", json = json_
+            f"{self._bot_url}/channels/{channel_id}/schedules/{schedule_id}", json=json_
         )
         return await regular_temp(return_)
 
     async def delete_schedule(
-            self, channel_id: str, schedule_id: str
+        self, channel_id: str, schedule_id: str
     ) -> _api_model.delete_schedule():
         """
         用于删除日程子频道 channel_id 下 schedule_id 指定的日程
@@ -1422,7 +1422,7 @@ class AsyncAPI:
         return await http_temp(return_, 204)
 
     async def create_reaction(
-            self, channel_id: str, message_id: str, type_: str, id_: str
+        self, channel_id: str, message_id: str, type_: str, id_: str
     ) -> _api_model.reactions():
         """
         对message_id指定的消息进行表情表态
@@ -1440,7 +1440,7 @@ class AsyncAPI:
         return await http_temp(return_, 204)
 
     async def delete_reaction(
-            self, channel_id: str, message_id: str, type_: str, id_: str
+        self, channel_id: str, message_id: str, type_: str, id_: str
     ) -> _api_model.reactions():
         """
         删除自己对message_id指定消息的表情表态
@@ -1458,7 +1458,7 @@ class AsyncAPI:
         return await http_temp(return_, 204)
 
     async def get_reaction_users(
-            self, channel_id: str, message_id: str, type_: str, id_: str
+        self, channel_id: str, message_id: str, type_: str, id_: str
     ) -> _api_model.get_reaction_users():
         """
         拉取对消息 message_id 指定表情表态的用户列表
@@ -1526,11 +1526,11 @@ class AsyncAPI:
             )
 
     async def control_audio(
-            self,
-            channel_id: str,
-            status: int,
-            audio_url: Optional[str] = None,
-            text: Optional[str] = None,
+        self,
+        channel_id: str,
+        status: int,
+        audio_url: Optional[str] = None,
+        text: Optional[str] = None,
     ) -> _api_model.audio():
         """
         用于控制子频道 channel_id 下的音频
@@ -1543,7 +1543,7 @@ class AsyncAPI:
         """
         json_ = {"audio_url": audio_url, "text": text, "status": status}
         return_ = await self._session.post(
-            f"{self._bot_url}/channels/{channel_id}/audio", json = json_
+            f"{self._bot_url}/channels/{channel_id}/audio", json=json_
         )
         return await empty_temp(return_)
 
@@ -1595,8 +1595,8 @@ class AsyncAPI:
             else:
                 for items in return_dict["threads"]:
                     if (
-                            "thread_info" in items.keys()
-                            and "content" in items["thread_info"].keys()
+                        "thread_info" in items.keys()
+                        and "content" in items["thread_info"].keys()
                     ):
                         items["thread_info"]["content"] = loads(
                             items["thread_info"]["content"]
@@ -1620,8 +1620,8 @@ class AsyncAPI:
                         results.append(True)
                         for items in return_dict["threads"]:
                             if (
-                                    "thread_info" in items.keys()
-                                    and "content" in items["thread_info"].keys()
+                                "thread_info" in items.keys()
+                                and "content" in items["thread_info"].keys()
                             ):
                                 items["thread_info"]["content"] = loads(
                                     items["thread_info"]["content"]
@@ -1646,7 +1646,7 @@ class AsyncAPI:
             )
 
     async def get_thread_info(
-            self, channel_id: str, thread_id: str
+        self, channel_id: str, thread_id: str
     ) -> _api_model.get_thread_info():
         """
         获取子频道下的帖子详情
@@ -1662,7 +1662,7 @@ class AsyncAPI:
         return await regular_temp(return_)
 
     async def create_thread(
-            self, channel_id: str, title: str, content: Union[str, Dict], format_: int
+        self, channel_id: str, title: str, content: Union[str, Dict], format_: int
     ) -> _api_model.create_thread():
         """
         创建帖子，创建成功后，返回创建成功的任务ID
@@ -1681,12 +1681,12 @@ class AsyncAPI:
         else:
             return sdk_error_temp("content参数类型错误，应为str或dict")
         return_ = await self._session.put(
-            f"{self._bot_url}/channels/{channel_id}/threads", json = json_
+            f"{self._bot_url}/channels/{channel_id}/threads", json=json_
         )
         return await regular_temp(return_)
 
     async def delete_thread(
-            self, channel_id: str, thread_id: str
+        self, channel_id: str, thread_id: str
     ) -> _api_model.delete_thread():
         """
         删除指定子频道下的某个帖子
@@ -1702,7 +1702,7 @@ class AsyncAPI:
         return await http_temp(return_, 204)
 
     async def get_guild_permissions(
-            self, guild_id: str
+        self, guild_id: str
     ) -> _api_model.get_guild_permissions():
         """
         获取机器人在频道 guild_id 内可以使用的权限列表
@@ -1749,7 +1749,7 @@ class AsyncAPI:
             )
 
     async def create_permission_demand(
-            self, guild_id: str, channel_id: str, api: str, desc: Optional[str]
+        self, guild_id: str, channel_id: str, api: str, desc: Optional[str]
     ) -> _api_model.create_permission_demand():
         """
         发送频道API接口权限授权链接到频道
@@ -1769,18 +1769,18 @@ class AsyncAPI:
             "desc": desc,
         }
         return_ = await self._session.post(
-            f"{self._bot_url}/guilds/{guild_id}/api_permission/demand", json = json_
+            f"{self._bot_url}/guilds/{guild_id}/api_permission/demand", json=json_
         )
         return await empty_temp(return_)
 
     async def upload_media(
-            self,
-            file_type: int,
-            url: str,
-            srv_send_msg: bool,
-            file_data = None,
-            user_openid: str = None,
-            group_openid: str = None,
+        self,
+        file_type: int,
+        url: str,
+        srv_send_msg: bool,
+        file_data=None,
+        user_openid: str = None,
+        group_openid: str = None,
     ) -> _api_model.upload_media():
         """
         上传富媒体文件的 v2 API，仅用于在QQ单聊和QQ群聊内
@@ -1802,24 +1802,24 @@ class AsyncAPI:
             return sdk_error_temp("user_openid和group_openid不能同时有值")
         elif user_openid:
             return_ = await self._session.post(
-                f"{self._bot_url}/v2/users/{user_openid}/files", json = json_
+                f"{self._bot_url}/v2/users/{user_openid}/files", json=json_
             )
         else:  # if group_openid
             return_ = await self._session.post(
-                f"{self._bot_url}/v2/groups/{group_openid}/files", json = json_
+                f"{self._bot_url}/v2/groups/{group_openid}/files", json=json_
             )
         return await regular_temp(return_)
 
     async def send_qq_dm(
-            self,
-            user_openid: str,
-            content: Optional[Union[str, BaseMessageApiModel]] = None,
-            media_file_info: Optional[str] = None,
-            message_id: Optional[str] = None,
-            event_id: Optional[str] = None,
-            message_reference_id: Optional[str] = None,
-            ignore_message_reference_error: Optional[bool] = None,
-            msg_seq: Optional[int] = None,
+        self,
+        user_openid: str,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
+        media_file_info: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
+        msg_seq: Optional[int] = None,
     ) -> _api_model.send_msg():
         """
         发送qq单聊消息的 v2 API
@@ -1835,16 +1835,16 @@ class AsyncAPI:
         """
         if not isinstance(content, BaseMessageApiModel):
             content = ApiModel.Message(
-                content = content,
-                media_file_info = media_file_info,
-                message_reference_id = message_reference_id,
-                ignore_message_reference_error = ignore_message_reference_error,
+                content=content,
+                media_file_info=media_file_info,
+                message_reference_id=message_reference_id,
+                ignore_message_reference_error=ignore_message_reference_error,
             )
         ret = content.construct(
-            message_id = message_id,
-            event_id = event_id,
-            is_v2 = True,
-            msg_seq = msg_seq,
+            message_id=message_id,
+            event_id=event_id,
+            is_v2=True,
+            msg_seq=msg_seq,
         )
         if ret.logger_msg:
             self._logger.warning(ret.logger_msg)
@@ -1857,15 +1857,15 @@ class AsyncAPI:
             return ret.error_ret
 
     async def send_group_msg(
-            self,
-            group_openid: str,
-            content: Optional[Union[str, BaseMessageApiModel]] = None,
-            media_file_info: Optional[str] = None,
-            message_id: Optional[str] = None,
-            event_id: Optional[str] = None,
-            message_reference_id: Optional[str] = None,
-            ignore_message_reference_error: Optional[bool] = None,
-            msg_seq: Optional[int] = None,
+        self,
+        group_openid: str,
+        content: Optional[Union[str, BaseMessageApiModel]] = None,
+        media_file_info: Optional[str] = None,
+        message_id: Optional[str] = None,
+        event_id: Optional[str] = None,
+        message_reference_id: Optional[str] = None,
+        ignore_message_reference_error: Optional[bool] = None,
+        msg_seq: Optional[int] = None,
     ) -> _api_model.send_msg():
         """
         发送qq群消息的 v2 API
@@ -1881,16 +1881,16 @@ class AsyncAPI:
         """
         if not isinstance(content, BaseMessageApiModel):
             content = ApiModel.Message(
-                content = content,
-                media_file_info = media_file_info,
-                message_reference_id = message_reference_id,
-                ignore_message_reference_error = ignore_message_reference_error,
+                content=content,
+                media_file_info=media_file_info,
+                message_reference_id=message_reference_id,
+                ignore_message_reference_error=ignore_message_reference_error,
             )
         ret = content.construct(
-            message_id = message_id,
-            event_id = event_id,
-            is_v2 = True,
-            msg_seq = msg_seq,
+            message_id=message_id,
+            event_id=event_id,
+            is_v2=True,
+            msg_seq=msg_seq,
         )
         if ret.logger_msg:
             self._logger.warning(ret.logger_msg)
@@ -1902,7 +1902,9 @@ class AsyncAPI:
         else:
             return ret.error_ret
 
-    async def callback_interactions(self, interaction_id: str, code: int = 0) -> _api_model.callback_interactions():
+    async def callback_interactions(
+        self, interaction_id: str, code: int = 0
+    ) -> _api_model.callback_interactions():
         """
         机器人在 channel_id 对应的语音子频道上麦
 
@@ -1911,5 +1913,7 @@ class AsyncAPI:
         :return: 返回的.result显示是否成功
         """
         json_ = {"code": code}
-        return_ = await self._session.put(f"{self._bot_url}/interactions/{interaction_id}", json = json_)
+        return_ = await self._session.put(
+            f"{self._bot_url}/interactions/{interaction_id}", json=json_
+        )
         return await empty_temp(return_)

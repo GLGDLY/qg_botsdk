@@ -1,0 +1,20 @@
+name: Lint
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: psf/black@stable
+        with:
+          options: "--check --verbose"
+          src: "qg_botsdk example test"
+  isort:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: isort/isort-action@v1
+        with:
+          sort-paths: "qg_botsdk example test"

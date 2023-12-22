@@ -1016,11 +1016,11 @@ class StrPtr:
 
 class MessageConstructRet:
     def __init__(
-            self,
-            result: bool,
-            logger_msg: Optional[str] = None,
-            error_ret: Optional[send_msg()] = None,
-            kwargs: Optional[dict] = None,
+        self,
+        result: bool,
+        logger_msg: Optional[str] = None,
+        error_ret: Optional[send_msg()] = None,
+        kwargs: Optional[dict] = None,
     ):
         self.result = result
         self.logger_msg = logger_msg
@@ -1061,7 +1061,7 @@ class BaseMessageApiModel(ABC):
         return self._msg_seq
 
     def construct(
-            self, message_id, event_id, is_v2: bool = False, msg_seq: Optional[int] = None
+        self, message_id, event_id, is_v2: bool = False, msg_seq: Optional[int] = None
     ) -> MessageConstructRet:
         self._message_id.value = message_id
         self._event_id.value = event_id
@@ -1078,9 +1078,9 @@ class BaseMessageApiModel(ABC):
                     self._msg_seq += 1
                 params["msg_seq"] = self._msg_seq
                 if (
-                        self._msg_type == 0
-                        and hasattr(self, "_media_file_info")
-                        and self._media_file_info
+                    self._msg_type == 0
+                    and hasattr(self, "_media_file_info")
+                    and self._media_file_info
                 ):
                     params["msg_type"] = 7
                 else:
