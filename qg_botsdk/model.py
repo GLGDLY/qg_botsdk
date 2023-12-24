@@ -489,7 +489,7 @@ class Model:
 
         .. seealso::
              其子字段数据可参阅：
-             https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#interaction
+             https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/trans/msg-btn.html#%E4%BA%8B%E4%BB%B6
         """
 
         class data:
@@ -506,10 +506,14 @@ class Model:
         event_id: str
         id: str
         type: int
+        scene: str
         chat_type: int
+        timestamp: str
         guild_id: str
         channel_id: str
         group_open_id: str
+        user_openid: str
+        group_member_openid: str
         version: int
         application_id: str
 
