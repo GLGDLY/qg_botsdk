@@ -18,3 +18,5 @@ test/log
 test/session_data
 test/.pytest_cache
 test/config/config.yml
+.venv/
+docs/_build/
