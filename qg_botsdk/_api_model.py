@@ -15,14 +15,23 @@ apis = {
     ("创建子频道", "create_channels"): ["POST", "/guilds/{guild_id}/channels"],
     ("修改子频道", "patch_channels"): ["PATCH", "/channels/{channel_id}"],
     ("删除子频道", "delete_channels"): ["DELETE", "/channels/{channel_id}"],
-    ("获取在线成员数", "get_online_nums"): ["GET", "/channels/{channel_id}/online_nums"],
+    ("获取在线成员数", "get_online_nums"): [
+        "GET",
+        "/channels/{channel_id}/online_nums",
+    ],
     ("获取频道成员列表", "get_guild_members"): ["GET", "/guilds/{guild_id}/members"],
     ("获取频道身份组成员列表", "get_role_members"): [
         "GET",
         "/guilds/{guild_id}/roles/{role_id}/members",
     ],
-    ("获取频道成员详情", "get_member_info"): ["GET", "/guilds/{guild_id}/members/{user_id}"],
-    ("删除频道成员", "delete_member"): ["DELETE", "/guilds/{guild_id}/members/{user_id}"],
+    ("获取频道成员详情", "get_member_info"): [
+        "GET",
+        "/guilds/{guild_id}/members/{user_id}",
+    ],
+    ("删除频道成员", "delete_member"): [
+        "DELETE",
+        "/guilds/{guild_id}/members/{user_id}",
+    ],
     ("获取频道身份组列表", "get_guild_roles"): ["GET", "/guilds/{guild_id}/roles"],
     ("创建频道身份组", "create_role"): ["POST", "/guilds/{guild_id}/roles"],
     ("修改频道身份组", "patch_role"): ["PATCH", "/guilds/{guild_id}/roles/{role_id}"],
@@ -67,21 +76,39 @@ apis = {
         "发送 37 大图模板ark消息",
         "send_ark_37",
     ): ["POST", "/channels/{channel_id}/messages"],
-    ("撤回消息", "delete_msg"): ["DELETE", "/channels/{channel_id}/messages/{message_id}"],
-    ("获取频道消息频率设置", "get_guild_setting"): ["GET", "/guilds/{guild_id}/message/setting"],
+    ("撤回消息", "delete_msg"): [
+        "DELETE",
+        "/channels/{channel_id}/messages/{message_id}",
+    ],
+    ("获取频道消息频率设置", "get_guild_setting"): [
+        "GET",
+        "/guilds/{guild_id}/message/setting",
+    ],
     ("创建私信会话", "create_dm_guild"): ["POST", "/users/@me/dms"],
     ("发送私信消息", "send_dm"): ["POST", "/dms/{guild_id}/messages"],
-    ("撤回私信消息", "delete_dm_msg"): ["DELETE", "/dms/{guild_id}/messages/{message_id}"],
+    ("撤回私信消息", "delete_dm_msg"): [
+        "DELETE",
+        "/dms/{guild_id}/messages/{message_id}",
+    ],
     ("禁言全员", "mute_all_member"): ["PATCH", "/guilds/{guild_id}/mute"],
-    ("禁言指定成员", "mute_member"): ["PATCH", "/guilds/{guild_id}/members/{user_id}/mute"],
+    ("禁言指定成员", "mute_member"): [
+        "PATCH",
+        "/guilds/{guild_id}/members/{user_id}/mute",
+    ],
     ("禁言批量成员", "mute_members"): ["PATCH", "/guilds/{guild_id}/mute"],
     ("创建频道公告", "create_announce"): ["POST", "/guilds/{guild_id}/announces"],
     ("删除频道公告", "delete_announce"): [
         "DELETE",
         "/guilds/{guild_id}/announces/{message_id}",
     ],
-    ("添加精华消息", "create_pinmsg"): ["PUT", "/channels/{channel_id}/pins/{message_id}"],
-    ("删除精华消息", "delete_pinmsg"): ["DELETE", "/channels/{channel_id}/pins/{message_id}"],
+    ("添加精华消息", "create_pinmsg"): [
+        "PUT",
+        "/channels/{channel_id}/pins/{message_id}",
+    ],
+    ("删除精华消息", "delete_pinmsg"): [
+        "DELETE",
+        "/channels/{channel_id}/pins/{message_id}",
+    ],
     ("获取精华消息", "get_pinmsg"): ["GET", "/channels/{channel_id}/pins"],
     ("获取频道日程列表", "get_schedules"): ["GET", "/channels/{channel_id}/schedules"],
     ("获取日程详情", "get_schedule_info"): [
@@ -118,7 +145,10 @@ apis = {
         "/channels/{channel_id}/threads/{thread_id}",
     ],
     ("发表帖子", "create_thread"): ["PUT", "/channels/{channel_id}/threads"],
-    ("删除帖子", "delete_thread"): ["DELETE", "/channels/{channel_id}/threads/{thread_id}"],
+    ("删除帖子", "delete_thread"): [
+        "DELETE",
+        "/channels/{channel_id}/threads/{thread_id}",
+    ],
     (
         "[单聊]单独发动消息给用户",
         "send_friend_msg",
@@ -133,7 +163,10 @@ apis = {
         "创建频道 API 接口权限授权链接",
         "create_permission_demand",
     ): [False, "此API不需要请求权限"],
-    ("互动事件回调", "callback_interactions"): ["PUT", "/interactions/{interaction_id}"],
+    ("互动事件回调", "callback_interactions"): [
+        "PUT",
+        "/interactions/{interaction_id}",
+    ],
 }
 
 

@@ -88,7 +88,9 @@ class BotWs:
         self.repeat_function = repeat_function
         self.func_registers = func_registers
         if not intents:
-            self.logger.warning("当前未订阅任何事件，将无法接收任何消息，只能使用主动消息功能")
+            self.logger.warning(
+                "当前未订阅任何事件，将无法接收任何消息，只能使用主动消息功能"
+            )
             intents = 1
         self.intents = intents
         self.msg_treat = msg_treat
@@ -210,7 +212,9 @@ class BotWs:
             if not retry:
                 return self.get_robot_info(retry)
             else:
-                self.logger.error("获取当前机器人信息失败，机器人启动失败，程序将退出运行（可重试）")
+                self.logger.error(
+                    "获取当前机器人信息失败，机器人启动失败，程序将退出运行（可重试）"
+                )
                 exit()
         return objectize(robot_info)
 
@@ -450,7 +454,9 @@ class BotWs:
         if op == 11:
             self.logger.debug("心跳发送成功")
         elif op == 9:
-            self.logger.error("[错误] op9参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）")
+            self.logger.error(
+                "[错误] op9参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）"
+            )
             self.disable_reconnect = True
         elif op == 10:
             self.heartbeat_time = (

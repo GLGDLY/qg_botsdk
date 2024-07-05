@@ -59,7 +59,9 @@ class ApiModel:
             if (self._image or self._file_image) and self._media_file_info:
                 return _MessageConstructRet(
                     result=False,
-                    error_ret=sdk_error_temp("image/file_image与media_file_info不可同时存在"),
+                    error_ret=sdk_error_temp(
+                        "image/file_image与media_file_info不可同时存在"
+                    ),
                 )
             if self._message_reference_id is not None:
                 json_ = {
@@ -97,7 +99,8 @@ class ApiModel:
                                 ),
                             )
                         return _MessageConstructRet(
-                            result=False, error_ret=sdk_error_temp("目标图片路径不存在，无法发送")
+                            result=False,
+                            error_ret=sdk_error_temp("目标图片路径不存在，无法发送"),
                         )
                 elif not isinstance(self._file_image, bytes):
                     return _MessageConstructRet(
@@ -205,7 +208,8 @@ class ApiModel:
             """
             if len(self._content) != len(self._link):
                 return _MessageConstructRet(
-                    result=False, error_ret=sdk_error_temp("注意内容列表长度应与链接列表长度一致")
+                    result=False,
+                    error_ret=sdk_error_temp("注意内容列表长度应与链接列表长度一致"),
                 )
             json_ = {
                 "ark": {

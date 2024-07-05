@@ -565,7 +565,9 @@ class BOT:
             self._intents = self._intents | 1 << 28
             self.logger.info("论坛事件订阅成功")
             if not self.is_private and self.no_permission_warning:
-                self.logger.warning("请注意，一般公域机器人并不能注册论坛事件，请检查自身是否拥有相关权限")
+                self.logger.warning(
+                    "请注意，一般公域机器人并不能注册论坛事件，请检查自身是否拥有相关权限"
+                )
 
         if not callback:
             return wraps
@@ -604,7 +606,9 @@ class BOT:
             self._intents = self._intents | 1 << 29
             self.logger.info("音频事件订阅成功")
             if self.no_permission_warning:
-                self.logger.warning("请注意，一般机器人并不能注册音频事件（需先进行申请），请检查自身是否拥有相关权限")
+                self.logger.warning(
+                    "请注意，一般机器人并不能注册音频事件（需先进行申请），请检查自身是否拥有相关权限"
+                )
 
         if not callback:
             return wraps
@@ -763,7 +767,9 @@ class BOT:
 
     def _check_warning(self, name: str):
         if not self.is_private and self.no_permission_warning:
-            self.logger.warning(f"请注意，一般公域机器人并不能使用{name}API，请检查自身是否拥有相关权限")
+            self.logger.warning(
+                f"请注意，一般公域机器人并不能使用{name}API，请检查自身是否拥有相关权限"
+            )
 
     def start(self, is_blocking: bool = True):
         """
@@ -854,7 +860,9 @@ class BOT:
         if self.__running:
             self.__await_closure = True
             self.__running = False
-            self.logger.info("WS链接已开始结束进程，请等待另一端完成握手并等待 TCP 连接终止")
+            self.logger.info(
+                "WS链接已开始结束进程，请等待另一端完成握手并等待 TCP 连接终止"
+            )
             self._bot_class.running = False
             self._loop.create_task(self._bot_class.close())
         else:

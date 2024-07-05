@@ -6,7 +6,9 @@ from qg_botsdk import BOT, Model, Scope
 # import example_13_plugins  # 使用plugins的方法一，直接import相应module，BOT.start()时将自动加载
 
 bot = BOT(bot_id="", bot_token="", is_private=True, is_sandbox=True)
-bot.load_plugins("example_13_plugins.py")  # [推荐] 使用plugins的方法二，使用BOT.load_plugins()加载
+bot.load_plugins(
+    "example_13_plugins.py"
+)  # [推荐] 使用plugins的方法二，使用BOT.load_plugins()加载
 
 
 # before_command代表预处理器，将在检查所有commands前执行（要求SDK版本>=2.5.2）
@@ -24,7 +26,9 @@ def c_0(data: Model.MESSAGE):
 # is_require_at代表是否要求检测到用户@了机器人才可触发指令
 @bot.on_command(command=["c_1", "case_1"], is_short_circuit=True, is_require_at=True)
 def c_1(data: Model.MESSAGE):
-    data.reply("导入command列表进行注册，用户消息包含每个指令（c_1、case_1）均可触发此函数")
+    data.reply(
+        "导入command列表进行注册，用户消息包含每个指令（c_1、case_1）均可触发此函数"
+    )
 
 
 # is_require_admin代表是否要求检测到用户是频道主或频道管理才可触发指令

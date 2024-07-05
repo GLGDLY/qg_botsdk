@@ -17,12 +17,18 @@ def on_start():
     for items in all_guilds:
         gi = bot.api.get_guild_info(items.id)
         if not gi.result and gi.data.code == 11292:
-            bot.logger.warning(items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]")
+            bot.logger.warning(
+                items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]"
+            )
         else:
-            bot.logger.info(f"频道 {items.name}({items.id}) 的拥有者：" + str(items.owner_id))
+            bot.logger.info(
+                f"频道 {items.name}({items.id}) 的拥有者：" + str(items.owner_id)
+            )
             gm = bot.api.get_guild_members(items.id)
             if not all(gm.result):
-                bot.logger.warning(items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]")
+                bot.logger.warning(
+                    items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]"
+                )
                 bot.api.create_permission_demand(
                     items.id, "xxx", "get_guild_members", "查看成员权限"
                 )
@@ -31,10 +37,14 @@ def on_start():
                     f"频道 {items.name}({items.id}) 的成员："
                     + "、".join([gm_data.nick for gm_data in gm.data])
                 )
-                bot.logger.info(f"频道 {items.name}({items.id}) 的成员数量：{len(gm.data)}")
+                bot.logger.info(
+                    f"频道 {items.name}({items.id}) 的成员数量：{len(gm.data)}"
+                )
             gr = bot.api.get_guild_roles(items.id)
             if not gr.result:
-                bot.logger.warning(items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]")
+                bot.logger.warning(
+                    items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]"
+                )
                 bot.api.create_permission_demand(
                     items.id, "xxx", "get_guild_roles", "查看成员权限"
                 )
@@ -51,7 +61,9 @@ def on_start():
             ggc = bot.api.get_guild_channels(items.id)
             bot.logger.info(
                 f"频道 {items.name}({items.id}) 子频道："
-                + "、".join([f"{gr_data.name}（id:{gr_data.id}）" for gr_data in ggc.data])
+                + "、".join(
+                    [f"{gr_data.name}（id:{gr_data.id}）" for gr_data in ggc.data]
+                )
             )
 
 
@@ -59,7 +71,10 @@ def deliver(data: Model.MESSAGE):
     if "你好" in data.treated_msg:
         bot.api.send_embed(
             data.channel_id,
-            content=["【@机器人 我的】\n查看我的资料卡", "【@机器人 我的】\n查看我的资料卡"],
+            content=[
+                "【@机器人 我的】\n查看我的资料卡",
+                "【@机器人 我的】\n查看我的资料卡",
+            ],
             message_id=data.id,
         )
 
