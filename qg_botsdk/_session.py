@@ -98,13 +98,19 @@ class SessionManager:
             self, lambda x: x(), self.__del__
         )  # ensure commit_data() is called before exit
 
+    def __logger_exception_handler(self, attr: str, msg: str):
+        try:
+            getattr(self.__logger, attr, print)(msg)
+        except Exception:
+            print(msg)
+
     def __del__(self):
         if self.__is_auto_commit:
+            self.__logger_exception_handler("info", "Session Manager结束中，正在保存数据...")
             try:
-                self.__logger.info("Session Manager结束中，正在保存数据...")
-            except Exception:
-                print("Session Manager结束中，正在保存数据...")
-            self.commit_data(is_info=False)
+                self.commit_data(is_info=False)
+            except Exception as e:
+                self.__logger_exception_handler("error", f"Session Manager保存数据时出现错误：{e.__repr__()}")
 
     # -*- class internal methods -*-
     @staticmethod

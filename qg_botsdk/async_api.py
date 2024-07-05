@@ -1906,7 +1906,7 @@ class AsyncAPI:
         self, interaction_id: str, code: int = 0
     ) -> _api_model.callback_interactions():
         """
-        机器人在 channel_id 对应的语音子频道上麦
+        机器人按钮事件回调, 该接口需单独申请使用
 
         :param interaction_id: 互动事件id
         :param code: 互动事件回调请求参数: 0 成功/1 操作失败/2 操作频繁/3 重复操作/4 没有权限/5 仅管理员操作, 默认是0成功

@@ -64,7 +64,7 @@ def _event_class_reply_get_api(
         kwargs["user_openid"] = getattr(
             getattr(obj, "author", object()), "user_openid", None
         )
-        return obj.api.send_c2c_msg
+        return obj.api.send_qq_dm
     elif "GROUP_AT_MESSAGE" in t:
         if len(args) > v2_reply_args_len:
             raise TypeError(
