@@ -791,9 +791,11 @@ class AT(str):
         """
         用于构建艾特其他用户的字符串
 
+        旧格式<@userid>即将弃用
+
         :param user_id: 要@的用户id
         """
-        return super().__new__(cls, f"<@{user_id}>")
+        return super().__new__(cls, f'<qqbot-at-user id="{user_id}" />')
 
 
 class EmojiID:
