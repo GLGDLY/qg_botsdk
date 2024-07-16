@@ -31,10 +31,15 @@ show_authors = True
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
 html_static_path = ["_static"]
 html_title = "qg_botsdk 帮助文档"
 html_logo = "_static/robot.png"
 html_favicon = "_static/favicon.ico"
 html_show_copyright = True
 html_show_sphinx = False
+html_theme_options = {
+    "source_repository": "https://github.com/GLGDLY/qg_botsdk/",
+    "source_branch": "master",
+    "source_directory": "docs/",
+}
