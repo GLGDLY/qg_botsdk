@@ -1,5 +1,6 @@
 from asyncio import AbstractEventLoop, get_event_loop
 from asyncio import sleep as async_sleep
+from distutils.version import LooseVersion
 from time import time
 from typing import Optional
 
@@ -19,23 +20,17 @@ from ._utils import exception_handler, general_header, retry_err_code
 
 try:
     from importlib.metadata import version
-
-    aio_version = version("aiohttp")
 except (ImportError, ModuleNotFoundError):
     from pkg_resources import get_distribution
-
     aio_version = get_distribution("aiohttp").version
+else:
+    aio_version = version("aiohttp")
 
-version_checking = (3, 8, 1)
-for version_index in range(3):
-    try:
-        if int(aio_version[2 * version_index]) < version_checking[version_index]:
-            print(
-                f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1，避免出现无法预计的错误\033[0m"
-            )
-            break
-    except (ValueError, IndexError):
-        pass
+
+if LooseVersion(aio_version) < LooseVersion("3.8.1"):
+    print(
+        f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1，避免出现无法预计的错误\033[0m"
+    )
 
 
 # derived from aiohttp FormData object, changing the return of _is_processed to allow retry using the same data object
