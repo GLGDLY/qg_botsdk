@@ -22,6 +22,7 @@ try:
     from importlib.metadata import version
 except (ImportError, ModuleNotFoundError):
     from pkg_resources import get_distribution
+
     aio_version = get_distribution("aiohttp").version
 else:
     aio_version = version("aiohttp")
@@ -29,7 +30,7 @@ else:
 
 if LooseVersion(aio_version) < LooseVersion("3.8.1"):
     print(
-        f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1，避免出现无法预计的错误\033[0m"
+        f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1以上，避免出现无法预计的错误\033[0m"
     )
 
 
