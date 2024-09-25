@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from asyncio import AbstractEventLoop
+from asyncio import AbstractEventLoop, CancelledError, Future
 from asyncio import TimeoutError as AsyncTimeoutError
 from asyncio import all_tasks, sleep
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy, deepcopy
 from json import dumps, loads
 from ssl import create_default_context
+from time import time
 from typing import Any, Callable, Dict, List, Union
 
 from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
@@ -143,6 +144,7 @@ class BotWs:
         self.disable_reconnect = False
         self.disable_reconnect_on_not_recv_msg = disable_reconnect_on_not_recv_msg
         self.skip_connect_waiting = False
+        self.last_msg_recv_time = time()
 
     @exception_processor
     async def _time_event_run(self):
@@ -451,9 +453,14 @@ class BotWs:
         op = data.get("op")
         if "s" in data:
             self.s = data["s"]
+
         if op == 11:
             self.logger.debug("心跳发送成功")
-        elif op == 9:
+        else:
+            # check for connection opened but not recv msg except hb
+            self.last_msg_recv_time = time()
+
+        if op == 9:
             self.logger.error(
                 "[错误] op9参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）"
             )
@@ -482,9 +489,17 @@ class BotWs:
             else:
                 await self.data_process(data)
 
+        if time() - self.last_msg_recv_time > self.disable_reconnect_on_not_recv_msg:
+            self.disable_reconnect = True
+            self.skip_connect_waiting = True
+            self.logger.warning("BOT_WS链接已因长时间未收到消息而主动断开")
+
+        if self.disable_reconnect:
+            if isinstance(self.ws._waiting, Future):
+                self.ws._waiting.cancel()
+            await self.ws.close()
+
     async def close(self):
-        if self.heartbeat is not None and not self.heartbeat.cancelled():
-            self.heartbeat.cancel()
         await self.ws.close()
         self.logger.info("WS链接已结束")
 
@@ -498,25 +513,17 @@ class BotWs:
                             message = await self.ws.receive(
                                 timeout=self.disable_reconnect_on_not_recv_msg
                             )
-                        except AsyncTimeoutError:
+                        except (AsyncTimeoutError, CancelledError):
                             self.logger.warning("BOT_WS链接已断开，正在尝试重连……")
-                            if (
-                                self.heartbeat is not None
-                                and not self.heartbeat.cancelled()
-                            ):
-                                self.heartbeat.cancel()
                             self.disable_reconnect = True
                             self.skip_connect_waiting = True
                             return
                         if not self.running:
-                            if not not self.ws.closed:
+                            if not self.ws.closed:
                                 await self.close()
                             return
                         if message.type == WSMsgType.TEXT:
                             self.loop.create_task(self.dispatch_events(message.data))
-                            if self.disable_reconnect:
-                                await self.ws.close()
-                                return
                         elif message.type in (
                             WSMsgType.CLOSE,
                             WSMsgType.CLOSED,
@@ -524,20 +531,16 @@ class BotWs:
                         ):
                             if self.running:
                                 self.is_reconnect = True
-                                if (
-                                    self.heartbeat is not None
-                                    and not self.heartbeat.cancelled()
-                                ):
-                                    self.heartbeat.cancel()
                                 self.logger.warning("BOT_WS链接已断开，正在尝试重连……")
                                 return
         except Exception as e:
             self.logger.warning("BOT_WS链接已断开，正在尝试重连……")
-            if self.heartbeat is not None and not self.heartbeat.cancelled():
-                self.heartbeat.cancel()
             self.logger.error(repr(e))
             self.logger.error(exception_handler(e))
             return
+        finally:
+            if self.heartbeat is not None and not self.heartbeat.cancelled():
+                self.heartbeat.cancel()
 
     async def starter(self):
         self.session_manager.start(self.loop)
