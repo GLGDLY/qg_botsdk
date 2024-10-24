@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from asyncio import AbstractEventLoop, CancelledError, Future
-from asyncio import TimeoutError as AsyncTimeoutError
-from asyncio import all_tasks, sleep
+from asyncio import AbstractEventLoop, sleep
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy, deepcopy
 from json import dumps, loads
 from ssl import create_default_context
-from time import time
 from typing import Any, Callable, Dict, List, Union
-
-from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
 
 from ._api_model import StrPtr
 from ._event import object_class
+from ._exception import IdTokenError
 from ._session import SessionManager
 from ._statics import EVENTS
 from ._utils import (
@@ -25,25 +21,19 @@ from ._utils import (
 )
 from .api import API
 from .async_api import AsyncAPI
-from .http import Session
 from .logger import Logger
 from .model import BotCommandObject, CommandValidScenes, Model
+from .proto import Proto
 
-Op9RetryTime = 2
 
-
-class BotWs:
+class BotProto:
     def __init__(
         self,
         bot_id: str,
         bot_token: str,
         bot_secret: str,
         loop: AbstractEventLoop,
-        http_session: Session,
         logger: Logger,
-        total_shard: int,
-        shard_no: int,
-        ws_url: str,
         access_token: StrPtr,
         func_registers: Dict,
         intents: int,
@@ -64,8 +54,8 @@ class BotWs:
                 ]
             ],
         ],
-        disable_reconnect_on_not_recv_msg: float,
         session_manager: SessionManager,
+        protocol: Proto,
     ):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
@@ -77,12 +67,8 @@ class BotWs:
         self._bot_id = bot_id
         self._bot_token = bot_token
         self._bot_secret = bot_secret
-        self.http_session = http_session
         self._ssl = create_default_context()
         self.logger = logger
-        self.total_shard = total_shard
-        self.shard_no = shard_no
-        self.ws_url = ws_url
         self.auth = access_token if bot_secret else f"Bot {bot_id}.{bot_token}"
         self.on_start_function = on_start_function
         self.check_interval = check_interval
@@ -97,7 +83,6 @@ class BotWs:
         self.msg_treat = msg_treat
         self.dm_treat = dm_treat
         self.robot = None
-        self.heartbeat_time = 0
         self.loop = loop
         self.s = None
         self.reconnect_times = 0
@@ -137,14 +122,22 @@ class BotWs:
         }
         self.threads = ThreadPoolExecutor(max_workers) if not self.is_async else None
         self.api = api
+        self.raw_api: AsyncAPI = api if is_async else api._api
         self.commands = commands
         self.preprocessors = preprocessors
         self.session_manager = session_manager
         self.at = "<@!%s>"
         self.disable_reconnect = False
-        self.disable_reconnect_on_not_recv_msg = disable_reconnect_on_not_recv_msg
         self.skip_connect_waiting = False
-        self.last_msg_recv_time = time()
+
+        self.protocol = protocol(
+            raw_api=self.raw_api,
+            intents=intents,
+            auth=self.auth,
+            logger=logger,
+            loop=loop,
+            dispatch_func=self.dispatch_events,
+        )
 
     @exception_processor
     async def _time_event_run(self):
@@ -173,44 +166,9 @@ class BotWs:
         if self.repeat_function is not None:
             self.loop.create_task(self._time_event_check())
 
-    async def send_connect(self):
-        connect_params = {
-            "op": 2,
-            "d": {
-                "token": self.auth,
-                "intents": self.intents,
-                "shard": [self.shard_no, self.total_shard],
-            },
-        }
-        await self.ws_send(dumps(connect_params))
-
-    async def send_reconnect(self):
-        reconnect_paras = {
-            "op": 6,
-            "d": {"token": self.auth, "session_id": self.session_id, "seq": self.s},
-        }
-        await self.ws_send(dumps(reconnect_paras))
-
-    async def ws_send(self, msg):
-        if not self.ws.closed:
-            await self.ws.send_str(msg)
-
-    async def heart(self):
-        heart_json = {"op": 1, "d": None}
-        while self.running:
-            await sleep(self.heartbeat_time)
-            if not self.ws.closed:
-                heart_json["d"] = self.s
-                await self.ws.send_str(dumps(heart_json))
-
-    def start_heartbeat(self):
-        if self.heartbeat is None or self.heartbeat not in all_tasks():
-            self.heartbeat = self.loop.create_task(self.heart())
-
     async def get_robot_info(self, retry=False):
-        robot_info = await self.http_session.get(r"https://api.sgroup.qq.com/users/@me")
-        robot_info = await robot_info.json()
-        if "id" not in robot_info:
+        robot_info = await self.raw_api.get_bot_info()
+        if not robot_info.result or robot_info.data.id is None:
             if not retry:
                 return self.get_robot_info(retry)
             else:
@@ -218,7 +176,7 @@ class BotWs:
                     "获取当前机器人信息失败，机器人启动失败，程序将退出运行（可重试）"
                 )
                 exit()
-        return objectize(robot_info)
+        return robot_info.data
 
     @exception_processor
     async def async_start_callback_task(self, func, *args):
@@ -448,113 +406,60 @@ class BotWs:
         else:
             self.logger.warning(f"unknown event type: [{t}]")
 
-    async def dispatch_events(self, msg: str):
-        data = loads(msg)
+    async def dispatch_events(self, data: dict):
         op = data.get("op")
         if "s" in data:
             self.s = data["s"]
 
         if op == 11:
             self.logger.debug("心跳发送成功")
-        else:
-            # check for connection opened but not recv msg except hb
-            self.last_msg_recv_time = time()
-
-        if op == 9:
+        elif op == 9:
             self.logger.error(
                 "[错误] op9参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）"
             )
             self.disable_reconnect = True
+            await self.protocol.close()
         elif op == 10:
-            self.heartbeat_time = (
+            # check for connection opened but not recv msg except hb
+            self.protocol.update_last_msg_recv_time()
+            self.protocol.update_hearbeat_time(
                 int(data.get("d", {}).get("heartbeat_interval", 40)) * 0.001
             )
             if not self.is_reconnect:
-                await self.send_connect()
+                await self.protocol.send_connect()
             else:
-                await self.send_reconnect()
+                await self.protocol.send_reconnect()
         elif op == 0:
+            # check for connection opened but not recv msg except hb
+            self.protocol.update_last_msg_recv_time()
+
             t = data.get("t")
             if t == "READY":
                 self.session_id = data.get("d", {}).get("session_id")
                 self.reconnect_times = 0
-                self.start_heartbeat()
+                self.protocol.start_heartbeat()
                 self.logger.info("连接成功，机器人开始运行")
                 if not self.is_first_run:
                     await self._start_event()
             elif t == "RESUMED":
                 self.reconnect_times = 0
-                self.start_heartbeat()
+                self.protocol.start_heartbeat()
                 self.logger.info("重连成功，机器人继续运行")
             else:
                 await self.data_process(data)
+        elif op == 7:  # resume
+            pass
+        else:
+            self.logger.debug(f"未知的op类型：{op}")
 
-        if time() - self.last_msg_recv_time > self.disable_reconnect_on_not_recv_msg:
-            self.disable_reconnect = True
-            self.skip_connect_waiting = True
-            self.logger.warning("BOT_WS链接已因长时间未收到消息而主动断开")
-
-        if self.disable_reconnect:
-            if isinstance(self.ws._waiting, Future):
-                self.ws._waiting.cancel()
-            await self.ws.close()
+    async def start(self):
+        self.running = True
+        self.session_manager.start(self.loop)
+        await self.protocol.start()
 
     async def close(self):
-        await self.ws.close()
-        self.logger.info("WS链接已结束")
+        await self.protocol.close()
 
-    async def connect(self):
-        self.reconnect_times += 1
-        try:
-            async with ClientSession() as ws_session:
-                async with ws_session.ws_connect(self.ws_url, ssl=self._ssl) as self.ws:
-                    while not self.ws.closed:
-                        try:
-                            message = await self.ws.receive(
-                                timeout=self.disable_reconnect_on_not_recv_msg
-                            )
-                        except (AsyncTimeoutError, CancelledError):
-                            self.logger.warning("BOT_WS链接已断开，正在尝试重连……")
-                            self.disable_reconnect = True
-                            self.skip_connect_waiting = True
-                            return
-                        if not self.running:
-                            if not self.ws.closed:
-                                await self.close()
-                            return
-                        if message.type == WSMsgType.TEXT:
-                            self.loop.create_task(self.dispatch_events(message.data))
-                        elif message.type in (
-                            WSMsgType.CLOSE,
-                            WSMsgType.CLOSED,
-                            WSMsgType.ERROR,
-                        ):
-                            if self.running:
-                                self.is_reconnect = True
-                                self.logger.warning("BOT_WS链接已断开，正在尝试重连……")
-                                return
-        except Exception as e:
-            self.logger.warning("BOT_WS链接已断开，正在尝试重连……")
-            self.logger.error(repr(e))
-            self.logger.error(exception_handler(e))
-            return
-        finally:
-            if self.heartbeat is not None and not self.heartbeat.cancelled():
-                self.heartbeat.cancel()
-
-    async def starter(self):
-        self.session_manager.start(self.loop)
-        await self.connect()
-        while self.running:
-            if self.disable_reconnect:
-                if not self.skip_connect_waiting:
-                    await sleep(Op9RetryTime)
-                self.skip_connect_waiting = False
-                self.disable_reconnect = False
-                self.is_reconnect = False
-            try:
-                await self.connect()
-            except WSServerHandshakeError:
-                self.logger.warning("网络连线不稳定或已断开，请检查网络链接")
-            await sleep(3)
-            self.is_reconnect = self.reconnect_times < 20
+    async def stop(self):
+        self.running = False
+        await self.close()

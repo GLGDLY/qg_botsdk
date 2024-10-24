@@ -195,21 +195,17 @@ def robot_model():
         id: str
         username: str
         avatar: str
+        union_openid: str
+        union_user_account: str
+        code: int
+        message: str
 
     return Robot
 
 
 def get_bot_info():
     class GetBotInfo(object_class):
-        class data:
-            id: str
-            username: str
-            avatar: str
-            union_openid: str
-            union_user_account: str
-            code: int
-            message: str
-
+        data: robot_model()
         http_code: int
         trace_id: str
         result: bool

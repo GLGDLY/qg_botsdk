@@ -31,6 +31,7 @@ from .model import (
     SessionStatus,
 )
 from .plugins import Plugins
+from .proto import Proto
 from .qg_bot import BOT
 from .version import __version__
 
@@ -65,4 +66,5 @@ __all__ = (
     "IdTokenMissing",
     "IdTokenError",
     "WaitTimeoutError",
+    "Proto",
 )
