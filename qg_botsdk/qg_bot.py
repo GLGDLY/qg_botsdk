@@ -22,7 +22,8 @@ from .http import Session
 from .logger import Logger
 from .model import BotCommandObject, CommandValidScenes, Model
 from .plugins import Plugins
-from .qg_bot_ws import BotWs as _BotWs
+from .proto import Proto
+from .qg_bot_proto import BotProto as _BotWs
 from .session import AbstractSessionManager, SessionPatcher
 from .version import __version__
 
@@ -43,12 +44,10 @@ class BOT:
         is_async: bool = False,
         is_retry: bool = True,
         is_log_error: bool = True,
-        shard_no: int = 0,
-        total_shard: int = 1,
         max_workers: int = 32,
         api_max_concurrency: int = 0,
         api_timeout: int = 20,
-        disable_reconnect_on_not_recv_msg: float = 1000,
+        protocol: Proto = Proto.websocket(),
     ):
         """
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
@@ -62,12 +61,10 @@ class BOT:
         :param is_async: 使用同步api还是异步api，默认False（使用同步）
         :param is_retry: 使用api时，如遇可重试的错误码是否自动进行重试，默认开启
         :param is_log_error: 使用api时，如返回的结果为不成功，可自动log输出报错信息，默认开启
-        :param shard_no: 当前分片数，如不熟悉相关配置请不要轻易改动此项，默认0
-        :param total_shard: 最大分片数，如不熟悉相关配置请不要轻易改动此项，默认1
         :param max_workers: 在同步模式下，允许同时运行的最大线程数，默认32
         :param api_max_concurrency: API允许的最大并发数，超过此并发数将进入队列，如此数值<=0代表不开启任何队列，默认0
         :param api_timeout: API请求的超时设置。默认20
-        :param disable_reconnect_on_not_recv_msg: 当机器人长时间未收到消息后进行连接而非重连。默认1000秒
+        :param protocol: 机器人连接协议，默认为Proto.websocket()
         """
         try:
             self._loop = get_event_loop()
@@ -93,8 +90,6 @@ class BOT:
                 "请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情"
             )
         self._intents = 0
-        self._shard_no = shard_no
-        self._total_shard = total_shard
         self._bot_class = None
         self._func_registers = {}
         self._repeat_function = None
@@ -104,18 +99,6 @@ class BOT:
         self.__running = False
         self.__await_closure = False
         self._access_token = StrPtr("")
-        self._http_session = Session(
-            bot_id,
-            bot_token,
-            bot_secret,
-            self._access_token,
-            self._loop,
-            is_retry,
-            is_log_error,
-            self.logger,
-            api_max_concurrency,
-            api_timeout,
-        )
         self.msg_treat = True
         self.dm_treat = False
         self.no_permission_warning = no_permission_warning
@@ -124,7 +107,18 @@ class BOT:
         self.__session_manager = SessionManager(self.logger)
         self.api: Union[AsyncAPI, API] = AsyncAPI(
             self.bot_url,
-            self._http_session,
+            Session(
+                bot_id,
+                bot_token,
+                bot_secret,
+                self._access_token,
+                self._loop,
+                is_retry,
+                is_log_error,
+                self.logger,
+                api_max_concurrency,
+                api_timeout,
+            ),
             self.logger,
             self._check_warning,
             self.__session_manager,
@@ -150,7 +144,7 @@ class BOT:
             ],
         ] = {1 << x: [] for x in range(CommandValidScenes.ALL.bit_length())}
         self.session: AbstractSessionManager = SessionPatcher()
-        self.disable_reconnect_on_not_recv_msg = disable_reconnect_on_not_recv_msg
+        self.protocol = protocol
 
     def __repr__(self):
         return f"<qg_botsdk.BOT object [id: {self.bot_id}, token: {self.bot_token}]>"
@@ -788,28 +782,13 @@ class BOT:
         try:
             if not self.__running and not self._bot_class:
                 self.__running = True
-                gateway = self._loop.run_until_complete(
-                    self._http_session.get(f"{self.bot_url}/gateway/bot")
-                )
-                gateway = self._loop.run_until_complete(gateway.json())
-                url = gateway.get("url")
-                if not url:
-                    raise _exception.IdTokenError(
-                        "你输入的 bot_id 和/或 bot_token 错误，无法连接使用机器人\n如尚未有相关票据，"
-                        "请参阅 https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start 了解相关详情"
-                    )
-                self.logger.debug("[机器人ws地址] " + url)
                 self.refresh_plugins()
                 self._bot_class = _BotWs(
                     self.bot_id,
                     self.bot_token,
                     self.bot_secret,
                     self._loop,
-                    self._http_session,
                     self.logger,
-                    self._total_shard,
-                    self._shard_no,
-                    url,
                     self._access_token,
                     self._func_registers,
                     self._intents,
@@ -823,10 +802,10 @@ class BOT:
                     self.api,
                     self._commands,
                     self._preprocessors,
-                    self.disable_reconnect_on_not_recv_msg,
                     self.__session_manager,
+                    self.protocol,
                 )
-                self.__task = self._loop.create_task(self._bot_class.starter())
+                self.__task = self._loop.create_task(self._bot_class.start())
                 if is_blocking and not self._loop.is_running():
                     self._loop.run_until_complete(self.__task)
             else:
