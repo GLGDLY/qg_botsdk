@@ -5,12 +5,12 @@ from json import dumps, loads
 from ssl import Purpose, create_default_context
 from typing import Coroutine, Optional
 
-import ed25519
 from aiohttp import web
 
 from .._exception import IdTokenError
-from .._utils import exception_handler, exception_processor
+from .._utils import exception_handler
 from ..async_api import AsyncAPI
+from ..ed25519 import SigningKey
 from ..logger import Logger
 from .abc_proto import AbstractProto
 
@@ -39,8 +39,8 @@ class WebHook(AbstractProto):
 
         self.running = True
 
-        self.bot_id = self.raw_api._session._bot_id
-        self.bot_secret = self.raw_api._session._bot_secret
+        self.bot_id: str = self.raw_api._session._bot_id
+        self.bot_secret: str = self.raw_api._session._bot_secret
 
         if path_to_ssl_cert and path_to_ssl_cert_key:
             self.ssl = create_default_context(Purpose.CLIENT_AUTH)
@@ -54,18 +54,11 @@ class WebHook(AbstractProto):
         self.runner = web.AppRunner(app)
 
     def validation(self, data: dict):
-        ed25519_seed_size = 32
-
         if not self.bot_secret:
             raise IdTokenError("选择 WebHook 作为协议时，必须提供 bot_secret")
-
-        seed = self.bot_secret
-        while len(seed) < ed25519_seed_size:
-            seed = seed * 2
-        seed = seed[:ed25519_seed_size]
-        pri_key = ed25519.SigningKey(seed.encode("ascii"))
-        msg = data.get("event_ts") + data.get("plain_token")
-        signature = pri_key.sign(msg.encode("ascii")).hex()
+        sign_key = SigningKey.from_seed(self.bot_secret.encode("ascii"))
+        msg: str = data.get("event_ts") + data.get("plain_token")
+        signature = sign_key.sign(msg.encode("ascii")).hex()
         return dumps(
             {
                 "plain_token": data.get("plain_token"),
