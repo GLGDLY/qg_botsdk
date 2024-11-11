@@ -401,7 +401,8 @@ class BotProto:
                     return
             await self.distribute(self.func_registers["on_delete"], data)
         elif t in EVENTS.FORUM:
-            treat_thread(data)
+            if t == "FORUM_THREAD_CREATE":
+                treat_thread(data)
             await self.distribute(self.func_registers["on_forum"], data)
         else:
             self.logger.warning(f"unknown event type: [{t}]")
