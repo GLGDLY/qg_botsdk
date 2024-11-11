@@ -158,7 +158,7 @@ def treat_thread(data: Dict):
             data["d"]["thread_info"][items] = loads(
                 data.get("d", {}).get("thread_info", {}).get(items, "{}")
             )
-        except JSONDecodeError:
+        except (JSONDecodeError, ContentTypeError, AttributeError, KeyError):
             pass
 
 
