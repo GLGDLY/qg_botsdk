@@ -3,22 +3,15 @@
 from asyncio import AbstractEventLoop, sleep
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy, deepcopy
-from json import dumps, loads
 from ssl import create_default_context
 from typing import Any, Callable, Dict, List, Union
 
 from ._api_model import StrPtr
 from ._event import object_class
-from ._exception import IdTokenError
+from ._seq_cache import SeqCache
 from ._session import SessionManager
 from ._statics import EVENTS
-from ._utils import (
-    exception_handler,
-    exception_processor,
-    objectize,
-    treat_msg,
-    treat_thread,
-)
+from ._utils import exception_processor, objectize, treat_msg, treat_thread
 from .api import API
 from .async_api import AsyncAPI
 from .logger import Logger
@@ -138,6 +131,7 @@ class BotProto:
             loop=loop,
             dispatch_func=self.dispatch_events,
         )
+        self.seq_cache = SeqCache()
 
     @exception_processor
     async def _time_event_run(self):
@@ -408,9 +402,11 @@ class BotProto:
             self.logger.warning(f"unknown event type: [{t}]")
 
     async def dispatch_events(self, data: dict):
-        op = data.get("op")
         if "s" in data:
+            if not self.seq_cache.add_with_checking(data["s"]):
+                return
             self.s = data["s"]
+        op = data.get("op")
 
         if op == 11:
             self.logger.debug("心跳发送成功")
