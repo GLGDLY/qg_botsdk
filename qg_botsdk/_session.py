@@ -47,8 +47,12 @@ class _SessionObject:
         self.timeout = timeout
         self.last_operate = last_operate
         self.timeout_reply = timeout_reply
-        self.inactive_gc_timeout = inactive_gc_timeout  # 处于INACTIVE的session在相隔这段时间后被回收
-        self.gc_timeout_stamp = gc_timeout_stamp  # 处于INACTIVE的session在此时间后被回收
+        self.inactive_gc_timeout = (
+            inactive_gc_timeout  # 处于INACTIVE的session在相隔这段时间后被回收
+        )
+        self.gc_timeout_stamp = (
+            gc_timeout_stamp  # 处于INACTIVE的session在此时间后被回收
+        )
         self.timeout_reply_api = timeout_reply_api  # 超时回复的消息API
         self.timeout_reply_params = timeout_reply_params  # 超时回复的消息默认参数
         self.timeout_reply_message_id_expire = (
@@ -106,7 +110,9 @@ class SessionManager:
 
     def __del__(self):
         if self.__is_auto_commit:
-            self.__logger_exception_handler("info", "Session Manager结束中，正在保存数据...")
+            self.__logger_exception_handler(
+                "info", "Session Manager结束中，正在保存数据..."
+            )
             try:
                 self.commit_data(is_info=False)
             except Exception as e:
@@ -161,9 +167,9 @@ class SessionManager:
                             v.timeout_reply_api == "send_group_msg"
                             or v.timeout_reply_api == "send_qq_dm"
                         ):
-                            v.timeout_reply_params[
-                                "msg_seq"
-                            ] = 999999999  # 保证消息不会因为这破msg_seq而被忽略
+                            v.timeout_reply_params["msg_seq"] = (
+                                999999999  # 保证消息不会因为这破msg_seq而被忽略
+                            )
                         _params = {"content": v.timeout_reply, **v.timeout_reply_params}
                         if isinstance(self.api, AsyncAPI):
                             loop.create_task(
@@ -298,7 +304,9 @@ class SessionManager:
                 timeout_reply_api = "send_qq_dm"
             # not support event: FORUM, GUILD, GUILD_MEMBER, OPEN_FORUM
         except Exception as e:
-            self.__logger.error(f"Session Manager 获取回复参数时出现错误：{e.__repr__()}")
+            self.__logger.error(
+                f"Session Manager 获取回复参数时出现错误：{e.__repr__()}"
+            )
             self.__logger.error(exception_handler(e))
 
         return {
@@ -608,9 +616,13 @@ class SessionManager:
                                         f"Session Manager 读取 Scope::{scope}::{_id}::{k} 数据时出现错误，将跳过：{repr(e)}"
                                     )
             if is_info:
-                self.__logger.info(f"Session Manager 读取了 {self.__commit_path} 的数据")
+                self.__logger.info(
+                    f"Session Manager 读取了 {self.__commit_path} 的数据"
+                )
         except Exception as e:
-            self.__logger.error(f"Session Manager 读取 {_path} 时出现错误，将跳过：{repr(e)}")
+            self.__logger.error(
+                f"Session Manager 读取 {_path} 时出现错误，将跳过：{repr(e)}"
+            )
 
     def commit_data(self, is_info: bool = True, pk_data: Optional[bytes] = None):
         _path = os.path.join(self.__commit_path, f"session_{self.__bot_identify}.db")
@@ -622,7 +634,9 @@ class SessionManager:
             if is_info:
                 self.__logger.info(f"Session Manager 写入了 {_path} 的数据")
         except Exception as e:
-            self.__logger.error(f"Session Manager 写入 {_path} 时出现错误，将跳过：{repr(e)}")
+            self.__logger.error(
+                f"Session Manager 写入 {_path} 时出现错误，将跳过：{repr(e)}"
+            )
 
     def set_auto_commit(self, is_auto_commit: bool):
         self.__is_auto_commit = is_auto_commit

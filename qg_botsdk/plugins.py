@@ -141,10 +141,14 @@ class Plugins:
                         elif isinstance(x, Pattern):
                             regexs.append(x)
                         else:
-                            raise TypeError("regex参数仅接受re.compile返回的实例或str类型的正则表达式")
+                            raise TypeError(
+                                "regex参数仅接受re.compile返回的实例或str类型的正则表达式"
+                            )
                     command_obj = BotCommandObject(regex=regexs, **_kwargs)
                 else:
-                    raise TypeError("regex参数仅接受re.compile返回的实例或str类型的正则表达式")
+                    raise TypeError(
+                        "regex参数仅接受re.compile返回的实例或str类型的正则表达式"
+                    )
             cls._commands.append(command_obj)
             return func
 

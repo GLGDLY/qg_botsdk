@@ -94,7 +94,9 @@ class WebHook(AbstractProto):
             try:
                 await self.runner.setup()
                 site = web.TCPSite(self.runner, port=self.port, ssl_context=self.ssl)
-                self.logger.info(f"WebHook 服务已在 0.0.0.0:{self.port}{self.path} 启动")
+                self.logger.info(
+                    f"WebHook 服务已在 0.0.0.0:{self.port}{self.path} 启动"
+                )
                 await site.start()
                 await site._server.serve_forever()
             except Exception as e:

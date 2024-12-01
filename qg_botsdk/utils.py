@@ -32,7 +32,9 @@ def convert_color(color: Union[Tuple[int, int, int], str]):
                     )
                 colors.append(items)
         else:
-            raise TypeError("RGB颜色应为一个三位数的tuple，且当中每个数值都应该介乎于0和255之间，如(255,255,255)")
+            raise TypeError(
+                "RGB颜色应为一个三位数的tuple，且当中每个数值都应该介乎于0和255之间，如(255,255,255)"
+            )
     elif isinstance(color, str):
         colour = color.replace("#", "")
         if len(colour) == 6:
@@ -47,5 +49,7 @@ def convert_color(color: Union[Tuple[int, int, int], str]):
         else:
             raise TypeError('HEX颜色应为一个 #加六位数字或字母 的string，如"#ffffff"')
     else:
-        raise TypeError('颜色值应为RGB的三位数tuple，如(255,255,255)；或HEX的sting颜色，如"#ffffff"')
+        raise TypeError(
+            '颜色值应为RGB的三位数tuple，如(255,255,255)；或HEX的sting颜色，如"#ffffff"'
+        )
     return colors[0] + 256 * colors[1] + (256**2) * colors[2]

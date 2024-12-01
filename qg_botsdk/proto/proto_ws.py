@@ -133,7 +133,9 @@ class WS(AbstractProto):
                         ):
                             self.disable_reconnect = True
                             self.skip_connect_waiting = True
-                            self.logger.warning("BOT_WS链接已因长时间未收到消息而主动断开")
+                            self.logger.warning(
+                                "BOT_WS链接已因长时间未收到消息而主动断开"
+                            )
         except Exception as e:
             self.logger.warning("BOT_WS链接已断开，正在尝试重连……")
             self.logger.error(repr(e))
