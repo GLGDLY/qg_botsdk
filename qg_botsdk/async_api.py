@@ -127,9 +127,7 @@ class AsyncAPI:
 
     @staticmethod
     async def get_bot_id():
-        raise DeprecationWarning(
-            "SDK版本>=2.3.2后已遗弃get_bot_id()的api，改为BOT.robot.id"
-        )
+        raise DeprecationWarning("SDK版本>=2.3.2后已遗弃get_bot_id()的api，改为BOT.robot.id")
 
     async def get_bot_info(self) -> _api_model.get_bot_info():
         """
@@ -486,9 +484,7 @@ class AsyncAPI:
         """
         self._check_warning("删除频道成员")
         if delete_history_msg_days not in (3, 7, 15, 30, 0, -1):
-            return sdk_error_temp(
-                "注意delete_history_msg_days的数值只能是3，7，15，30，0，-1"
-            )
+            return sdk_error_temp("注意delete_history_msg_days的数值只能是3，7，15，30，0，-1")
         json_ = {
             "add_blacklist": add_blacklist,
             "delete_history_msg_days": delete_history_msg_days,
@@ -690,9 +686,7 @@ class AsyncAPI:
         """
         try:
             if not all([int(items) < 16 for items in (add, remove)]):  # 16 == 1 << 4
-                return sdk_error_temp(
-                    "注意add或remove的值只能为为1、2、4或8的位或运算内容"
-                )
+                return sdk_error_temp("注意add或remove的值只能为为1、2、4或8的位或运算内容")
         except ValueError:
             return sdk_error_temp("注意add或remove的值只能为为1、2、4或8的位或运算内容")
         json_ = {"add": str(add), "remove": str(remove)}
@@ -735,9 +729,7 @@ class AsyncAPI:
         """
         try:
             if not all([int(items) < 16 for items in (add, remove)]):  # 16 == 1 << 4
-                return sdk_error_temp(
-                    "注意add或remove的值只能为为1、2、4或8的位或运算内容"
-                )
+                return sdk_error_temp("注意add或remove的值只能为为1、2、4或8的位或运算内容")
         except ValueError:
             return sdk_error_temp("注意add或remove的值只能为为1、2、4或8的位或运算内容")
         json_ = {"add": str(add), "remove": str(remove)}
@@ -1252,9 +1244,7 @@ class AsyncAPI:
                             )
                         )
                 else:
-                    return sdk_error_temp(
-                        "注意推荐子频道ID列表长度，应与推荐子频道推荐语列表长度一致"
-                    )
+                    return sdk_error_temp("注意推荐子频道ID列表长度，应与推荐子频道推荐语列表长度一致")
         return_ = await self._session.post(
             f"{self._bot_url}/guilds/{guild_id}/announces", json=json_
         )

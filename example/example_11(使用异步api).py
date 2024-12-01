@@ -15,18 +15,12 @@ async def on_start():
     for items in all_guilds:
         gi = await bot.api.get_guild_info(items.id)
         if not gi.result and gi.data.code == 11292:
-            bot.logger.warning(
-                items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]"
-            )
+            bot.logger.warning(items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]")
         else:
-            bot.logger.info(
-                f"频道 {items.name}({items.id}) 的拥有者：" + str(items.owner_id)
-            )
+            bot.logger.info(f"频道 {items.name}({items.id}) 的拥有者：" + str(items.owner_id))
             gm = await bot.api.get_guild_members(items.id)
             if not all(gm.result):
-                bot.logger.warning(
-                    items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]"
-                )
+                bot.logger.warning(items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]")
                 await bot.api.create_permission_demand(
                     items.id, "xxx", "get_guild_members", "查看成员权限"
                 )
@@ -37,9 +31,7 @@ async def on_start():
                 )
             gr = await bot.api.get_guild_roles(items.id)
             if not gr.result:
-                bot.logger.warning(
-                    items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]"
-                )
+                bot.logger.warning(items.name + "(" + items.id + ")[权限不足，无法查询此频道信息]")
                 await bot.api.create_permission_demand(
                     items.id, "xxx", "get_guild_roles", "查看成员权限"
                 )

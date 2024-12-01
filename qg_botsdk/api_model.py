@@ -59,9 +59,7 @@ class ApiModel:
             if (self._image or self._file_image) and self._media_file_info:
                 return _MessageConstructRet(
                     result=False,
-                    error_ret=sdk_error_temp(
-                        "image/file_image与media_file_info不可同时存在"
-                    ),
+                    error_ret=sdk_error_temp("image/file_image与media_file_info不可同时存在"),
                 )
             if self._message_reference_id is not None:
                 json_ = {

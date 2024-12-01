@@ -19,16 +19,15 @@ from ._queue import Queue
 from ._utils import exception_handler, general_header, retry_err_code
 
 try:
-    from importlib.metadata import version
+    from pkg_resources import get_distribution, parse_version
 except (ImportError, ModuleNotFoundError):
-    from pkg_resources import get_distribution
+    from importlib.metadata import version
 
-    aio_version = get_distribution("aiohttp").version
-else:
     aio_version = version("aiohttp")
+else:
+    aio_version = get_distribution("aiohttp").version
 
-
-if LooseVersion(aio_version) < LooseVersion("3.8.1"):
+if parse_version(aio_version) < parse_version("3.8.1"):
     print(
         f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1以上，避免出现无法预计的错误\033[0m"
     )

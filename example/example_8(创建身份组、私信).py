@@ -14,9 +14,7 @@ def deliver(data: Model.MESSAGE):
         )
         if cr.result:
             # SDK版本 >= v2.4.0 可直接使用reply()
-            data.reply(
-                f"【{data.author.username}的身份组】（id:{cr.data.role_id}）已经被创建好啦！"
-            )
+            data.reply(f"【{data.author.username}的身份组】（id:{cr.data.role_id}）已经被创建好啦！")
     elif "私信我" in data.treated_msg:
         cdg = bot.api.create_dm_guild(data.author.id, data.guild_id)
         if cdg.result:

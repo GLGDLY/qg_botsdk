@@ -79,14 +79,10 @@ def security_wrapper(func):
             logger = getattr(args[0], "logger", None)
             if name == "__security_check_code":
                 if logger:
-                    logger.error(
-                        "无法调用内容安全检测接口（备注：请检查机器人密钥是否正确）"
-                    )
+                    logger.error("无法调用内容安全检测接口（备注：请检查机器人密钥是否正确）")
             else:
                 if logger:
-                    logger.error(
-                        f"调用内容安全检测接口失败，详情：{exception_handler(e)}"
-                    )
+                    logger.error(f"调用内容安全检测接口失败，详情：{exception_handler(e)}")
                 return False
 
     return wrap
@@ -259,9 +255,7 @@ def func_type_checker(func, *args, is_async: bool = False):
     for i in range(sig_keys_len):
         annotation = sig[sig_keys[i]].annotation
         if annotation is not Signature.empty and annotation != args[i]:
-            raise TypeError(
-                f"函数{func.__name__}中{sig_keys[i]}参数应为类型：{args[i]}"
-            )
+            raise TypeError(f"函数{func.__name__}中{sig_keys[i]}参数应为类型：{args[i]}")
     if is_async:
         if not iscoroutinefunction(func):
             raise TypeError(f"函数{func.__name__}应为一个async coroutine函数")
