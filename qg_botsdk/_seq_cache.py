@@ -22,3 +22,8 @@ class SeqCache:
             return False
         self.add(seq)
         return True
+
+    def clear(self):
+        self.cache = [None] * self.size
+        self.cache_set.clear()
+        self.ptr = 0

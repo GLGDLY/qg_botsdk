@@ -403,8 +403,6 @@ class BotProto:
 
     async def dispatch_events(self, data: dict):
         if "s" in data:
-            if not self.seq_cache.add_with_checking(data["s"]):
-                return
             self.s = data["s"]
         op = data.get("op")
 
@@ -417,8 +415,6 @@ class BotProto:
             self.disable_reconnect = True
             await self.protocol.close()
         elif op == 10:
-            # check for connection opened but not recv msg except hb
-            self.protocol.update_last_msg_recv_time()
             self.protocol.update_hearbeat_time(
                 int(data.get("d", {}).get("heartbeat_interval", 40)) * 0.001
             )
@@ -435,14 +431,18 @@ class BotProto:
                 self.session_id = data.get("d", {}).get("session_id")
                 self.reconnect_times = 0
                 self.protocol.start_heartbeat()
+                self.seq_cache.clear()
                 self.logger.info("连接成功，机器人开始运行")
                 if not self.is_first_run:
                     await self._start_event()
             elif t == "RESUMED":
                 self.reconnect_times = 0
                 self.protocol.start_heartbeat()
+                self.seq_cache.clear()
                 self.logger.info("重连成功，机器人继续运行")
             else:
+                if "s" in data and not self.seq_cache.add_with_checking(data["s"]):
+                    return
                 await self.data_process(data)
         elif op == 7:  # resume
             pass
