@@ -1,6 +1,5 @@
 from asyncio import AbstractEventLoop, get_event_loop
 from asyncio import sleep as async_sleep
-from distutils.version import LooseVersion
 from time import time
 from typing import Optional
 
