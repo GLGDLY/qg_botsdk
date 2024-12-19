@@ -592,8 +592,11 @@ class Model:
             url: str
 
         class author:
+            id: str
+            union_openid: str
             member_openid: str
 
+        t: str
         id: str
         group_openid: str
         content: str
@@ -620,8 +623,11 @@ class Model:
             url: str
 
         class author:
+            id: str
+            union_openid: str
             user_openid: str
 
+        t: str
         id: str
         content: str
         attachments = List[__MsgAttachments]
