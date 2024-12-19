@@ -16,7 +16,7 @@ from .api import API
 from .async_api import AsyncAPI
 from .logger import Logger
 from .model import BotCommandObject, CommandValidScenes, Model
-from .proto import Proto
+from .proto import proto
 
 
 class BotProto:
@@ -48,7 +48,7 @@ class BotProto:
             ],
         ],
         session_manager: SessionManager,
-        protocol: Proto,
+        protocol: proto.Proto,
     ):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
@@ -67,7 +67,7 @@ class BotProto:
         self.check_interval = check_interval
         self.repeat_function = repeat_function
         self.func_registers = func_registers
-        if not intents:
+        if not intents and isinstance(protocol, proto.WS):
             self.logger.warning(
                 "当前未订阅任何事件，将无法接收任何消息，只能使用主动消息功能"
             )

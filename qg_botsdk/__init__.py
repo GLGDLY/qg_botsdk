@@ -19,7 +19,6 @@ import json
 from . import utils
 from ._exception import IdTokenError, IdTokenMissing, WaitTimeoutError
 from .api_model import ApiModel
-from .ed25519 import SigningKey
 from .logger import Logger
 from .model import (
     BotCommandObject,
@@ -33,6 +32,7 @@ from .model import (
 )
 from .plugins import Plugins
 from .proto import Proto
+from .proto.wh_backend import SigningKey
 from .qg_bot import BOT
 from .version import __version__
 

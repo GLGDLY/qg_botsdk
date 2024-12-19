@@ -6,6 +6,7 @@ __pycache__
 qg_botsdk/__pycache__
 example/log
 example/session_data
+*.log
 update.txt
 build
 dist

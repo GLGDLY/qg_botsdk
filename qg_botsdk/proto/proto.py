@@ -7,6 +7,7 @@ from typing import Any, Coroutine, Optional
 from ..async_api import AsyncAPI
 from ..logger import Logger
 from .abc_proto import AbstractProto
+from .proto_remote_wh import RemoteWebHook
 from .proto_wh import WebHook
 from .proto_ws import WS
 
@@ -14,6 +15,7 @@ from .proto_ws import WS
 class ProtoType(IntEnum):
     WebSocket = 0
     WebHook = 1
+    RemoteWebHook = 2
 
 
 class Proto:
@@ -23,6 +25,8 @@ class Proto:
             self.proto = WS
         elif proto_type == ProtoType.WebHook:
             self.proto = WebHook
+        elif proto_type == ProtoType.RemoteWebHook:
+            self.proto = RemoteWebHook
         else:
             raise ValueError("Invalid ProtoType")
         self.kwargs = kwargs
@@ -89,4 +93,21 @@ class Proto:
             path_to_ssl_cert_key=path_to_ssl_cert_key,
             port=port,
             path=path,
+        )
+
+    @classmethod
+    def remote_webhook(
+        cls,
+        ws_url: str,
+    ) -> "Proto":
+        """
+        使用远程 WebHook 作为协议
+
+        :param ws_url: 远程 WebHook 的 URL
+
+        :note: 由于安全理由，避免在非本地环境传输敏感信息，因此需要在远程服务端配置机器人基本信息后，本地进行连接
+        """
+        return cls(
+            ProtoType.RemoteWebHook,
+            ws_url=ws_url,
         )
