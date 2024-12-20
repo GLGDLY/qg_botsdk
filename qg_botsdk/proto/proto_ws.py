@@ -16,7 +16,7 @@ from ..async_api import AsyncAPI
 from ..logger import Logger
 from .abc_proto import AbstractProto
 
-Op9RetryTime = 2
+Op9RetryTime = 3
 
 
 class WS(AbstractProto):
@@ -133,9 +133,11 @@ class WS(AbstractProto):
                         ):
                             self.disable_reconnect = True
                             self.skip_connect_waiting = True
+                            self.update_last_msg_recv_time()
                             self.logger.warning(
                                 "BOT_WS链接已因长时间未收到消息而主动断开"
                             )
+                            return
         except Exception as e:
             self.logger.warning("BOT_WS链接已断开，正在尝试重连……")
             self.logger.error(repr(e))
@@ -177,7 +179,7 @@ class WS(AbstractProto):
                 await self.connect()
             except WSServerHandshakeError:
                 self.logger.warning("网络连线不稳定或已断开，请检查网络链接")
-            await sleep(1)
+            await sleep(0.1)
             self.is_reconnect = self.reconnect_times < 20
 
     async def close(self):
