@@ -17,6 +17,7 @@ from .async_api import AsyncAPI
 from .logger import Logger
 from .model import BotCommandObject, CommandValidScenes, Model
 from .proto import proto
+from .sandbox import SandBox
 
 
 class BotProto:
@@ -49,6 +50,7 @@ class BotProto:
         ],
         session_manager: SessionManager,
         protocol: proto.Proto,
+        sandbox: SandBox,
     ):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
@@ -131,6 +133,7 @@ class BotProto:
             loop=loop,
             dispatch_func=self.dispatch_events,
         )
+        self.sandbox = sandbox
         self.seq_cache = SeqCache()
 
     @exception_processor
@@ -368,21 +371,35 @@ class BotProto:
                 treated_msg = ""
             # distribute_commands return True when short circuit
             if t in EVENTS.MESSAGE_CREATE:
+                if self.sandbox and not self.sandbox.checker(
+                    EVENTS.MESSAGE_CREATE, data
+                ):
+                    return
                 if not await self.distribute_commands(
                     CommandValidScenes.GUILD, data, treated_msg
                 ):
                     await self.distribute(self.func_registers["on_msg"], data)
             elif t in EVENTS.DM_CREATE:
+                if self.sandbox and not self.sandbox.checker(EVENTS.DM_CREATE, data):
+                    return
                 if not await self.distribute_commands(
                     CommandValidScenes.DM, data, treated_msg
                 ):
                     await self.distribute(self.func_registers["on_dm"], data)
             elif t in EVENTS.C2C_MESSAGE_CREATE:
+                if self.sandbox and not self.sandbox.checker(
+                    EVENTS.C2C_MESSAGE_CREATE, data
+                ):
+                    return
                 if not await self.distribute_commands(
                     CommandValidScenes.C2C, data, treated_msg
                 ):
                     await self.distribute(self.func_registers["on_friend_msg"], data)
             else:  # t in EVENTS.GROUP_AT_MESSAGE_CREATE
+                if self.sandbox and not self.sandbox.checker(
+                    EVENTS.GROUP_AT_MESSAGE_CREATE, data
+                ):
+                    return
                 if not await self.distribute_commands(
                     CommandValidScenes.GROUP, data, treated_msg
                 ):

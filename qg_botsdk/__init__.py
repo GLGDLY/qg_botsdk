@@ -34,6 +34,7 @@ from .plugins import Plugins
 from .proto import Proto
 from .proto.wh_backend import SigningKey
 from .qg_bot import BOT
+from .sandbox import SandBox
 from .version import __version__
 
 json.JSONEncoder.default = lambda self, obj: (
@@ -68,4 +69,5 @@ __all__ = (
     "IdTokenError",
     "WaitTimeoutError",
     "Proto",
+    "SandBox",
 )
