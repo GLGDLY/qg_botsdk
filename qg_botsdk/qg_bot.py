@@ -24,6 +24,7 @@ from .model import BotCommandObject, CommandValidScenes, Model
 from .plugins import Plugins
 from .proto import Proto
 from .qg_bot_proto import BotProto as _BotWs
+from .sandbox import SandBox
 from .session import AbstractSessionManager, SessionPatcher
 from .version import __version__
 
@@ -48,6 +49,7 @@ class BOT:
         api_max_concurrency: int = 0,
         api_timeout: int = 20,
         protocol: Proto = Proto.websocket(),
+        sandbox: Optional[SandBox] = None,
     ):
         """
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
@@ -65,6 +67,7 @@ class BOT:
         :param api_max_concurrency: API允许的最大并发数，超过此并发数将进入队列，如此数值<=0代表不开启任何队列，默认0
         :param api_timeout: API请求的超时设置。默认20
         :param protocol: 机器人连接协议，默认为Proto.websocket()
+        :param sandbox: 沙箱模式配置项，当 is_sandbox=True 时，只有指定的频道、群、用户可以接收到消息；否则当非沙箱环境时，过滤掉指定频道、群、用户的消息。
         """
         try:
             self._loop = get_event_loop()
@@ -145,6 +148,13 @@ class BOT:
         ] = {1 << x: [] for x in range(CommandValidScenes.ALL.bit_length())}
         self.session: AbstractSessionManager = SessionPatcher()
         self.protocol = protocol
+        self.sandbox = sandbox
+        if isinstance(self.sandbox, SandBox):
+            self.sandbox.set_logger(self.logger)
+            self.sandbox.set_is_sandbox(is_sandbox)
+            self.logger.info("已加载沙箱配置项")
+        elif self.sandbox:
+            raise TypeError("传入的沙箱配置项不是SandBox类")
 
     def __repr__(self):
         return f"<qg_botsdk.BOT object [id: {self.bot_id}, token: {self.bot_token}]>"
@@ -804,6 +814,7 @@ class BOT:
                     self._preprocessors,
                     self.__session_manager,
                     self.protocol,
+                    self.sandbox,
                 )
                 self.__task = self._loop.create_task(self._bot_class.start())
                 if is_blocking and not self._loop.is_running():
