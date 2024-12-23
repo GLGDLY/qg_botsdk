@@ -1,3 +1,6 @@
+from enum import Enum, auto
+
+
 class EVENTS:
     MESSAGE_CREATE = (
         "AT_MESSAGE_CREATE",
@@ -48,6 +51,26 @@ class EVENTS:
         "GROUP_MSG_RECEIVE",
     )
     FRIEND = ("FRIEND_ADD", "FRIEND_DEL", "C2C_MSG_REJECT", "C2C_MSG_RECEIVE")
+
+
+class EVENTS_ENUM(Enum):
+    MESSAGE_CREATE = auto()
+    DM_CREATE = auto()
+    GROUP_AT_MESSAGE_CREATE = auto()
+    C2C_MESSAGE_CREATE = auto()
+    MESSAGE_DELETE = auto()
+    FORUM = auto()
+    GUILD = auto()
+    CHANNEL = auto()
+    GUILD_MEMBER = auto()
+    REACTION = auto()
+    INTERACTION = auto()
+    AUDIT = auto()
+    OPEN_FORUM = auto()
+    AUDIO = auto()
+    ALC_MEMBER = auto()
+    GROUP = auto()
+    FRIEND = auto()
 
 
 TraceNames = ("start_callback_task", "async_start_callback_task")

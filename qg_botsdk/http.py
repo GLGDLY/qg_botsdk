@@ -2,7 +2,6 @@ from asyncio import AbstractEventLoop, get_event_loop
 from asyncio import sleep as async_sleep
 from time import time
 from typing import Optional
-from pkg_resources import parse_version
 
 from aiohttp import (
     ClientSession,
@@ -20,17 +19,35 @@ from ._utils import exception_handler, general_header, retry_err_code
 
 try:
     from pkg_resources import get_distribution, parse_version
+
+    aio_version = get_distribution("aiohttp").version
+
+    if parse_version(aio_version) < parse_version("3.8.1"):
+        print(
+            f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1以上，避免出现无法预计的错误\033[0m"
+        )
 except (ImportError, ModuleNotFoundError):
     from importlib.metadata import version
 
-    aio_version = version("aiohttp")
-else:
-    aio_version = get_distribution("aiohttp").version
+    def __to_int(s):
+        ret = ""
+        for i in s:
+            if i.isdigit():
+                ret += i
+        return int(ret) if ret else 0
 
-if parse_version(aio_version) < parse_version("3.8.1"):
-    print(
-        f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1以上，避免出现无法预计的错误\033[0m"
-    )
+    def __simple_version_cmp(version: str, target: str):
+        version_cmp = zip(version.split("."), target.split("."))
+        for a, b in version_cmp:
+            if __to_int(a) < __to_int(b):
+                return False
+        return True
+
+    aio_version = version("aiohttp")
+    if not __simple_version_cmp(aio_version, "3.8.1"):
+        print(
+            f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1以上，避免出现无法预计的错误\033[0m"
+        )
 
 
 # derived from aiohttp FormData object, changing the return of _is_processed to allow retry using the same data object

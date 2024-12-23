@@ -10,7 +10,7 @@ from ._api_model import StrPtr
 from ._event import object_class
 from ._seq_cache import SeqCache
 from ._session import SessionManager
-from ._statics import EVENTS
+from ._statics import EVENTS, EVENTS_ENUM
 from ._utils import exception_processor, objectize, treat_msg, treat_thread
 from .api import API
 from .async_api import AsyncAPI
@@ -88,32 +88,70 @@ class BotProto:
         self.heartbeat = None
         self.is_async = is_async
         self.events = {
-            **dict(zip(EVENTS.GUILD, ["on_guild_event"] * len(EVENTS.GUILD))),
-            **dict(zip(EVENTS.CHANNEL, ["on_channel_event"] * len(EVENTS.CHANNEL))),
+            **dict(
+                zip(
+                    EVENTS.GUILD,
+                    [("on_guild_event", EVENTS_ENUM.GUILD)] * len(EVENTS.GUILD),
+                )
+            ),
+            **dict(
+                zip(
+                    EVENTS.CHANNEL,
+                    [("on_channel_event", EVENTS_ENUM.CHANNEL)] * len(EVENTS.CHANNEL),
+                )
+            ),
             **dict(
                 zip(
                     EVENTS.GUILD_MEMBER,
-                    ["on_guild_member"] * len(EVENTS.GUILD_MEMBER),
+                    [("on_guild_member", EVENTS_ENUM.GUILD_MEMBER)]
+                    * len(EVENTS.GUILD_MEMBER),
                 )
             ),
-            **dict(zip(EVENTS.REACTION, ["on_reaction"] * len(EVENTS.REACTION))),
+            **dict(
+                zip(
+                    EVENTS.REACTION,
+                    [("on_reaction", EVENTS_ENUM.REACTION)] * len(EVENTS.REACTION),
+                )
+            ),
             **dict(
                 zip(
                     EVENTS.INTERACTION,
-                    ["on_interaction"] * len(EVENTS.INTERACTION),
+                    [("on_interaction", EVENTS_ENUM.INTERACTION)]
+                    * len(EVENTS.INTERACTION),
                 )
             ),
-            **dict(zip(EVENTS.AUDIT, ["on_audit"] * len(EVENTS.AUDIT))),
-            **dict(zip(EVENTS.OPEN_FORUM, ["on_open_forum"] * len(EVENTS.OPEN_FORUM))),
-            **dict(zip(EVENTS.AUDIO, ["on_audio"] * len(EVENTS.AUDIO))),
+            **dict(
+                zip(EVENTS.AUDIT, [("on_audit", EVENTS_ENUM.AUDIT)] * len(EVENTS.AUDIT))
+            ),
+            **dict(
+                zip(
+                    EVENTS.OPEN_FORUM,
+                    [("on_open_forum", EVENTS_ENUM.OPEN_FORUM)]
+                    * len(EVENTS.OPEN_FORUM),
+                )
+            ),
+            **dict(
+                zip(EVENTS.AUDIO, [("on_audio", EVENTS_ENUM.AUDIO)] * len(EVENTS.AUDIO))
+            ),
             **dict(
                 zip(
                     EVENTS.ALC_MEMBER,
-                    ["on_live_channel_member"] * len(EVENTS.ALC_MEMBER),
+                    [("on_live_channel_member", EVENTS_ENUM.ALC_MEMBER)]
+                    * len(EVENTS.ALC_MEMBER),
                 )
             ),
-            **dict(zip(EVENTS.GROUP, ["on_group_event"] * len(EVENTS.GROUP))),
-            **dict(zip(EVENTS.FRIEND, ["on_friend_event"] * len(EVENTS.FRIEND))),
+            **dict(
+                zip(
+                    EVENTS.GROUP,
+                    [("on_group_event", EVENTS_ENUM.GROUP)] * len(EVENTS.GROUP),
+                )
+            ),
+            **dict(
+                zip(
+                    EVENTS.FRIEND,
+                    [("on_friend_event", EVENTS_ENUM.FRIEND)] * len(EVENTS.FRIEND),
+                )
+            ),
         }
         self.threads = ThreadPoolExecutor(max_workers) if not self.is_async else None
         self.api = api
@@ -355,7 +393,9 @@ class BotProto:
         data["d"]["event_id"] = data.get("id")
         # process and distribute data
         if t in self.events:
-            _key = self.events[t]
+            _key, _grp = self.events[t]
+            if self.sandbox and not self.sandbox.checker(_grp, data):
+                return
             await self.distribute(self.func_registers[_key], data)
         elif (
             t in EVENTS.MESSAGE_CREATE
@@ -372,7 +412,7 @@ class BotProto:
             # distribute_commands return True when short circuit
             if t in EVENTS.MESSAGE_CREATE:
                 if self.sandbox and not self.sandbox.checker(
-                    EVENTS.MESSAGE_CREATE, data
+                    EVENTS_ENUM.MESSAGE_CREATE, data
                 ):
                     return
                 if not await self.distribute_commands(
@@ -380,7 +420,9 @@ class BotProto:
                 ):
                     await self.distribute(self.func_registers["on_msg"], data)
             elif t in EVENTS.DM_CREATE:
-                if self.sandbox and not self.sandbox.checker(EVENTS.DM_CREATE, data):
+                if self.sandbox and not self.sandbox.checker(
+                    EVENTS_ENUM.DM_CREATE, data
+                ):
                     return
                 if not await self.distribute_commands(
                     CommandValidScenes.DM, data, treated_msg
@@ -388,7 +430,7 @@ class BotProto:
                     await self.distribute(self.func_registers["on_dm"], data)
             elif t in EVENTS.C2C_MESSAGE_CREATE:
                 if self.sandbox and not self.sandbox.checker(
-                    EVENTS.C2C_MESSAGE_CREATE, data
+                    EVENTS_ENUM.C2C_MESSAGE_CREATE, data
                 ):
                     return
                 if not await self.distribute_commands(
@@ -397,7 +439,7 @@ class BotProto:
                     await self.distribute(self.func_registers["on_friend_msg"], data)
             else:  # t in EVENTS.GROUP_AT_MESSAGE_CREATE
                 if self.sandbox and not self.sandbox.checker(
-                    EVENTS.GROUP_AT_MESSAGE_CREATE, data
+                    EVENTS_ENUM.GROUP_AT_MESSAGE_CREATE, data
                 ):
                     return
                 if not await self.distribute_commands(
@@ -405,6 +447,10 @@ class BotProto:
                 ):
                     await self.distribute(self.func_registers["on_group_msg"], data)
         elif t in EVENTS.MESSAGE_DELETE:
+            if self.sandbox and not self.sandbox.checker(
+                EVENTS_ENUM.MESSAGE_DELETE, data
+            ):
+                return
             if self.func_registers["del_is_filter_self"]:
                 target = d.get("message", {}).get("author", {}).get("id")
                 op_user = d.get("op_user", {}).get("id")
@@ -412,6 +458,8 @@ class BotProto:
                     return
             await self.distribute(self.func_registers["on_delete"], data)
         elif t in EVENTS.FORUM:
+            if self.sandbox and not self.sandbox.checker(EVENTS_ENUM.FORUM, data):
+                return
             if t == "FORUM_THREAD_CREATE":
                 treat_thread(data)
             await self.distribute(self.func_registers["on_forum"], data)

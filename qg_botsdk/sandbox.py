@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Any, List, Optional, Iterable
+from typing import Iterable, List, Optional
 
-from ._statics import EVENTS
+from ._statics import EVENTS_ENUM
 from ._utils import exception_handler
 from .logger import Logger
 
@@ -31,6 +31,18 @@ class SandBox:
 
         self.is_sandbox = False
         self.logger: Optional[Logger] = None
+        self.__guild_id_events = set(
+            EVENTS_ENUM.MESSAGE_CREATE,
+            EVENTS_ENUM.FORUM,
+            EVENTS_ENUM.CHANNEL,
+            EVENTS_ENUM.GUILD_MEMBER,
+            EVENTS_ENUM.REACTION,
+            EVENTS_ENUM.INTERACTION,
+            EVENTS_ENUM.AUDIT,
+            EVENTS_ENUM.OPEN_FORUM,
+            EVENTS_ENUM.AUDIO,
+            EVENTS_ENUM.ALC_MEMBER,
+        )
 
     @staticmethod
     def __to_set(data: Optional[List[str]]) -> set:
@@ -44,16 +56,28 @@ class SandBox:
     def set_is_sandbox(self, is_sandbox: bool):
         self.is_sandbox = is_sandbox
 
-    def checker(self, event: EVENTS, data: dict) -> bool:
+    def checker(self, event: EVENTS_ENUM, data: dict) -> bool:
         try:
-            if event == EVENTS.MESSAGE_CREATE:
+            if event in self.__guild_id_events:
                 return (data["d"]["guild_id"] not in self.guilds) ^ self.is_sandbox
-            elif event == EVENTS.DM_CREATE:
-                return (data["d"]["author"]["id"] not in self.guild_users) ^ self.is_sandbox
-            elif event == EVENTS.GROUP_AT_MESSAGE_CREATE:
+            elif event == EVENTS_ENUM.DM_CREATE:
+                return (
+                    data["d"]["author"]["id"] not in self.guild_users
+                ) ^ self.is_sandbox
+            elif event == EVENTS_ENUM.GROUP_AT_MESSAGE_CREATE:
                 return (data["d"]["group_openid"] not in self.groups) ^ self.is_sandbox
-            elif event == EVENTS.C2C_MESSAGE_CREATE:
+            elif event == EVENTS_ENUM.C2C_MESSAGE_CREATE:
                 return (data["d"]["author"]["id"] not in self.q_users) ^ self.is_sandbox
+            elif event == EVENTS_ENUM.MESSAGE_DELETE:
+                return (
+                    data["d"]["message"]["guild_id"] not in self.guilds
+                ) ^ self.is_sandbox
+            elif event == EVENTS_ENUM.GUILD:
+                return (data["d"]["id"] not in self.guilds) ^ self.is_sandbox
+            elif event == EVENTS_ENUM.GROUP:
+                return (data["d"]["group_openid"] not in self.groups) ^ self.is_sandbox
+            elif event == EVENTS_ENUM.FRIEND:
+                return (data["d"]["id"] not in self.q_users) ^ self.is_sandbox
         except Exception as e:
             if self.logger:
                 self.logger.error(f"沙箱模式检查失败，已放行：{repr(e)}")

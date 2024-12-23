@@ -63,7 +63,9 @@ class RemoteWebHook(AbstractProto):
     async def simple_ws_connect(self):
         async with ClientSession() as ws_session:
             try:
-                async with ws_session.get(self.http_url) as resp:
+                async with ws_session.get(
+                    self.http_url, headers={"Cache-Control": "no-cache"}
+                ) as resp:
                     if resp.status != 200:
                         self.logger.error(
                             f"远程WebHook后端返回状态码{resp.status}{resp.reason}，无法连接"
