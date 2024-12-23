@@ -6,8 +6,6 @@
    :target: https://www.python.org/
 .. image:: https://img.shields.io/badge/license-MIT-orange.svg?style=plastic
    :target: https://github.com/GLGDLY/qg_botsdk/blob/master/LICENSE
-.. image:: https://img.shields.io/github/v/release/GLGDLY/qg_botsdk?style=plastic
-   :target: https://github.com/GLGDLY/qg_botsdk/releases
 .. image:: https://img.shields.io/pypi/dw/qg-botsdk?style=plastic&color=blue
    :target: https://pypi.org/project/qg-botsdk/
 .. image:: https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5
@@ -48,7 +46,6 @@
 下载方式
 ==========
 
--   直接下载 `最新release <https://github.com/GLGDLY/qg_botsdk/releases>`_ ，放到项目中即可
 -   pip安装（推荐）：
 
 .. code-block:: bash
@@ -118,6 +115,8 @@ SDK同时已经在内部实现指令装饰器：
 相关链接
 ========
 
+-   更多完整例程：
+     * `example <https://github.com/GLGDLY/qg_botsdk/tree/master/example>`_
 -   文档：
      * `readthedocs <https://qg-botsdk.readthedocs.io/zh_CN/latest/>`_
 -   官方注册机器人：https://q.qq.com/#/

@@ -4,7 +4,6 @@
 
 [![Language](https://img.shields.io/badge/language-python-green.svg?style=plastic)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg?style=plastic)](https://github.com/GLGDLY/qg_botsdk/blob/master/LICENSE)
-[![Releases](https://img.shields.io/github/v/release/GLGDLY/qg_botsdk?style=plastic)](https://github.com/GLGDLY/qg_botsdk/releases)
 [![Pypi](https://img.shields.io/pypi/dw/qg-botsdk?style=plastic&color=blue)](https://pypi.org/project/qg-botsdk/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5)](https://www.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=github.com&utm_medium=referral&utm_content=GLGDLY/qg_botsdk&utm_campaign=Badge_Grade)
 [![docs](https://readthedocs.org/projects/qg-botsdk/badge/?version=latest)](https://qg-botsdk.readthedocs.io/zh_CN/latest/)
@@ -13,7 +12,7 @@
 
 [文档](https://qg-botsdk.readthedocs.io/zh_CN/latest/)
 ·
-[下载](https://github.com/GLGDLY/qg_botsdk/releases)
+[例程](https://github.com/GLGDLY/qg_botsdk/tree/master/example)
 ·
 [快速入门](https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start)
 
@@ -50,7 +49,6 @@
 
 ### 下载方式
 
--   直接下载[最新release](https://github.com/GLGDLY/qg_botsdk/releases)，放到项目中即可
 -   pip安装（推荐）：
 
 ```shell bash
@@ -119,6 +117,10 @@ if __name__ == '__main__':
 * * *
 
 ### 相关链接
+
+-   更多完整例程：
+
+    -   [example](https://github.com/GLGDLY/qg_botsdk/tree/master/example)
 
 -   文档：
 
