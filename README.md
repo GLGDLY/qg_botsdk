@@ -86,98 +86,37 @@ if __name__ == '__main__':
 
 * * *
 
-### 已实现事件接收（已支持解析论坛事件）
+### 指令装饰器
 
-> `from qg_botsdk.model import Model` 
->
-> 此库为所有事件的数据格式结构，可套用到代码以检查结构是否正确
+SDK同时已经在内部实现指令装饰器：
 
--   bind_msg
--   bind_dm
--   bind_msg_delete
--   bind_guild_event
--   bind_guild_member
--   bind_reaction
--   bind_interaction
--   bind_audit
--   bind_forum
--   bind_audio
+```python
+from qg_botsdk import BOT, Model 
 
-### 已实现API
+bot = BOT(bot_id='xxx', bot_token='xxx', is_private=True, is_sandbox=True)
 
-> API已基本完善，具体详情可查阅：<https://qg-botsdk.readthedocs.io/zh_CN/latest/API.html>
+# before_command代表预处理器，将在检查所有commands前执行（要求SDK版本>=2.5.2）
+@bot.before_command()
+def preprocessor(data: Model.MESSAGE):
+    bot.logger.info(f"收到来自{data.author.username}的消息：{data.treated_msg}")
 
-> 关于API的更多详细信息可阅读官方文档介绍：<https://bot.q.qq.com/wiki/develop/api/>
 
--   get_bot_id
--   get_bot_info
--   get_bot_guilds
--   get_guild_info
--   get_guild_channels
--   get_channels_info
--   create_channels
--   patch_channels
--   delete_channels
--   get_guild_members
--   get_role_members
--   get_member_info
--   delete_member
--   get_guild_roles
--   create_role
--   patch_role
--   delete_role
--   create_role_member
--   delete_role_member
--   get_channel_member_permission
--   put_channel_member_permission
--   get_channel_role_permission
--   put_channel_role_permission
--   get_message_info
--   send_msg
--   ~~send_embed~~
--   ~~send_ark_23~~
--   ~~send_ark_24~~
--   ~~send_ark_37~~
--   ~~send_markdown~~
--   delete_msg
--   get_guild_setting
--   create_dm_guild
--   send_dm
--   delete_dm_msg
--   mute_all_member
--   mute_member
--   mute_members
--   create_announce
--   delete_announce
--   create_pinmsg
--   delete_pinmsg
--   get_pinmsg
--   get_schedules
--   get_schedule_info
--   create_schedule
--   patch_schedule
--   delete_schedule
--   create_reaction
--   delete_reaction
--   get_reaction_users
--   control_audio
--   bot_on_mic
--   bot_off_mic
--   get_threads
--   get_thread_info
--   create_thread
--   delete_thread
--   get_guild_permissions
--   create_permission_demand
--   upload_media
--   send_qq_dm
--   send_group_msg
+@bot.on_command(
+    regex=r"你好(?:机器人)?",  # 正则表达式，匹配用户消息
+    is_short_circuit=True,    # is_short_circuit代表短路机制，根据注册顺序，匹配到即停止匹配，但不影响bind_msg()
+    is_require_at=True,       # is_require_at代表是否要求检测到用户@了机器人才可触发指令
+    is_require_admin=True,    # is_require_admin代表是否要求检测到用户是频道主或频道管理才可触发指令
+    admin_error_msg="抱歉，你的权限不足（非频道主或管理员），不能使用此指令",
+)
+def command(data: Model.MESSAGE):
+    data.reply("你好，世界")
 
-### 特殊功能
 
--   register_start_event：绑定一个在机器人开始运行后马上执行的函数
--   register_repeat_event：绑定一个背景重复运行的函数
--   security_check：用于使用腾讯内容检测接口进行内容检测
+if __name__ == '__main__':
+    bot.start()
+```
+
+* * *
 
 ### 相关链接
 
