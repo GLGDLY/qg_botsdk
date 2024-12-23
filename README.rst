@@ -27,7 +27,9 @@
 亮点
 =====
 
--   已支持Websocket和Webhook两种连接方式
+-   已支持Websocket、Webhook、Remote Webhook（wh转ws允许本地调试）三种连接方式
+
+-   已支持SDK层面的沙箱处理，允许沙箱过滤外部消息、外部过滤沙箱消息；已支持频道、频道私信、群、QQ私信四种沙箱过滤模式
 
 -   两种应用层开发方式（threading、asyncio），可根据自己的喜好选择，而底层均为asyncio实现，保持高并发能力
 
