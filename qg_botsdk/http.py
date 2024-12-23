@@ -2,6 +2,7 @@ from asyncio import AbstractEventLoop, get_event_loop
 from asyncio import sleep as async_sleep
 from time import time
 from typing import Optional
+from pkg_resources import parse_version
 
 from aiohttp import (
     ClientSession,
