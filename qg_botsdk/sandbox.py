@@ -14,6 +14,7 @@ class SandBox:
         guild_users: Optional[List[str]] = None,
         groups: Optional[List[str]] = None,
         q_users: Optional[List[str]] = None,
+        sandbox_fail_action: bool = True,
     ):
         """ "
         沙箱模式配置项，当BOT(..., is_sandbox=True)时，只有列表中指定的频道、群、用户可以接收到消息；
@@ -23,11 +24,13 @@ class SandBox:
         :param guild_users: 设置为沙箱的频道私信用户ID列表
         :param groups: 设置为沙箱的群ID列表
         :param q_users: 设置为沙箱的QQ私信用户ID列表
+        :param sandbox_fail_action: 沙箱模式检查失败时的处理方式，默认为True，即放行
         """
         self.guilds = self.__to_set(guilds)
         self.guild_users = self.__to_set(guild_users)
         self.groups = self.__to_set(groups)
         self.q_users = self.__to_set(q_users)
+        self.sandbox_fail_action = sandbox_fail_action
 
         self.is_sandbox = False
         self.logger: Optional[Logger] = None
@@ -80,7 +83,7 @@ class SandBox:
                 return (data["d"]["id"] not in self.q_users) ^ self.is_sandbox
         except Exception as e:
             if self.logger:
-                self.logger.error(f"沙箱模式检查失败，已放行：{repr(e)}")
+                self.logger.error(f"沙箱模式检查失败：{repr(e)}")
                 self.logger.debug(f"事件：{event}, 数据：{data}")
                 self.logger.error(exception_handler(e))
-            return True
+            return self.sandbox_fail_action
