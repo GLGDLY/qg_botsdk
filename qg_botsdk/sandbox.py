@@ -35,16 +35,18 @@ class SandBox:
         self.is_sandbox = False
         self.logger: Optional[Logger] = None
         self.__guild_id_events = set(
-            EVENTS_ENUM.MESSAGE_CREATE,
-            EVENTS_ENUM.FORUM,
-            EVENTS_ENUM.CHANNEL,
-            EVENTS_ENUM.GUILD_MEMBER,
-            EVENTS_ENUM.REACTION,
-            EVENTS_ENUM.INTERACTION,
-            EVENTS_ENUM.AUDIT,
-            EVENTS_ENUM.OPEN_FORUM,
-            EVENTS_ENUM.AUDIO,
-            EVENTS_ENUM.ALC_MEMBER,
+            (
+                EVENTS_ENUM.MESSAGE_CREATE,
+                EVENTS_ENUM.FORUM,
+                EVENTS_ENUM.CHANNEL,
+                EVENTS_ENUM.GUILD_MEMBER,
+                EVENTS_ENUM.REACTION,
+                EVENTS_ENUM.INTERACTION,
+                EVENTS_ENUM.AUDIT,
+                EVENTS_ENUM.OPEN_FORUM,
+                EVENTS_ENUM.AUDIO,
+                EVENTS_ENUM.ALC_MEMBER,
+            )
         )
 
     @staticmethod
