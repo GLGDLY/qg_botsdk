@@ -62,7 +62,15 @@ class Plugins:
 
         def wrap(
             func: Callable[
-                [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
+                [
+                    Union[
+                        Model.MESSAGE,
+                        Model.DIRECT_MESSAGE,
+                        Model.GROUP_MESSAGE,
+                        Model.C2C_MESSAGE,
+                    ]
+                ],
+                Any,
             ]
         ):
             # cls._preprocessors.append(func)

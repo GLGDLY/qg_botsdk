@@ -3,7 +3,7 @@
 from asyncio import Lock as ALock
 from asyncio import get_event_loop, new_event_loop
 from copy import deepcopy
-from importlib.machinery import SourceFileLoader
+from importlib.util import spec_from_file_location, module_from_spec
 from os import getpid
 from os.path import exists
 from os.path import split as path_split
@@ -221,7 +221,10 @@ class BOT:
                 func_type_checker(
                     items.func,
                     union_type_checker(
-                        Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE
+                        Model.MESSAGE,
+                        Model.DIRECT_MESSAGE,
+                        Model.GROUP_MESSAGE,
+                        Model.C2C_MESSAGE,
                     ),
                     is_async=self.is_async,
                 )
@@ -232,7 +235,10 @@ class BOT:
                 func_type_checker(
                     func,
                     union_type_checker(
-                        Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE
+                        Model.MESSAGE,
+                        Model.DIRECT_MESSAGE,
+                        Model.GROUP_MESSAGE,
+                        Model.C2C_MESSAGE,
                     ),
                     is_async=self.is_async,
                 )
@@ -240,6 +246,11 @@ class BOT:
 
     def refresh_plugins(self):
         commands, preprocessors = self._retrieve_new_plugins()
+        for v in preprocessors.values():
+            for func in v:
+                self.logger.info(f"从Plugins注册预处理器：{func.__name__}")
+        for command in commands:
+            self.logger.info(f"从Plugins注册指令：{command.func.__name__}")
         self._commands.extend(commands)
         for bit in range(CommandValidScenes.ALL.bit_length()):
             current_bit = 1 << bit
@@ -295,9 +306,16 @@ class BOT:
             path_to_plugins += ".py"
         _name = path_split(path_to_plugins)[1][:-3]
         try:
-            SourceFileLoader(_name, path_to_plugins).load_module()
-        except Exception:
-            raise ImportError(f"plugin [{path_to_plugins}] 导入失败")
+            # SourceFileLoader(_name, path_to_plugins).exec_module()
+            spec = spec_from_file_location(_name, path_to_plugins)
+            if not spec:
+                raise ImportError(
+                    f"plugin [{path_to_plugins}] 导入失败，未找到对应模块"
+                )
+            module = module_from_spec(spec)
+            spec.loader.exec_module(module)
+        except Exception as e:
+            raise ImportError(f"plugin [{path_to_plugins}] 导入失败，错误：{e}")
         if self._bot_class and self._bot_class.running:
             self.refresh_plugins()
 
@@ -353,7 +371,15 @@ class BOT:
 
         def wrap(
             callback: Callable[
-                [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
+                [
+                    Union[
+                        Model.MESSAGE,
+                        Model.DIRECT_MESSAGE,
+                        Model.GROUP_MESSAGE,
+                        Model.C2C_MESSAGE,
+                    ]
+                ],
+                Any,
             ]
         ):
             Plugins.on_command(
@@ -850,10 +876,8 @@ class BOT:
         if self.__running:
             self.__await_closure = True
             self.__running = False
-            self.logger.info(
-                "WS链接已开始结束进程，请等待另一端完成握手并等待 TCP 连接终止"
-            )
+            self.logger.info("开始关闭机器人")
             self._bot_class.running = False
-            self._loop.create_task(self._bot_class.close())
+            self._loop.create_task(self._bot_class.stop())
         else:
             self.logger.error("当前机器人没有运行！")

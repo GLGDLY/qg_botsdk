@@ -254,7 +254,7 @@ class BotProto:
             objectized_data = deepcopy(objectized_data, memo)
             objectized_data.treated_msg = (
                 msg[msg.find(command) + len(command) :].strip()
-                if command
+                if command is not None
                 else regex.groups()
             )
         return objectized_data
@@ -524,4 +524,4 @@ class BotProto:
 
     async def stop(self):
         self.running = False
-        await self.close()
+        await self.protocol.stop()
