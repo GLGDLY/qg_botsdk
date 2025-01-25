@@ -10,7 +10,7 @@ qg_botsdk
 
     <div align="center">
 
-    <p><a target="_blank" rel="noopener noreferrer" href="https://socialify.git.ci/GLGDLY/qg_botsdk/image?description=1&font=Source%20Code%20Pro&forks=1&issues=1&language=1&logo=https%3A%2F%2Fgithub.com%2Ftencent-connect%2Fbot-docs%2Fblob%2Fmain%2Fdocs%2F.vuepress%2Fpublic%2Ffavicon-64px.png%3Fraw%3Dtrue&name=1&owner=1&pattern=Floating%20Cogs&pulls=1&stargazers=1&theme=Light" style="max-width: 100%;"></a></p>
+    <p><img src="https://socialify.git.ci/GLGDLY/qg_botsdk/image?description=1&font=Source%20Code%20Pro&forks=1&issues=1&language=1&logo=https%3A%2F%2Fgithub.com%2Ftencent-connect%2Fbot-docs%2Fblob%2Fmain%2Fdocs%2F.vuepress%2Fpublic%2Ffavicon-64px.png%3Fraw%3Dtrue&name=1&owner=1&pattern=Floating%20Cogs&pulls=1&stargazers=1&theme=Light" style="max-width: 100%;"></p>
 
     <p><a href="https://www.python.org/" rel="nofollow"><img src="https://img.shields.io/badge/language-python-green.svg?style=plastic" style="max-width: 100%;"></a>
     <a href="https://github.com/GLGDLY/qg_botsdk/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg?style=plastic" style="max-width: 100%;"></a>
@@ -18,13 +18,17 @@ qg_botsdk
     <a href="https://app.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade" rel="nofollow"><img src="https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5" style="max-width: 100%;"></a></p>
     <a href="https://qg-botsdk.readthedocs.io/zh_CN/latest/" rel="nofollow"><img src="https://readthedocs.org/projects/qg-botsdk/badge/?version=latest" style="max-width: 100%;"></a></p>
 
+    <p>
     ✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
+    </p>
 
+    <p>
     <a href="https://qg-botsdk.readthedocs.io/zh_CN/latest/" rel="nofollow">文档</a>
     ·
     <a href="https://github.com/GLGDLY/qg_botsdk/tree/master/example">例程</a>
     ·
     <a href="https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start" rel="nofollow">快速入门</a>
+    </p>
 
     </div>
 
