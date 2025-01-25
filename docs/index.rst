@@ -48,6 +48,7 @@ qg_botsdk
    快速入门
    SDK组件
    API
+   ApiModel
    Model库
    Plugins插件开发
    常见问题Q&A
