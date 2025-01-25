@@ -9,7 +9,7 @@
 .. image:: https://img.shields.io/pypi/dw/qg-botsdk?style=plastic&color=blue
    :target: https://pypi.org/project/qg-botsdk/
 .. image:: https://app.codacy.com/project/badge/Grade/f015549b3dba4602be2fe0f5d8b0a8d5
-   :target: https://www.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=github.com&utm_medium=referral&utm_content=GLGDLY/qg_botsdk&utm_campaign=Badge_Grade
+   :target: https://app.codacy.com/gh/GLGDLY/qg_botsdk/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade
 .. image:: https://readthedocs.org/projects/qg-botsdk/badge/?version=latest
    :target: https://qg-botsdk.readthedocs.io/zh_CN/latest/
 

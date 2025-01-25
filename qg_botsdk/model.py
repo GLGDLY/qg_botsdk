@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import inspect
 from abc import ABC, abstractmethod
 from enum import Enum
 from re import Pattern
@@ -696,6 +697,15 @@ class CommandValidScenes(int):
     GROUP = 4
     C2C = 8
     ALL = GUILD | DM | GROUP | C2C
+
+    @classmethod
+    def get_name(cls, value: int) -> str:
+        member = inspect.getmembers(
+            cls, lambda a: not (inspect.isroutine(a)) and a == value
+        )
+        if not member:
+            return ""
+        return member[0][0]
 
 
 class BotCommandObject:

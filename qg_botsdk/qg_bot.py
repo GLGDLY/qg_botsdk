@@ -3,7 +3,7 @@
 from asyncio import Lock as ALock
 from asyncio import get_event_loop, new_event_loop
 from copy import deepcopy
-from importlib.util import spec_from_file_location, module_from_spec
+from importlib.util import module_from_spec, spec_from_file_location
 from os import getpid
 from os.path import exists
 from os.path import split as path_split
@@ -180,14 +180,34 @@ class BOT:
             return
 
         def __sdk_default_logger(
-            data: Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]
+            data: Union[
+                Model.MESSAGE,
+                Model.DIRECT_MESSAGE,
+                Model.GROUP_MESSAGE,
+                Model.C2C_MESSAGE,
+            ],
         ):
-            self.logger.info(
-                f"收到频道 {data.guild_id} 用户 {data.author.username}({data.author.id}) "
-                f"的消息：{data.treated_msg}"
-            )
+            if isinstance(data, Model.MESSAGE):
+                self.logger.info(
+                    f"收到频道 {data.guild_id} 用户 {data.author.username}({data.author.id}) "
+                    f"的消息：{data.treated_msg}"
+                )
+            elif isinstance(data, Model.DIRECT_MESSAGE):
+                self.logger.info(
+                    f"收到频道私信用户 {data.author.username}({data.author.id}) 的消息：{data.treated_msg}"
+                )
+            elif isinstance(data, Model.GROUP_MESSAGE):
+                self.logger.info(
+                    f"收到Q群 {data.group_openid} 用户 {data.author.id} 的消息：{data.treated_msg}"
+                )
+            elif isinstance(data, Model.C2C_MESSAGE):
+                self.logger.info(
+                    f"收到Q私信用户 {data.author.id} 的消息：{data.treated_msg}"
+                )
 
-        Plugins.before_command()(__sdk_default_logger)
+        Plugins.before_command(
+            valid_scenes=CommandValidScenes.ALL,
+        )(__sdk_default_logger)
 
     def __register_msg_intents(self, valid_scenes, is_log=True):
         if valid_scenes & CommandValidScenes.GUILD:
@@ -246,9 +266,11 @@ class BOT:
 
     def refresh_plugins(self):
         commands, preprocessors = self._retrieve_new_plugins()
-        for v in preprocessors.values():
+        print(preprocessors)
+        for intents, v in preprocessors.items():
+            scope = CommandValidScenes.get_name(intents)
             for func in v:
-                self.logger.info(f"从Plugins注册预处理器：{func.__name__}")
+                self.logger.info(f"从Plugins注册 {scope} 预处理器：{func.__name__}")
         for command in commands:
             self.logger.info(f"从Plugins注册指令：{command.func.__name__}")
         self._commands.extend(commands)
@@ -690,7 +712,7 @@ class BOT:
         callback: Callable[[Model.FRIEND_EVENTS], Any] = None,
     ):
         """
-        用作用户事件的回调函数
+        用作QQ用户事件的回调函数
 
         :param callback: 类型为function，该回调函数应包含一个参数以接收Object消息数据进行处理
         """

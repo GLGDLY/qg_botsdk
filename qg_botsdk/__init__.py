@@ -21,6 +21,7 @@ from ._exception import IdTokenError, IdTokenMissing, WaitTimeoutError
 from .api_model import ApiModel
 from .logger import Logger
 from .model import (
+    AT,
     BotCommandObject,
     CommandValidScenes,
     EmojiID,
@@ -70,4 +71,5 @@ __all__ = (
     "WaitTimeoutError",
     "Proto",
     "SandBox",
+    "AT",
 )

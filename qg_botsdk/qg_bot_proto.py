@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, List, Union
 
 from ._api_model import StrPtr
 from ._event import object_class
+from ._proto_events_conversion import EVENTS_TO_DISPATCH, EVENTS_TO_MODEL
 from ._seq_cache import SeqCache
 from ._session import SessionManager
 from ._statics import EVENTS, EVENTS_ENUM
@@ -87,72 +88,6 @@ class BotProto:
         self.is_first_run = False
         self.heartbeat = None
         self.is_async = is_async
-        self.events = {
-            **dict(
-                zip(
-                    EVENTS.GUILD,
-                    [("on_guild_event", EVENTS_ENUM.GUILD)] * len(EVENTS.GUILD),
-                )
-            ),
-            **dict(
-                zip(
-                    EVENTS.CHANNEL,
-                    [("on_channel_event", EVENTS_ENUM.CHANNEL)] * len(EVENTS.CHANNEL),
-                )
-            ),
-            **dict(
-                zip(
-                    EVENTS.GUILD_MEMBER,
-                    [("on_guild_member", EVENTS_ENUM.GUILD_MEMBER)]
-                    * len(EVENTS.GUILD_MEMBER),
-                )
-            ),
-            **dict(
-                zip(
-                    EVENTS.REACTION,
-                    [("on_reaction", EVENTS_ENUM.REACTION)] * len(EVENTS.REACTION),
-                )
-            ),
-            **dict(
-                zip(
-                    EVENTS.INTERACTION,
-                    [("on_interaction", EVENTS_ENUM.INTERACTION)]
-                    * len(EVENTS.INTERACTION),
-                )
-            ),
-            **dict(
-                zip(EVENTS.AUDIT, [("on_audit", EVENTS_ENUM.AUDIT)] * len(EVENTS.AUDIT))
-            ),
-            **dict(
-                zip(
-                    EVENTS.OPEN_FORUM,
-                    [("on_open_forum", EVENTS_ENUM.OPEN_FORUM)]
-                    * len(EVENTS.OPEN_FORUM),
-                )
-            ),
-            **dict(
-                zip(EVENTS.AUDIO, [("on_audio", EVENTS_ENUM.AUDIO)] * len(EVENTS.AUDIO))
-            ),
-            **dict(
-                zip(
-                    EVENTS.ALC_MEMBER,
-                    [("on_live_channel_member", EVENTS_ENUM.ALC_MEMBER)]
-                    * len(EVENTS.ALC_MEMBER),
-                )
-            ),
-            **dict(
-                zip(
-                    EVENTS.GROUP,
-                    [("on_group_event", EVENTS_ENUM.GROUP)] * len(EVENTS.GROUP),
-                )
-            ),
-            **dict(
-                zip(
-                    EVENTS.FRIEND,
-                    [("on_friend_event", EVENTS_ENUM.FRIEND)] * len(EVENTS.FRIEND),
-                )
-            ),
-        }
         self.threads = ThreadPoolExecutor(max_workers) if not self.is_async else None
         self.api = api
         self.raw_api: AsyncAPI = api if is_async else api._api
@@ -223,11 +158,18 @@ class BotProto:
 
     @exception_processor
     async def distribute(
-        self, function, data: Dict = None, objectized_data: object_class = None
+        self,
+        function,
+        data: Dict = None,
+        objectized_data: object_class = None,
     ):
         if function:
             if not objectized_data:
                 objectized_data = objectize(data.get("d", {}), self.api, self.is_async)
+            t = getattr(objectized_data, "t", None)
+            model_class = EVENTS_TO_MODEL.get(t, None)
+            if model_class and model_class not in objectized_data.__class__.__bases__:
+                objectized_data.__class__.__bases__ += (model_class,)
             if not self.is_async:
                 return self.threads.submit(
                     self.start_callback_task, function, objectized_data
@@ -392,8 +334,8 @@ class BotProto:
         data["d"]["t"] = t
         data["d"]["event_id"] = data.get("id")
         # process and distribute data
-        if t in self.events:
-            _key, _grp = self.events[t]
+        if t in EVENTS_TO_DISPATCH:
+            _key, _grp = EVENTS_TO_DISPATCH[t]
             if self.sandbox and not self.sandbox.checker(_grp, data):
                 return
             await self.distribute(self.func_registers[_key], data)
