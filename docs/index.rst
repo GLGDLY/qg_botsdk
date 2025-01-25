@@ -20,9 +20,11 @@ qg_botsdk
 
     ✨用于QQ官方频道机器人，兼顾实用与容易入门的Python应用级SDK✨
 
-    <a href="https://github.com/GLGDLY/qg_botsdk/releases">下载</a>
+    <a href="https://qg-botsdk.readthedocs.io/zh_CN/latest/" rel="nofollow">文档</a>
     ·
-    <a href="https://thoughts.teambition.com/sharespace/6289c429eb27e90041a58b57/docs/6289c429eb27e90041a58b52" rel="nofollow">快速入门</a></p>
+    <a href="https://github.com/GLGDLY/qg_botsdk/tree/master/example">例程</a>
+    ·
+    <a href="https://qg-botsdk.readthedocs.io/zh_CN/latest/quick_start" rel="nofollow">快速入门</a>
 
     </div>
 
