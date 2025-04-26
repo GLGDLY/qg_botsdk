@@ -57,7 +57,9 @@ class WebHook(AbstractProto):
         # exec ./wh_backend/wh_core.py in background
         py_path = sys.executable
         file_path = os.path.abspath(__file__)
-        wh_core_path = os.path.join(os.path.dirname(file_path), "wh_backend/wh_core.py")
+        wh_core_path = os.path.join(
+            os.path.dirname(file_path), "wh_backend", "wh_core.py"
+        )
         core_log = f"./log/wh_core{time.time()}.log"
         args = f"--version {__version__} --port {self.port} --log {core_log}"
         if self.path_to_ssl_cert and self.path_to_ssl_cert_key:

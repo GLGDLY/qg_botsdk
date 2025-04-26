@@ -4,6 +4,7 @@ from time import time
 from typing import Optional
 
 from aiohttp import (
+    ClientResponse,
     ClientSession,
     ClientTimeout,
     FormData,
@@ -223,7 +224,7 @@ class Session:
 
             def wrap(*args, **kwargs):
                 try:
-                    return self._queue.create_task(self._request, item, *args, **kwargs)
+                    return self._queue.create_task(self.request, item, *args, **kwargs)
                 except Exception as e:
                     self._logger.error(
                         f"HTTP API(url:{args[0]})调用错误，详情：{exception_handler(e)}"
@@ -231,7 +232,7 @@ class Session:
 
             return wrap
 
-    async def _request(self, method, url, retry=False, **kwargs):
+    async def request(self, method, url, retry=False, **kwargs) -> ClientResponse:
         await self._check_session()
         if self._bot_secret and (
             not self._access_token.value or self._access_token_expire <= 0
@@ -252,5 +253,5 @@ class Session:
                     await self._warning(url, resp)
                     return resp
             await async_sleep(0.05)
-            return await self._request(method, url, True, **kwargs)
+            return await self.request(method, url, True, **kwargs)
         return resp

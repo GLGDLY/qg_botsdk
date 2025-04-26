@@ -4,7 +4,9 @@ from asyncio import sleep
 from json import dumps, loads
 from json.decoder import JSONDecodeError
 from time import time
-from typing import BinaryIO, Dict, Iterable, List, Optional, Tuple, Union
+from typing import BinaryIO, Dict, Iterable, List, Literal, Optional, Tuple, Union
+
+from aiohttp import ClientResponse
 
 from . import _api_model, model
 from ._exception import WaitError, WaitTimeoutError
@@ -20,6 +22,7 @@ from ._utils import (
     security_wrapper,
 )
 from .api_model import ApiModel, BaseMessageApiModel
+from .http import FormData_, Session
 from .utils import convert_color
 
 
@@ -28,7 +31,7 @@ class AsyncAPI:
         self._bot_url = bot_url
         self._mini_id = None
         self._mini_secret = None
-        self._session = session
+        self._session: Session = session
         self._logger = logger
         self._check_warning = check_warning
         self._security_code = ""
@@ -1931,3 +1934,36 @@ class AsyncAPI:
             f"{self._bot_url}/interactions/{interaction_id}", json=json_
         )
         return await empty_temp(return_)
+
+    async def custom_api_call(
+        self,
+        method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+        path: str,
+        kv_pair: Dict = {},
+        data_type: Literal["json", "form"] = "json",
+    ) -> ClientResponse:
+        """
+        自定义API调用，可以通过SDK内部调用链请求SDK尚未更新的API接口
+
+        :param method: 请求方法，GET、POST、PUT、DELETE、PATCH
+        :param path: 请求路径，如文档接口为 /channels/{channel_id}，则传入 /channels/123
+        :param kv_pair: 请求参数，传入一个字典
+        :param data_type: 数据类型，json或form，默认为json
+        :return: 返回 aiohttp.ClientResponse 对象
+        """
+        if method not in ["GET", "POST", "PUT", "DELETE", "PATCH"]:
+            return sdk_error_temp("method参数错误，请传入正确的请求方法")
+        if data_type not in ["json", "form"]:
+            return sdk_error_temp("data_type参数错误，请传入正确的数据类型")
+        if data_type == "json":
+            return_ = await self._session.request(
+                method=method, url=f"{self._bot_url}{path}", json=kv_pair
+            )
+        else:
+            form = FormData_()
+            for key, value in kv_pair.items():
+                form.add_field(key, value)
+            return_ = await self._session.request(
+                method=method, url=f"{self._bot_url}{path}", data=form
+            )
+        return return_

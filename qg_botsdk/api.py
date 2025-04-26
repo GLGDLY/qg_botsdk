@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 from asyncio import AbstractEventLoop, run_coroutine_threadsafe
 from time import sleep, time
-from typing import BinaryIO, Dict, Iterable, List, Optional, Tuple, Union
+from typing import BinaryIO, Dict, Iterable, List, Literal, Optional, Tuple, Union
+
+from aiohttp import ClientResponse
 
 from . import _api_model, model
 from ._exception import WaitError, WaitTimeoutError
@@ -1404,5 +1406,29 @@ class API:
         self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.callback_interactions(**_args), self._loop
+        )
+        return future_.result(timeout=self._timeout)
+
+    def custom_api_call(
+        self,
+        method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"],
+        path: str,
+        kv_pair: Dict = {},
+        data_type: Literal["json", "form"] = "json",
+    ) -> ClientResponse:
+        """
+        自定义API调用，可以通过SDK内部调用链请求SDK尚未更新的API接口
+
+        :param method: 请求方法，GET、POST、PUT、DELETE、PATCH
+        :param path: 请求路径，如文档接口为 /channels/{channel_id}，则传入 /channels/123
+        :param kv_pair: 请求参数，传入一个字典
+        :param data_type: 数据类型，json或form，默认为json
+        :return: 返回 aiohttp.ClientResponse 对象
+        """
+        _args = locals()
+        _args.pop("self")
+        self.__check_ready()
+        future_ = run_coroutine_threadsafe(
+            self._api.custom_api_call(**_args), self._loop
         )
         return future_.result(timeout=self._timeout)
