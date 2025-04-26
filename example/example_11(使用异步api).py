@@ -61,7 +61,7 @@ async def deliver(data: Model.MESSAGE):
     # example_10 的异步版本
     if "你好" in data.treated_msg:
         await data.reply("你好，世界 <emoji:106>")  # 发送QQ系统表情emoji
-        await data.reply("你好，世界 \U0001F600")  # 发送unicode格式的emoji
+        await data.reply("你好，世界 \U0001f600")  # 发送unicode格式的emoji
     elif "图片" in data.treated_msg:
         with open("example_10_image.jpg", "rb") as img:
             img_bytes = img.read()

@@ -71,7 +71,7 @@ class Plugins:
                     ]
                 ],
                 Any,
-            ]
+            ],
         ):
             # cls._preprocessors.append(func)
             for bit in range(CommandValidScenes.ALL.bit_length()):
@@ -113,7 +113,7 @@ class Plugins:
         def wrap(
             func: Callable[
                 [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
-            ]
+            ],
         ):
             if is_short_circuit and is_custom_short_circuit:
                 print(

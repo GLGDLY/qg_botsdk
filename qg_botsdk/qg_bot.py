@@ -355,7 +355,7 @@ class BOT:
         def wrap(
             func: Callable[
                 [Union[Model.MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE]], Any
-            ]
+            ],
         ):
             Plugins.before_command(valid_scenes)(func)
             if self._bot_class and self._bot_class.running:
@@ -402,7 +402,7 @@ class BOT:
                     ]
                 ],
                 Any,
-            ]
+            ],
         ):
             Plugins.on_command(
                 command,

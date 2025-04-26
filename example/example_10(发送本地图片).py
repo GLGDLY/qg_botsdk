@@ -11,7 +11,7 @@ def deliver(data: Model.MESSAGE):
         data.reply(
             f"你好，世界{EmojiString.委屈}"
         )  # 如上，发送QQ系统表情emoji（106:委屈）-> EmojiString.委屈 = <emoji:106>
-        data.reply("你好，世界 \U0001F600")  # 发送unicode格式的emoji
+        data.reply("你好，世界 \U0001f600")  # 发送unicode格式的emoji
     elif "图片" in data.treated_msg:
         # 方法1（阅读档案后传入bytes类型图片数据）：
         with open("example_10_image.jpg", "rb") as img:
