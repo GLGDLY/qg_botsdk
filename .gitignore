@@ -19,3 +19,6 @@ test/log
 test/session_data
 test/.pytest_cache
 test/config/config.yml
+docs/.vitepress/cache
+.vscode
+node_modules/
