@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import ssl
 from asyncio import AbstractEventLoop, CancelledError, Future
 from asyncio import TimeoutError as AsyncTimeoutError
 from asyncio import sleep
 from json import JSONDecodeError, dumps
-from ssl import create_default_context
 from time import time
 from typing import Coroutine
 
-from aiohttp import ClientSession, WSMsgType, WSServerHandshakeError
+import certifi
+from aiohttp import ClientSession, TCPConnector, WSMsgType, WSServerHandshakeError
 
 from .._exception import IdTokenError
 from .._utils import exception_handler
@@ -41,7 +42,6 @@ class WS(AbstractProto):
         self.shard_no = shard_no
         self.total_shard = total_shard
         self.disable_reconnect_on_not_recv_msg = disable_reconnect_on_not_recv_msg
-        self.ssl = create_default_context()
         self.ws = None
         self.running = True
         self.is_reconnect = False
@@ -98,8 +98,12 @@ class WS(AbstractProto):
     async def connect(self):
         self.reconnect_times += 1
         try:
-            async with ClientSession() as ws_session:
-                async with ws_session.ws_connect(self.ws_url, ssl=self.ssl) as self.ws:
+            async with ClientSession(
+                connector=TCPConnector(
+                    ssl=ssl.create_default_context(cafile=certifi.where())
+                )
+            ) as ws_session:
+                async with ws_session.ws_connect(self.ws_url) as self.ws:
                     while not self.ws.closed:
                         try:
                             message = await self.ws.receive(

@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 import json
 import os
+import ssl
 import subprocess as sp
 import sys
 import time
 from asyncio import AbstractEventLoop, Future, TimeoutError, sleep, wait_for
-from ssl import create_default_context
 from typing import Coroutine, Optional
 
-from aiohttp import ClientSession, WSMsgType
+import certifi
+from aiohttp import ClientSession, TCPConnector, WSMsgType
 
 from .._exception import IdTokenError
 from .._utils import exception_handler
@@ -50,7 +51,6 @@ class WebHook(AbstractProto):
         self.path_to_ssl_cert_key = path_to_ssl_cert_key
 
         self.running = True
-        self.ssl = create_default_context()
         self.ws = None
 
     async def check_and_start_wh_backend(self):
@@ -98,10 +98,14 @@ class WebHook(AbstractProto):
             self.logger.info("WebHook后端已启动")
 
     async def simple_ws_connect(self, url, is_ssl):
-        async with ClientSession() as ws_session:
+        async with ClientSession(
+            connector=TCPConnector(
+                ssl=ssl.create_default_context(cafile=certifi.where())
+            )
+        ) as ws_session:
             try:
                 async with ws_session.head(
-                    "https" + url if is_ssl else "http" + url, ssl=self.ssl
+                    "https" + url if is_ssl else "http" + url
                 ) as resp:
                     if resp.status != 200:
                         self.logger.error(
@@ -115,7 +119,7 @@ class WebHook(AbstractProto):
                 await sleep(2)
                 return
             async with ws_session.ws_connect(
-                "wss" + url if is_ssl else "ws" + url, ssl=self.ssl
+                "wss" + url if is_ssl else "ws" + url
             ) as self.ws:
                 self.logger.info("已链接到WebHook后端")
                 async for msg in self.ws:

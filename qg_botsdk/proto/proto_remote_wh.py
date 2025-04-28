@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 import json
 import re
+import ssl
 from asyncio import AbstractEventLoop, Future, sleep
-from ssl import create_default_context
 from typing import Coroutine
 
-from aiohttp import ClientSession, WSMsgType
+import certifi
+from aiohttp import ClientSession, TCPConnector, WSMsgType
 
 from .._exception import IdTokenError
 from .._utils import exception_handler
@@ -57,11 +58,14 @@ class RemoteWebHook(AbstractProto):
         self.ws_url = f"{self.ws_url}/qg_botsdk_remote/{self.bot_id}" + remote_auth
 
         self.running = True
-        self.ssl = create_default_context()
         self.ws = None
 
     async def simple_ws_connect(self):
-        async with ClientSession() as ws_session:
+        async with ClientSession(
+            connector=TCPConnector(
+                ssl=ssl.create_default_context(cafile=certifi.where())
+            )
+        ) as ws_session:
             try:
                 async with ws_session.get(
                     self.http_url, headers={"Cache-Control": "no-cache"}
@@ -77,7 +81,7 @@ class RemoteWebHook(AbstractProto):
                 self.logger.error(exception_handler(e))
                 await sleep(2)
                 return
-            async with ws_session.ws_connect(self.ws_url, ssl=self.ssl) as self.ws:
+            async with ws_session.ws_connect(self.ws_url) as self.ws:
                 self.logger.info("已链接到远程WebHook后端")
                 async for msg in self.ws:
                     if msg.type == WSMsgType.TEXT:
