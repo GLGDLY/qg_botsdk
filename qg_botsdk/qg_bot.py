@@ -266,7 +266,6 @@ class BOT:
 
     def refresh_plugins(self):
         commands, preprocessors = self._retrieve_new_plugins()
-        print(preprocessors)
         for intents, v in preprocessors.items():
             scope = CommandValidScenes.get_name(intents)
             for func in v:

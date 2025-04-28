@@ -3,14 +3,15 @@
 import asyncio
 import json
 import os
+import ssl
 import sys
 import time
 import traceback
 from argparse import ArgumentParser
 from collections import Counter
-from ssl import Purpose, create_default_context
 
-from aiohttp import ClientSession, web
+import certifi
+from aiohttp import ClientSession, TCPConnector, web
 from ed25519 import SigningKey
 
 redirect_table = {}
@@ -33,7 +34,11 @@ def parse_args():
 async def check_backend_exists(args: ArgumentParser):
     proto = "https" if args.ssl_cert and args.ssl_cert_key else "http"
     try:
-        async with ClientSession() as session:
+        async with ClientSession(
+            connector=TCPConnector(
+                ssl=ssl.create_default_context(cafile=certifi.where())
+            )
+        ) as session:
             async with session.head(
                 f"{proto}://localhost:{args.port}/qg_botsdk?version={args.version}"
             ) as resp:
@@ -260,7 +265,7 @@ async def create_backend(args: ArgumentParser):
     app.add_routes([web.route("*", "/{tail:.*}", dispatch_handler)])
     runner = web.AppRunner(app)
     if args.ssl_cert and args.ssl_cert_key:
-        ssl_context = create_default_context(Purpose.CLIENT_AUTH)
+        ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_context.load_cert_chain(args.ssl_cert, args.ssl_cert_key)
     else:
         ssl_context = None

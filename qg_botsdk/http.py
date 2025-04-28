@@ -1,8 +1,10 @@
+import ssl
 from asyncio import AbstractEventLoop, get_event_loop
 from asyncio import sleep as async_sleep
 from time import time
 from typing import Optional
 
+import certifi
 from aiohttp import (
     ClientResponse,
     ClientSession,
@@ -155,7 +157,9 @@ class Session:
 
     @staticmethod
     async def _create_connector(*args, **kwargs):
-        return TCPConnector(*args, **kwargs)
+        return TCPConnector(
+            *args, **kwargs, ssl=ssl.create_default_context(cafile=certifi.where())
+        )
 
     async def _check_session(self):
         if not self._bot_secret:
