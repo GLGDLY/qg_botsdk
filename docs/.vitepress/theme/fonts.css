@@ -1,0 +1,5 @@
+@import url('https://fonts.googleapis.cn/css2?family=Noto+Color+Emoji&family=Noto+Sans+SC:wght@100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap');
+
+:root{
+    --vp-font-family-base: 'Noto Sans SC','Noto Color Emoji',sans-serif;
+}
