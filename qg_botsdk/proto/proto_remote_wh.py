@@ -117,6 +117,9 @@ class RemoteWebHook(AbstractProto):
                     await self.ws.close()
             await sleep(0.1)
 
+    async def force_reset(self):
+        pass
+
     async def close(self):
         if self.ws and isinstance(self.ws._waiting, Future):
             self.ws._waiting.cancel()

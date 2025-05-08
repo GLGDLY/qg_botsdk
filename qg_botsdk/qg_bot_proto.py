@@ -95,7 +95,6 @@ class BotProto:
         self.preprocessors = preprocessors
         self.session_manager = session_manager
         self.at = "<@!%s>"
-        self.disable_reconnect = False
         self.skip_connect_waiting = False
 
         self.protocol = protocol(
@@ -419,8 +418,8 @@ class BotProto:
             self.logger.error(
                 "[错误] op9参数出错（一般此报错为传递了无权限的事件订阅，请检查是否有权限订阅相关事件）"
             )
-            self.disable_reconnect = True
             await self.protocol.close()
+            await self.protocol.force_reset()
         elif op == 10:
             self.protocol.update_hearbeat_time(
                 int(data.get("d", {}).get("heartbeat_interval", 40)) * 0.001

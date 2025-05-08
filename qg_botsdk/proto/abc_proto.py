@@ -13,6 +13,10 @@ class AbstractProto(ABC):
         pass
 
     @abstractmethod
+    async def force_reset(self):
+        pass
+
+    @abstractmethod
     async def close(self):
         pass
 

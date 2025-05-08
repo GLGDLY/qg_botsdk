@@ -186,6 +186,10 @@ class WS(AbstractProto):
             await sleep(0.1)
             self.is_reconnect = self.reconnect_times < 20
 
+    async def force_reset(self):
+        self.disable_reconnect = True
+        self.skip_connect_waiting = False
+
     async def close(self):
         if self.ws and isinstance(self.ws._waiting, Future):
             self.ws._waiting.cancel()
