@@ -172,7 +172,7 @@ class BotProto:
                 new_class = type(
                     objectized_data.__class__.__name__,
                     objectized_data.__class__.__bases__ + (model_class,),
-                    dict(objectized_data.__class__.__dict__)
+                    dict(objectized_data.__class__.__dict__),
                 )
                 # 将objectized_data的类更改为新创建的类
                 objectized_data.__class__ = new_class
