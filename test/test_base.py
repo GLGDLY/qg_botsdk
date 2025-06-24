@@ -323,6 +323,19 @@ class TestBase:
 
     @staticmethod
     @pytest.mark.timeout(5)
+    def test_register_stop_event(bot):
+        bot.register_stop_event(_repeat_or_start)
+        assert bot._on_stop_function == _repeat_or_start
+
+        bot._on_stop_function = None
+        bot.register_stop_event()(_repeat_or_start)
+        assert bot._on_stop_function == _repeat_or_start
+
+        with pytest.raises(TypeError):
+            bot.register_stop_event(_async_repeat_or_start)
+
+    @staticmethod
+    @pytest.mark.timeout(5)
     def test_async_register_start_event(bot_async):
         bot_async.register_start_event(_async_repeat_or_start)
         assert bot_async._on_start_function == _async_repeat_or_start
@@ -333,6 +346,19 @@ class TestBase:
 
         with pytest.raises(TypeError):
             bot_async.register_start_event(_repeat_or_start)
+
+    @staticmethod
+    @pytest.mark.timeout(5)
+    def test_async_register_stop_event(bot_async):
+        bot_async.register_stop_event(_async_repeat_or_start)
+        assert bot_async._on_stop_function == _async_repeat_or_start
+
+        bot_async._on_stop_function = None
+        bot_async.register_stop_event()(_async_repeat_or_start)
+        assert bot_async._on_stop_function == _async_repeat_or_start
+
+        with pytest.raises(TypeError):
+            bot_async.register_stop_event(_repeat_or_start)
 
     @staticmethod
     @pytest.mark.timeout(5)

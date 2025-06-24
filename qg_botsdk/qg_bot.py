@@ -97,6 +97,7 @@ class BOT:
         self._func_registers = {}
         self._repeat_function = None
         self._on_start_function = None
+        self._on_stop_function = None
         self.del_is_filter_self = True
         self.check_interval = 10
         self.__running = False
@@ -807,6 +808,22 @@ class BOT:
             return wraps
         wraps(on_start_function)
 
+    def register_stop_event(self, on_stop_function: Callable[[], Any] = None):
+        """
+        用作注册机器人停止时运行的函数，此函数将在机器人关闭前被调用
+
+        :param on_stop_function: 类型为function，该函数不应包含任何参数
+        """
+
+        def wraps(func):
+            func_type_checker(func, is_async=self.is_async)
+            self._on_stop_function = func
+            self.logger.info("停止事件注册成功")
+
+        if not on_stop_function:
+            return wraps
+        wraps(on_stop_function)
+
     def security_setup(self, mini_id: str, mini_secret: str):
         """
         用于注册小程序ID和secret以使用腾讯内容安全接口
@@ -852,6 +869,7 @@ class BOT:
                     self.msg_treat,
                     self.dm_treat,
                     self._on_start_function,
+                    self._on_stop_function,
                     self.check_interval,
                     self._repeat_function,
                     self.is_async,
@@ -898,6 +916,15 @@ class BOT:
             self.__await_closure = True
             self.__running = False
             self.logger.info("开始关闭机器人")
+            if self._on_stop_function is not None:
+                if self.is_async:
+                    self._loop.create_task(
+                        self._bot_class.async_start_callback_task(
+                            self._on_stop_function
+                        )
+                    )
+                else:
+                    self._bot_class.start_callback_task(self._on_stop_function)
             self._bot_class.running = False
             self._loop.create_task(self._bot_class.stop())
         else:
