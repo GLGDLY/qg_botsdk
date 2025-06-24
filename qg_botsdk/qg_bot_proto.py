@@ -168,7 +168,14 @@ class BotProto:
             t = getattr(objectized_data, "t", None)
             model_class = EVENTS_TO_MODEL.get(t, None)
             if model_class and model_class not in objectized_data.__class__.__bases__:
-                objectized_data.__class__.__bases__ += (model_class,)
+                # 创建一个新的类，继承自原始类和model_class
+                new_class = type(
+                    objectized_data.__class__.__name__,
+                    objectized_data.__class__.__bases__ + (model_class,),
+                    dict(objectized_data.__class__.__dict__)
+                )
+                # 将objectized_data的类更改为新创建的类
+                objectized_data.__class__ = new_class
             if not self.is_async:
                 return self.threads.submit(
                     self.start_callback_task, function, objectized_data
