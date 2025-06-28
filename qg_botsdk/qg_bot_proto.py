@@ -35,7 +35,6 @@ class BotProto:
         msg_treat: bool,
         dm_treat: bool,
         on_start_function: Callable[[], Any],
-        on_stop_function: Callable[[], Any],
         check_interval: int,
         repeat_function: Callable[[], Any],
         is_async: bool,
@@ -68,7 +67,6 @@ class BotProto:
         self.logger = logger
         self.auth = access_token if bot_secret else f"Bot {bot_id}.{bot_token}"
         self.on_start_function = on_start_function
-        self.on_stop_function = on_stop_function
         self.check_interval = check_interval
         self.repeat_function = repeat_function
         self.func_registers = func_registers

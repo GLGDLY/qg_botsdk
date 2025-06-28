@@ -1036,6 +1036,9 @@ class StrPtr:
     def __init__(self, value: Optional[str] = None):
         self.value = value
 
+    def get(self):
+        return self.value if self.value is not None else ""
+
     def __repr__(self):
         return f'<StrPtr "{self.value}">'
 
