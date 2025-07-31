@@ -56,7 +56,7 @@ class Logger:
         self._logger.handlers.clear()
         self._logger.setLevel("DEBUG")
         self._format = "[%(asctime)s] [%(levelname)s] %(message)s"
-        self._date_format = "%m-%d %H:%M:%S"
+        self._date_format = "%Y-%m-%d %H:%M:%S"
         self._cmdh = StreamHandler()
         self._cmdh.setFormatter(self._Stream_Formatter())
         self._cmdh.setLevel("INFO")
@@ -74,9 +74,9 @@ class Logger:
             makedirs(self.file_path)
         assert isdir(self.file_path), "自定义Log输出路径必须为一个directory资料夹"
         self._logh = None
-        self._new_logh(strftime("%m-%d", localtime()))
+        self._new_logh(strftime("%Y-%m-%d", localtime()))
         self._logger.addHandler(self._cmdh)
-        self._previous_time = strftime("%m-%d", localtime())
+        self._previous_time = strftime("%Y-%m-%d", localtime())
         # self._previous_time = "12-16"
         self.event_queue = AsyncQueue()
 
@@ -93,7 +93,7 @@ class Logger:
                 self.FORMATS[20] = formats.get(20, None) or self.FORMATS[20]
                 self.FORMATS[30] = formats.get(30, None) or self.FORMATS[30]
                 self.FORMATS[40] = formats.get(40, None) or self.FORMATS[40]
-            self._date_format = date_format or "%m-%d %H:%M:%S"
+            self._date_format = date_format or "%Y-%m-%d %H:%M:%S"
 
         def format(self, record) -> str:
             log_fmt = self.FORMATS.get(record.levelno)
@@ -176,7 +176,7 @@ class Logger:
     async def start(self):
         while True:
             func, args, kwargs = await self.event_queue.get()
-            str_time = strftime("%m-%d", localtime())
+            str_time = strftime("%Y-%m-%d", localtime())
             if str_time != self._previous_time:
                 self._previous_time = str_time
                 self._logger.removeHandler(self._logh)
