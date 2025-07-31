@@ -20,6 +20,7 @@ from ._api_model import StrPtr
 from ._queue import Queue
 from ._utils import exception_handler, general_header, retry_err_code
 
+__is_aiohttp_reusable_bodies_released = False
 try:
     from pkg_resources import get_distribution, parse_version
 
@@ -29,6 +30,8 @@ try:
         print(
             f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1以上，避免出现无法预计的错误\033[0m"
         )
+    elif parse_version(aio_version) > parse_version("3.12.0"):
+        __is_aiohttp_reusable_bodies_released = True
 except (ImportError, ModuleNotFoundError):
     from importlib.metadata import version
 
@@ -51,6 +54,20 @@ except (ImportError, ModuleNotFoundError):
         print(
             f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1以上，避免出现无法预计的错误\033[0m"
         )
+    elif __simple_version_cmp(aio_version, "3.12.1"):
+        __is_aiohttp_reusable_bodies_released = True
+
+
+class __StrPtrPayload(payload.StringPayload):
+    def __init__(
+        self, value: StrPtr, *args, encoding=None, content_type=None, **kwargs
+    ):
+        super().__init__(
+            value.get(), *args, encoding=encoding, content_type=content_type, **kwargs
+        )
+
+
+payload.PAYLOAD_REGISTRY.register(__StrPtrPayload, StrPtr)
 
 
 # derived from aiohttp FormData object, changing the return of _is_processed to allow retry using the same data object
@@ -61,13 +78,6 @@ class FormData_(FormData):
             return self._writer
         for dispparams, headers, value in self._fields:
             try:
-                # handle custom datatype in sdk
-                if isinstance(value, StrPtr):
-                    value = value.value
-                if value is None:
-                    continue
-
-                # original process
                 if hdrs.CONTENT_TYPE in headers:
                     part = payload.get_payload(
                         value,
@@ -98,6 +108,10 @@ class FormData_(FormData):
 
         self._is_processed = True
         return self._writer
+
+
+if __is_aiohttp_reusable_bodies_released:
+    FormData_ = FormData  # directly use aiohttp's FormData directly if reusable_bodies is released
 
 
 class Session:

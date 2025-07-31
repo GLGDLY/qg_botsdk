@@ -869,7 +869,6 @@ class BOT:
                     self.msg_treat,
                     self.dm_treat,
                     self._on_start_function,
-                    self._on_stop_function,
                     self.check_interval,
                     self._repeat_function,
                     self.is_async,
