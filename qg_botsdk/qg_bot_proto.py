@@ -191,20 +191,15 @@ class BotProto:
     ):
         if self.msg_treat:
             msg = treated_msg
-            # deepcopy treated_msg with just shallow copy others
-            # resulting that changing of treated msg will not affect other commands
-            memo = {}
-            for x in objectized_data.__dict__:
-                if x != "treated_msg":
-                    memo[id(getattr(objectized_data, x))] = copy(
-                        getattr(objectized_data, x)
-                    )
-            objectized_data = deepcopy(objectized_data, memo)
-            objectized_data.treated_msg = (
+            new_treated_msg = (
                 msg[msg.find(command) + len(command) :].strip()
                 if command is not None
                 else regex.groups()
             )
+            new_objectized_data = copy(objectized_data)
+            new_objectized_data.__dict__ = objectized_data.__dict__.copy()
+            new_objectized_data.treated_msg = new_treated_msg
+            return new_objectized_data
         return objectized_data
 
     @exception_processor

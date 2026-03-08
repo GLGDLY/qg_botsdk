@@ -14,6 +14,7 @@ qg_botsdk Library
 :copyright: (c) 2022 by GLGDLY.
 :license: MIT, see LICENSE for more details.
 """
+
 import json
 
 from . import utils

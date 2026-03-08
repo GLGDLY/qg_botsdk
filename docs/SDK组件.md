@@ -46,6 +46,8 @@ BOT(bot_id='xxx', bot_token='xxx')
 | api_timeout           | int     | 20                | API 请求的超时设置（需求 SDK 版本>=2.6.3）                                                               |
 | protocol              | Proto   | Proto.websocket() | 机器人连接协议（需求 SDK 版本>=4.2.0）                                                                   |
 | sandbox               | SandBox | None              | 沙箱环境配置（需求 SDK 版本>=4.3.1）                                                                     |
+| auto_load_plugins     | bool    | False             | 是否自动加载插件目录中的插件（需求 SDK 版本>=4.3.9）                                                     |
+| plugins_dir           | string  | "plugins"         | 插件目录路径，配合 auto_load_plugins 使用（需求 SDK 版本>=4.3.9）                                        |
 
 ### Proto 类 （需求 SDK 版本>=4.2.0）
 
@@ -218,6 +220,35 @@ bot.get_current_commands()
 
 > 无参数
 
+### 获取当前机器人的指令名字列表（需求 SDK 版本>=4.3.9）
+
+- 获取当前所有注册的指令名字列表（包括 command 和 regex 模式的指令）
+
+```python
+bot.get_command_names()
+```
+
+| 返回       |                      |
+| ---------- | -------------------- |
+| 类型       | 说明                 |
+| list[str]  | 所有指令名字的列表   |
+
+> 无参数
+
+使用示例：
+
+```python
+from qg_botsdk import BOT
+
+bot = BOT(bot_id="xxx", bot_token="xxx")
+
+# 加载插件后获取所有指令名字
+bot.load_plugins_auto()
+command_names = bot.get_command_names()
+print(f"已加载的指令：{command_names}")
+# 输出：已加载的指令：['help', 'ping', 'info', 'echo .*']
+```
+
 ### 获取当前机器人的预处理器列表（需求 SDK 版本>=3.0.0）
 
 - 获取当前机器人的预处理器列表
@@ -279,6 +310,43 @@ bot.load_plugins(path_to_plugins="xxx")
 | path_to_plugins | str  | None   | 指向相应.py 插件文件的相对或绝对路径 |
 
 > （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
+
+### 自动加载插件（需求 SDK 版本>=4.3.9）
+
+- 自动扫描并加载插件目录中的所有 Python 文件
+
+```python
+bot.load_plugins_auto(plugins_dir="plugins", recursive=False, pattern="*.py")
+```
+
+| 参数        | 类型 | 默认值  | 说明                                           |
+| ----------- | ---- | ------- | ---------------------------------------------- |
+| 字段名      | 类型 | 默认值  | 说明                                           |
+| plugins_dir | str  | None    | 插件目录路径，默认使用初始化时传入的 plugins_dir |
+| recursive   | bool | False   | 是否递归扫描子目录                             |
+| pattern     | str  | "*.py"  | 文件匹配模式，默认匹配所有 .py 文件            |
+
+使用示例：
+
+```python
+from qg_botsdk import BOT
+
+bot = BOT(bot_id="xxx", bot_token="xxx")
+
+# 基础用法：加载默认目录下的所有插件
+bot.load_plugins_auto()
+
+# 指定目录
+bot.load_plugins_auto("my_plugins")
+
+# 递归扫描子目录
+bot.load_plugins_auto("plugins", recursive=True)
+
+# 自定义匹配模式
+bot.load_plugins_auto("plugins", pattern="*_plugin.py")
+```
+
+> **注意**：以 `_` 开头的文件（如 `__init__.py`）会被自动跳过。
 
 ### 清除当前所有插件、指令、预处理器（需求 SDK 版本>=3.0.0）
 

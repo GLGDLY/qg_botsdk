@@ -698,14 +698,11 @@ class CommandValidScenes(int):
     C2C = 8
     ALL = GUILD | DM | GROUP | C2C
 
+    _name_cache = {1: "GUILD", 2: "DM", 4: "GROUP", 8: "C2C", 15: "ALL"}
+
     @classmethod
     def get_name(cls, value: int) -> str:
-        member = inspect.getmembers(
-            cls, lambda a: not (inspect.isroutine(a)) and a == value
-        )
-        if not member:
-            return ""
-        return member[0][0]
+        return cls._name_cache.get(value, "")
 
 
 class BotCommandObject:

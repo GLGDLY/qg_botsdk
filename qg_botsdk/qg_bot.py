@@ -4,8 +4,9 @@ from asyncio import Lock as ALock
 from asyncio import get_event_loop, new_event_loop
 from copy import deepcopy
 from importlib.util import module_from_spec, spec_from_file_location
+from glob import glob
 from os import getpid
-from os.path import exists
+from os.path import exists, join
 from os.path import split as path_split
 from re import Pattern
 from threading import Lock as TLock
@@ -50,6 +51,8 @@ class BOT:
         api_timeout: int = 20,
         protocol: Proto = Proto.websocket(),
         sandbox: Optional[SandBox] = None,
+        auto_load_plugins: bool = False,
+        plugins_dir: str = "plugins",
     ):
         """
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
@@ -68,6 +71,8 @@ class BOT:
         :param api_timeout: API请求的超时设置。默认20
         :param protocol: 机器人连接协议，默认为Proto.websocket()
         :param sandbox: 沙箱模式配置项，当 is_sandbox=True 时，只有指定的频道、群、用户可以接收到消息；否则当非沙箱环境时，过滤掉指定频道、群、用户的消息。
+        :param auto_load_plugins: 是否自动加载插件目录中的插件，默认False
+        :param plugins_dir: 插件目录路径，默认"plugins"
         """
         try:
             self._loop = get_event_loop()
@@ -150,6 +155,8 @@ class BOT:
         self.session: AbstractSessionManager = SessionPatcher()
         self.protocol = protocol
         self.sandbox = sandbox
+        self._auto_load_plugins = auto_load_plugins
+        self._plugins_dir = plugins_dir
         if isinstance(self.sandbox, SandBox):
             self.sandbox.set_logger(self.logger)
             self.sandbox.set_is_sandbox(is_sandbox)
@@ -272,7 +279,19 @@ class BOT:
             for func in v:
                 self.logger.info(f"从Plugins注册 {scope} 预处理器：{func.__name__}")
         for command in commands:
-            self.logger.info(f"从Plugins注册指令：{command.func.__name__}")
+            # 获取指令名字（command或regex）
+            if command.command:
+                cmd_names = ", ".join(command.command)
+                self.logger.info(
+                    f"从Plugins注册指令：{command.func.__name__} -> [{cmd_names}]"
+                )
+            elif command.regex:
+                regex_patterns = [r.pattern for r in command.regex]
+                self.logger.info(
+                    f"从Plugins注册正则指令：{command.func.__name__} -> [{', '.join(regex_patterns)}]"
+                )
+            else:
+                self.logger.info(f"从Plugins注册指令：{command.func.__name__}")
         self._commands.extend(commands)
         for bit in range(CommandValidScenes.ALL.bit_length()):
             current_bit = 1 << bit
@@ -302,6 +321,20 @@ class BOT:
     def get_current_commands(self) -> List[BotCommandObject]:
         return self._commands[:]
 
+    def get_command_names(self) -> List[str]:
+        """
+        获取当前所有注册的指令名字列表
+
+        :return: 返回所有指令名字的列表（包括 command 和 regex 模式的指令）
+        """
+        names = []
+        for cmd in self._commands:
+            if cmd.command:
+                names.extend(cmd.command)
+            elif cmd.regex:
+                names.extend([r.pattern for r in cmd.regex])
+        return names
+
     @property
     def get_current_preprocessors(
         self,
@@ -313,7 +346,10 @@ class BOT:
             ]
         ],
     ]:
-        return deepcopy(self._preprocessors)
+        result = {}
+        for key, value in self._preprocessors.items():
+            result[key] = value.copy()
+        return result
 
     def load_plugins(self, path_to_plugins: str):
         """
@@ -340,6 +376,52 @@ class BOT:
             raise ImportError(f"plugin [{path_to_plugins}] 导入失败，错误：{e}")
         if self._bot_class and self._bot_class.running:
             self.refresh_plugins()
+
+    def load_plugins_auto(
+        self,
+        plugins_dir: Optional[str] = None,
+        recursive: bool = False,
+        pattern: str = "*.py",
+    ):
+        """
+        自动扫描并加载插件目录中的所有 Python 文件
+
+        :param plugins_dir: 插件目录路径，默认使用初始化时传入的 plugins_dir
+        :param recursive: 是否递归扫描子目录，默认False
+        :param pattern: 文件匹配模式，默认"*.py"
+        """
+        import os
+
+        target_dir = plugins_dir if plugins_dir is not None else self._plugins_dir
+
+        if not exists(target_dir):
+            self.logger.warning(f"插件目录不存在: {target_dir}")
+            return
+
+        search_pattern = join(target_dir, "**" if recursive else "", pattern)
+        plugin_files = glob(search_pattern, recursive=recursive)
+
+        if not plugin_files:
+            self.logger.info(f"插件目录 [{target_dir}] 中没有找到匹配的文件")
+            return
+
+        # 按文件名排序，确保加载顺序一致
+        plugin_files.sort()
+        loaded_count = 0
+
+        for plugin_path in plugin_files:
+            filename = os.path.basename(plugin_path)
+            # 跳过以 _ 开头的私有文件（如 __init__.py）
+            if filename.startswith("_"):
+                continue
+            try:
+                self.load_plugins(plugin_path)
+                loaded_count += 1
+                self.logger.info(f"自动加载插件成功: {filename}")
+            except Exception as e:
+                self.logger.error(f"自动加载插件失败 [{filename}]: {e}")
+
+        self.logger.info(f"自动加载完成，共加载 {loaded_count} 个插件")
 
     def before_command(
         self,
@@ -855,6 +937,9 @@ class BOT:
         """
         try:
             if not self.__running and not self._bot_class:
+                # 如果开启了自动加载插件，在启动前自动扫描加载
+                if self._auto_load_plugins:
+                    self.load_plugins_auto()
                 self.__running = True
                 self.refresh_plugins()
                 self._bot_class = _BotWs(

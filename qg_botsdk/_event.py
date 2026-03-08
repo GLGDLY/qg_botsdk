@@ -107,10 +107,7 @@ def objectize(
     data, api=None, is_async=False
 ):  # if api is not None, the event is a resp class
     if isinstance(data, dict):
-        try:
-            _static_copy = dumps(data)
-        except (TypeError, JSONDecodeError):
-            _static_copy = str(data)
+        _static_copy = None
         # main func to process data
         for keys, values in data.items():
             if keys.isnumeric():
@@ -123,12 +120,22 @@ def objectize(
                         data[keys][i] = objectize(items)
         if api:
             data["api"] = api
+            if _static_copy is None:
+                try:
+                    _static_copy = dumps(data)
+                except (TypeError, JSONDecodeError):
+                    _static_copy = str(data)
             object_data = (
                 async_event_class(_static_copy, data)
                 if is_async
                 else event_class(_static_copy, data)
             )
         else:
+            if _static_copy is None:
+                try:
+                    _static_copy = dumps(data)
+                except (TypeError, JSONDecodeError):
+                    _static_copy = str(data)
             object_data = object_class(_static_copy, data)
         return object_data
     else:

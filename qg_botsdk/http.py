@@ -20,42 +20,53 @@ from ._api_model import StrPtr
 from ._queue import Queue
 from ._utils import exception_handler, general_header, retry_err_code
 
-__is_aiohttp_reusable_bodies_released = False
-try:
-    from pkg_resources import get_distribution, parse_version
 
-    aio_version = get_distribution("aiohttp").version
+def _parse_version(version_str: str) -> tuple:
+    """将版本字符串解析为元组，用于比较"""
+    parts = version_str.split(".")
+    result = []
+    for part in parts[:3]:  # 只取前3个版本号
+        # 提取数字部分
+        num = ""
+        for char in part:
+            if char.isdigit():
+                num += char
+            else:
+                break
+        result.append(int(num) if num else 0)
+    # 补齐到3位
+    while len(result) < 3:
+        result.append(0)
+    return tuple(result)
 
-    if parse_version(aio_version) < parse_version("3.8.1"):
+
+def _check_aiohttp_version() -> bool:
+    """检查 aiohttp 版本，返回是否支持 reusable bodies"""
+    try:
+        # 优先使用 pkg_resources（setuptools）
+        from pkg_resources import get_distribution
+
+        aio_version = get_distribution("aiohttp").version
+    except (ImportError, ModuleNotFoundError):
+        # 回退到 importlib.metadata（Python 3.8+）
+        from importlib.metadata import version
+
+        aio_version = version("aiohttp")
+
+    version_tuple = _parse_version(aio_version)
+
+    # 检查版本警告
+    if version_tuple < (3, 8, 1):
         print(
-            f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1以上，避免出现无法预计的错误\033[0m"
+            f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，"
+            f"SDK建议升级到3.8.1以上，避免出现无法预计的错误\033[0m"
         )
-    elif parse_version(aio_version) > parse_version("3.12.0"):
-        __is_aiohttp_reusable_bodies_released = True
-except (ImportError, ModuleNotFoundError):
-    from importlib.metadata import version
 
-    def __to_int(s):
-        ret = ""
-        for i in s:
-            if i.isdigit():
-                ret += i
-        return int(ret) if ret else 0
+    # 检查是否支持 reusable bodies（3.12.1+）
+    return version_tuple >= (3, 12, 1)
 
-    def __simple_version_cmp(version: str, target: str):
-        version_cmp = zip(version.split("."), target.split("."))
-        for a, b in version_cmp:
-            if __to_int(a) < __to_int(b):
-                return False
-        return True
 
-    aio_version = version("aiohttp")
-    if not __simple_version_cmp(aio_version, "3.8.1"):
-        print(
-            f"\033[1;33m[warning] 注意你的aiohttp版本为{aio_version}，SDK建议升级到3.8.1以上，避免出现无法预计的错误\033[0m"
-        )
-    elif __simple_version_cmp(aio_version, "3.12.1"):
-        __is_aiohttp_reusable_bodies_released = True
+__is_aiohttp_reusable_bodies_released = _check_aiohttp_version()
 
 
 class __StrPtrPayload(payload.StringPayload):

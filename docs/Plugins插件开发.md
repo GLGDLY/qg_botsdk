@@ -79,6 +79,72 @@ import my_plugins
 BOT.load_plugins("my_plugins.py")
 ```
 
+### 方法 3：自动加载插件目录（需求 SDK 版本>=4.3.9）
+
+> 使用 BOT.load_plugins_auto() 或开启 auto_load_plugins 参数，自动扫描并加载插件目录中的所有插件
+
+#### 3.1 启动时自动加载
+
+在实例化 BOT 时开启 `auto_load_plugins` 参数，启动时会自动扫描并加载指定目录中的插件：
+
+```python
+from qg_botsdk import BOT, Proto
+
+bot = BOT(
+    bot_id="你的BotAppID",
+    bot_token="你的BotToken",
+    auto_load_plugins=True,      # 开启自动加载
+    plugins_dir="plugins"        # 指定插件目录，默认为 "plugins"
+)
+
+bot.start()  # 启动时会自动加载 plugins 目录下的所有插件
+```
+
+#### 3.2 手动调用自动加载
+
+也可以在代码中手动调用 `load_plugins_auto()` 方法：
+
+```python
+from qg_botsdk import BOT
+
+bot = BOT(bot_id="xxx", bot_token="xxx")
+
+# 基础用法：加载默认目录（plugins）下的所有插件
+bot.load_plugins_auto()
+
+# 指定目录
+bot.load_plugins_auto("my_plugins")
+
+# 递归扫描子目录
+bot.load_plugins_auto("plugins", recursive=True)
+
+# 自定义文件匹配模式
+bot.load_plugins_auto("plugins", pattern="*_plugin.py")
+
+bot.start()
+```
+
+| 参数        | 类型 | 默认值 | 说明                                           |
+| ----------- | ---- | ------ | ---------------------------------------------- |
+| plugins_dir | str  | None   | 插件目录路径，默认使用初始化时传入的 plugins_dir |
+| recursive   | bool | False  | 是否递归扫描子目录                             |
+| pattern     | str  | "*.py" | 文件匹配模式，默认匹配所有 .py 文件            |
+
+#### 3.3 插件目录结构示例
+
+```
+你的项目/
+├── main.py              # 机器人主程序
+├── plugins/             # 插件目录
+│   ├── __init__.py      # 会被自动跳过
+│   ├── admin.py         # 管理插件
+│   ├── fun.py           # 娱乐插件
+│   └── welcome.py       # 欢迎插件
+└── ...
+```
+
+> **注意**：以 `_` 开头的文件（如 `__init__.py`）会被自动跳过，避免加载私有文件。
+
 ## 实际用例
 
 可查看 github 中的 example 库的 example13：
