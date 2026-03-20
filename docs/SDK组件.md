@@ -205,21 +205,6 @@ def c_0(data: Model.MESSAGE):
 
 > （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
 
-### 获取当前机器人的指令列表（需求 SDK 版本>=3.0.0）
-
-- 获取当前机器人的指令列表
-
-```python
-bot.get_current_commands()
-```
-
-| 返回                                                                                                         |                                        |
-| ------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
-| 类型                                                                                                         | 说明                                   |
-| list[[BotCommandObject](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#botcommandobject)] | 包含机器人指令 BotCommandObject 的列表 |
-
-> 无参数
-
 ### 获取当前机器人的指令名字列表（需求 SDK 版本>=4.3.9）
 
 - 获取当前所有注册的指令名字列表（包括 command 和 regex 模式的指令）

@@ -317,10 +317,6 @@ class BOT:
                 return
         raise ValueError(f"未找到指定的preprocessor {preprocessor}")
 
-    @property
-    def get_current_commands(self) -> List[BotCommandObject]:
-        return self._commands[:]
-
     def get_command_names(self) -> List[str]:
         """
         获取当前所有注册的指令名字列表

@@ -302,7 +302,7 @@ class TestRunning:
                 message_id="id",
                 channel_id="channel_id",
             )
-            assert len(self.bot.get_current_commands) == 2
+            assert len(self.bot.get_command_names()) == 2
 
     async def _test_wait_for_msg_binder(self, data):
         command_obj = qg_botsdk.BotCommandObject(["plugins_test"], treat=False)
