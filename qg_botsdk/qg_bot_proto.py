@@ -104,6 +104,7 @@ class BotProto:
             logger=logger,
             loop=loop,
             dispatch_func=self.dispatch_events,
+            on_ready=self._start_event,
         )
         self.sandbox = sandbox
         self.seq_cache = SeqCache()
@@ -121,6 +122,8 @@ class BotProto:
             await self._time_event_run()
 
     async def _start_event(self):
+        if self.is_first_run:
+            return
         self.is_first_run = True
         self.robot = await self.get_robot_info()
         self.at = self.at % self.robot.id
@@ -441,8 +444,8 @@ class BotProto:
                 self.protocol.start_heartbeat()
                 self.seq_cache.clear()
                 self.logger.info("连接成功，机器人开始运行")
-                if not self.is_first_run:
-                    await self._start_event()
+                if not self.is_first_run and self.protocol.on_ready:
+                    self.loop.create_task(self.protocol.on_ready())
             elif t == "RESUMED":
                 self.reconnect_times = 0
                 self.protocol.start_heartbeat()

@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from abc import ABC, abstractmethod
+from typing import Callable, Optional
 
 
 class AbstractProto(ABC):
+    on_ready: Optional[Callable[[], None]] = None
+
     @abstractmethod
     def __init__(self, *args, **kwargs):
         pass

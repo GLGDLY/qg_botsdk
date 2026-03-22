@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from asyncio import AbstractEventLoop
 from enum import IntEnum
-from typing import Any, Coroutine, Optional
+from typing import Any, Callable, Coroutine, Optional
 
 from ..async_api import AsyncAPI
 from ..logger import Logger
@@ -39,8 +39,9 @@ class Proto:
         logger: Logger,
         loop: AbstractEventLoop,
         dispatch_func: Coroutine,
+        on_ready: Optional[Callable[[], None]] = None,
     ) -> AbstractProto:
-        return self.proto(
+        instance = self.proto(
             raw_api=raw_api,
             intents=intents,
             auth=auth,
@@ -49,6 +50,8 @@ class Proto:
             dispatch_func=dispatch_func,
             **self.kwargs
         )
+        instance.on_ready = on_ready
+        return instance
 
     @classmethod
     def websocket(

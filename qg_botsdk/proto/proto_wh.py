@@ -122,6 +122,8 @@ class WebHook(AbstractProto):
                 "wss" + url if is_ssl else "ws" + url
             ) as self.ws:
                 self.logger.info("已链接到WebHook后端")
+                if self.on_ready:
+                    self.loop.create_task(self.on_ready())
                 async for msg in self.ws:
                     if msg.type == WSMsgType.TEXT:
                         try:
