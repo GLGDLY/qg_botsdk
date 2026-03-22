@@ -1837,6 +1837,7 @@ class AsyncAPI:
         message_reference_id: Optional[str] = None,
         ignore_message_reference_error: Optional[bool] = None,
         msg_seq: Optional[int] = None,
+        is_wakeup: Optional[bool] = None,
     ) -> _api_model.send_msg():
         """
         发送qq单聊消息的 v2 API
@@ -1849,6 +1850,7 @@ class AsyncAPI:
         :param message_reference_id: 引用消息的id（选填）
         :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
         :param msg_seq: 直接替换ApiModel.Message内部构建递增的消息序号（选填）
+        :param is_wakeup: 是否为互动召回消息（选填）
         """
         if not isinstance(content, BaseMessageApiModel):
             content = ApiModel.Message(
@@ -1856,6 +1858,7 @@ class AsyncAPI:
                 media_file_info=media_file_info,
                 message_reference_id=message_reference_id,
                 ignore_message_reference_error=ignore_message_reference_error,
+                is_wakeup=is_wakeup,
             )
         ret = content.construct(
             message_id=message_id,
@@ -1918,6 +1921,64 @@ class AsyncAPI:
             return await regular_temp(return_)
         else:
             return ret.error_ret
+
+    async def delete_group_msg(
+        self, group_openid: str, message_id: str
+    ) -> _api_model.delete_group_msg():
+        """
+        撤回qq群消息的 v2 API
+
+        :param group_openid: 群id
+        :param message_id: 消息id
+        :return: 返回的.result显示是否成功
+        """
+        return_ = await self._session.delete(
+            f"{self._bot_url}/v2/groups/{group_openid}/messages/{message_id}"
+        )
+        return await empty_temp(return_)
+
+    async def delete_c2c_msg(
+        self, openid: str, message_id: str
+    ) -> _api_model.delete_c2c_msg():
+        """
+        撤回qq单聊消息的 v2 API
+
+        :param openid: 用户id
+        :param message_id: 消息id
+        :return: 返回的.result显示是否成功
+        """
+        return_ = await self._session.delete(
+            f"{self._bot_url}/v2/users/{openid}/messages/{message_id}"
+        )
+        return await empty_temp(return_)
+
+    async def generate_url_link(
+        self,
+        type: int,
+        channel_id: Optional[str] = None,
+        bot_appid: Optional[int] = None,
+        guild_appid: Optional[int] = None,
+    ) -> _api_model.generate_url_link():
+        """
+        获取分享链接
+
+        :param type: 分享类型 0-频道机器人资料页 1-子频道邀请链接
+        :param channel_id: 子频道id，当 type=1 时必填
+        :param bot_appid: 机器人应用id，当 type=0 时必填
+        :param guild_appid: 频道应用id，当 type=0 时必填
+        :return: 返回的.data.url为生成的分享链接
+        """
+        json_ = {"type": type}
+        if channel_id is not None:
+            json_["channel_id"] = channel_id
+        if bot_appid is not None:
+            json_["bot_appid"] = bot_appid
+        if guild_appid is not None:
+            json_["guild_appid"] = guild_appid
+        return_ = await self._session.post(
+            f"{self._bot_url}/v2/generate_url_link", json=json_
+        )
+        return await regular_temp(return_)
 
     async def callback_interactions(
         self, interaction_id: str, code: int = 0

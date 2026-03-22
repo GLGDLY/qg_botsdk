@@ -14,6 +14,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Set,
     Tuple,
     Union,
 )
@@ -21,18 +22,23 @@ from typing import (
 from ._api_model import BaseMessageApiModel, send_msg
 
 
-class _AbstractEventClass(ABC):
+class _AbstractReplyEventClass(ABC):
     @abstractmethod
     def reply(
         self,
         content: Optional[Union[str, BaseMessageApiModel]] = None,
         image: Optional[str] = None,
         file_image: Optional[Union[bytes, BinaryIO, str]] = None,
+        media_file_info: Optional[str] = None,
         message_reference_id: Optional[str] = None,
         ignore_message_reference_error: Optional[bool] = None,
+        msg_seq: Optional[int] = None,
     ) -> send_msg():
         """
-        直接回复相应事件的API，目前支持reply()发送被动消息的事件类型有:
+        直接回复相应事件的API
+
+        对于频道事件(v1)：
+        目前支持reply()发送被动消息的事件类型有:
 
         GUILD_MEMBER_ADD GUILD_MEMBER_UPDATE GUILD_MEMBER_REMOVE MESSAGE_REACTION_ADD MESSAGE_REACTION_REMOVE
         FORUM_THREAD_CREATE FORUM_THREAD_UPDATE FORUM_THREAD_DELETE FORUM_POST_CREATE FORUM_POST_DELETE
@@ -40,34 +46,17 @@ class _AbstractEventClass(ABC):
 
         剩余事件的reply()将会转为发送主动消息
 
-        :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
-        :param image: 图片url，不可发送本地图片（选填，此项与msg至少需要有一个字段，否则无法下发消息）
-        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档
-        :param message_reference_id: 引用消息的id（选填）
-        :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
-        :return: 返回的.data中为解析后的json数据
-        """
-        ...
-
-
-class _AbstractV2EventClass(ABC):
-    @abstractmethod
-    def reply(
-        self,
-        content: Optional[Union[str, BaseMessageApiModel]] = None,
-        media_file_info: Optional[str] = None,
-        message_reference_id: Optional[str] = None,
-        ignore_message_reference_error: Optional[bool] = None,
-        msg_seq: Optional[int] = None,
-    ) -> send_msg():
-        """
+        对于QQ单聊、群事件(v2)：
         直接回复相应事件的qq单聊、群事件 v2 API
 
-        :param content: 消息体【或消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）】
-        :param media_file_info: v2 qq相关接口使用，传入upload_media()获取的file_info字段
+        :param content: 消息文本（选填，此项与image至少需要有一个字段，否则无法下发消息）
+        :param image: 图片url，不可发送本地图片（选填，v1 频道事件专用）
+        :param file_image: 本地图片，可选三种方式传参，具体可参阅github中的example_10或帮助文档（v1 频道事件专用）
+        :param media_file_info: v2 qq相关接口使用，传入upload_media()获取的file_info字段（v2 QQ事件专用）
         :param message_reference_id: 引用消息的id（选填）
         :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
-        :param msg_seq: 直接替换ApiModel.Message内部构建递增的消息序号（选填）
+        :param msg_seq: 直接替换ApiModel.Message内部构建递增的消息序号（选填，v2 QQ事件专用）
+        :return: 返回的.data中为解析后的json数据
         """
         ...
 
@@ -80,7 +69,7 @@ class Model:
     GUILD_MEMBERS -
     """
 
-    class GUILDS(_AbstractEventClass, ABC):
+    class GUILDS(_AbstractReplyEventClass, ABC):
         """
         频道事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -101,11 +90,12 @@ class Model:
         member_count: int
         name: str
         op_user_id: str
+        owner: bool
         owner_id: str
         t: str
         event_id: str
 
-    class CHANNELS(_AbstractEventClass, ABC):
+    class CHANNELS(_AbstractReplyEventClass, ABC):
         """
         子频道事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -134,7 +124,7 @@ class Model:
         t: str
         event_id: str
 
-    class GUILD_MEMBERS(_AbstractEventClass, ABC):
+    class GUILD_MEMBERS(_AbstractReplyEventClass, ABC):
         """
         频道成员事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -161,7 +151,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE(_AbstractEventClass, ABC):
+    class MESSAGE(_AbstractReplyEventClass, ABC):
         """
         消息事件的数据模，可从t字段判断具体事件，其中包含：
 
@@ -214,6 +204,8 @@ class Model:
         seq: int
         seq_in_channel: str
         timestamp: str
+        edited_timestamp: str
+        mention_everyone: bool
         tts: bool
         pinned: bool
         type: int
@@ -222,7 +214,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE_DELETE(_AbstractEventClass, ABC):
+    class MESSAGE_DELETE(_AbstractReplyEventClass, ABC):
         """
         消息撤回事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -254,7 +246,7 @@ class Model:
         t: str
         event_id: str
 
-    class DIRECT_MESSAGE(_AbstractEventClass, ABC):
+    class DIRECT_MESSAGE(_AbstractReplyEventClass, ABC):
         """
         私信消息事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -299,7 +291,7 @@ class Model:
         t: str
         event_id: str
 
-    class MESSAGE_AUDIT(_AbstractEventClass, ABC):
+    class MESSAGE_AUDIT(_AbstractReplyEventClass, ABC):
         """
         主动消息审核事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -323,7 +315,7 @@ class Model:
         t: str
         event_id: str
 
-    class FORUMS_EVENT(_AbstractEventClass, ABC):
+    class FORUMS_EVENT(_AbstractReplyEventClass, ABC):
         """
         论坛事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -411,7 +403,7 @@ class Model:
         t: str
         event_id: str
 
-    class OPEN_FORUMS(_AbstractEventClass, ABC):
+    class OPEN_FORUMS(_AbstractReplyEventClass, ABC):
         """
         公域论坛事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -432,7 +424,7 @@ class Model:
         t: str
         event_id: str
 
-    class AUDIO_ACTION(_AbstractEventClass, ABC):
+    class AUDIO_ACTION(_AbstractReplyEventClass, ABC):
         """
         音频事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -456,7 +448,7 @@ class Model:
         t: str
         event_id: str
 
-    class REACTION(_AbstractEventClass, ABC):
+    class REACTION(_AbstractReplyEventClass, ABC):
         """
         表情表态事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -482,7 +474,7 @@ class Model:
         t: str
         event_id: str
 
-    class INTERACTION(_AbstractEventClass, ABC):
+    class INTERACTION(_AbstractReplyEventClass, ABC):
         """
         互动事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -518,7 +510,7 @@ class Model:
         version: int
         application_id: str
 
-    class LIVE_CHANNEL_MEMBER(_AbstractEventClass, ABC):
+    class LIVE_CHANNEL_MEMBER(_AbstractReplyEventClass, ABC):
         """
         音视频/直播子频道成员进出事件的数据模型，可从t字段判断具体事件，其中包含：
 
@@ -537,7 +529,7 @@ class Model:
         t: str
         event_id: str
 
-    class GROUP_EVENTS(_AbstractV2EventClass, ABC):
+    class GROUP_EVENTS(_AbstractReplyEventClass, ABC):
         """
         群聊机器人加入/退出群聊以及群聊拒绝/接受机器人主动消息的事件模型, 可从t字段判断具体事件, 其中包含:
         - GROUP_ADD_ROBOT  - 机器人加入群聊
@@ -556,7 +548,7 @@ class Model:
         op_member_openid: str
         timestamp: str
 
-    class FRIEND_EVENTS(_AbstractV2EventClass, ABC):
+    class FRIEND_EVENTS(_AbstractReplyEventClass, ABC):
         """
         用户添加/删除机器人以及用户拒绝/接受机器人主动消息的事件模型, 可从t字段判断具体事件, 其中包含:
         - FRIEND_ADD - 用户添加机器人
@@ -574,7 +566,7 @@ class Model:
         openid: str
         timestamp: str
 
-    class GROUP_MESSAGE(_AbstractV2EventClass, ABC):
+    class GROUP_MESSAGE(_AbstractReplyEventClass, ABC):
         """
         用户在群内@机器人发动的消息的事件模型, 可从t字段判断具体事件, 其中包含:
         - GROUP_AT_MESSAGE_CREATE - 用户在群聊@机器人发送消息
@@ -589,6 +581,7 @@ class Model:
             filename: str
             height: int
             width: int
+            id: str
             size: int
             url: str
 
@@ -605,7 +598,7 @@ class Model:
         timestamp: str
         treated_msg: Union[str, Tuple]
 
-    class C2C_MESSAGE(_AbstractV2EventClass, ABC):
+    class C2C_MESSAGE(_AbstractReplyEventClass, ABC):
         """
         用户在单聊发送消息给机器人的事件模型, 可从t字段判断具体事件, 其中包含:
         - C2C_MESSAGE_CREATE - 用户在群聊@机器人发送消息
@@ -620,8 +613,11 @@ class Model:
             filename: str
             height: int
             width: int
+            id: str
             size: int
             url: str
+            voice_wav_url: str
+            asr_refer_text: str
 
         class author:
             id: str
@@ -721,7 +717,7 @@ class BotAdminManager:
     """
 
     def __init__(self):
-        self._admins: set = set()
+        self._admins: Set[str] = set()
 
     def add_admin(self, *user_ids: str) -> None:
         """

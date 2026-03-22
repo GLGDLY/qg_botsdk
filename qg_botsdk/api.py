@@ -1341,6 +1341,7 @@ class API:
         message_reference_id: Optional[str] = None,
         ignore_message_reference_error: Optional[bool] = None,
         msg_seq: Optional[int] = None,
+        is_wakeup: Optional[bool] = None,
     ) -> _api_model.send_msg():
         """
         发送qq单聊消息的 v2 API
@@ -1353,6 +1354,7 @@ class API:
         :param message_reference_id: 引用消息的id（选填）
         :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
         :param msg_seq: 直接替换ApiModel.Message内部构建递增的消息序号（选填）
+        :param is_wakeup: 是否为互动召回消息（选填）
         """
         _args = locals()
         _args.pop("self")
@@ -1388,6 +1390,66 @@ class API:
         self.__check_ready()
         future_ = run_coroutine_threadsafe(
             self._api.send_group_msg(**_args), self._loop
+        )
+        return future_.result(timeout=self._timeout)
+
+    def delete_group_msg(
+        self, group_openid: str, message_id: str
+    ) -> _api_model.delete_group_msg():
+        """
+        撤回qq群消息的 v2 API
+
+        :param group_openid: 群id
+        :param message_id: 消息id
+        :return: 返回的.result显示是否成功
+        """
+        _args = locals()
+        _args.pop("self")
+        self.__check_ready()
+        future_ = run_coroutine_threadsafe(
+            self._api.delete_group_msg(**_args), self._loop
+        )
+        return future_.result(timeout=self._timeout)
+
+    def delete_c2c_msg(
+        self, openid: str, message_id: str
+    ) -> _api_model.delete_c2c_msg():
+        """
+        撤回qq单聊消息的 v2 API
+
+        :param openid: 用户id
+        :param message_id: 消息id
+        :return: 返回的.result显示是否成功
+        """
+        _args = locals()
+        _args.pop("self")
+        self.__check_ready()
+        future_ = run_coroutine_threadsafe(
+            self._api.delete_c2c_msg(**_args), self._loop
+        )
+        return future_.result(timeout=self._timeout)
+
+    def generate_url_link(
+        self,
+        type: int,
+        channel_id: Optional[str] = None,
+        bot_appid: Optional[int] = None,
+        guild_appid: Optional[int] = None,
+    ) -> _api_model.generate_url_link():
+        """
+        获取分享链接
+
+        :param type: 分享类型 0-频道机器人资料页 1-子频道邀请链接
+        :param channel_id: 子频道id，当 type=1 时必填
+        :param bot_appid: 机器人应用id，当 type=0 时必填
+        :param guild_appid: 频道应用id，当 type=0 时必填
+        :return: 返回的.data.url为生成的分享链接
+        """
+        _args = locals()
+        _args.pop("self")
+        self.__check_ready()
+        future_ = run_coroutine_threadsafe(
+            self._api.generate_url_link(**_args), self._loop
         )
         return future_.result(timeout=self._timeout)
 

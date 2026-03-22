@@ -18,6 +18,7 @@ class ApiModel:
             media_file_info: Optional[str] = None,
             message_reference_id: Optional[str] = None,
             ignore_message_reference_error: bool = False,
+            is_wakeup: Optional[bool] = None,
         ):
             """
             构建一个消息对象，用于发送消息
@@ -28,6 +29,7 @@ class ApiModel:
             :param media_file_info: v2 qq相关接口使用，不可与image或file_image同时存在，传入upload_media()获取的file_info字段
             :param message_reference_id: 引用消息的id（选填）
             :param ignore_message_reference_error: 是否忽略获取引用消息详情错误，默认否（选填）
+            :param is_wakeup: 是否为互动召回消息，仅单聊v2接口支持（选填）
             """
             super().__init__()
             if content is not None and not isinstance(content, str):
@@ -40,6 +42,7 @@ class ApiModel:
             if ignore_message_reference_error is None:
                 ignore_message_reference_error = False
             self._ignore_message_reference_error = ignore_message_reference_error
+            self._is_wakeup = is_wakeup
 
             self._constructed_obj = self._construct(self._message_id, self._event_id)
 
@@ -79,6 +82,8 @@ class ApiModel:
                     "msg_id": message_id,
                     "event_id": event_id,
                 }
+            if self._is_wakeup is not None:
+                json_["is_wakeup"] = self._is_wakeup
             if self._media_file_info is not None:
                 json_["media"] = {"file_info": self._media_file_info}
             elif self._image is not None:

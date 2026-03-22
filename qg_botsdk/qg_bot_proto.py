@@ -52,7 +52,7 @@ class BotProto:
         session_manager: SessionManager,
         protocol: proto.Proto,
         sandbox: SandBox,
-        bot_admin_manager: BotAdminManager = None,
+        bot_admin_manager: Optional[BotAdminManager] = None,
     ):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
@@ -109,7 +109,9 @@ class BotProto:
         )
         self.sandbox = sandbox
         self.seq_cache = SeqCache()
-        self.bot_admin_manager = bot_admin_manager if bot_admin_manager else BotAdminManager()
+        self.bot_admin_manager = (
+            bot_admin_manager if bot_admin_manager else BotAdminManager()
+        )
 
     @exception_processor
     async def _time_event_run(self):
@@ -271,7 +273,12 @@ class BotProto:
             r = task.result()
             return r  # True or False
 
-    def _get_user_id(self, objectized_data) -> Optional[str]:
+    def _get_user_id(
+        self,
+        objectized_data: Union[
+            Model.MESSAGE, Model.DIRECT_MESSAGE, Model.GROUP_MESSAGE, Model.C2C_MESSAGE
+        ],
+    ) -> Optional[str]:
         try:
             if hasattr(objectized_data, "author"):
                 if hasattr(objectized_data.author, "id"):

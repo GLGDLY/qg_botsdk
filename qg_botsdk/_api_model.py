@@ -158,6 +158,18 @@ apis = {
         "send_group_msg",
     ): ["POST", "/v2/groups/{group_openid}/messages"],
     (
+        "[群聊]撤回群聊消息",
+        "delete_group_msg",
+    ): ["DELETE", "/v2/groups/{group_openid}/messages/{message_id}"],
+    (
+        "[单聊]撤回单聊消息",
+        "delete_c2c_msg",
+    ): ["DELETE", "/v2/users/{openid}/messages/{message_id}"],
+    (
+        "获取分享链接",
+        "generate_url_link",
+    ): ["POST", "/v2/generate_url_link"],
+    (
         "获取频道可用权限列表",
         "get_guild_permissions",
         "创建频道 API 接口权限授权链接",
@@ -642,6 +654,42 @@ def delete_msg():
         result: bool
 
     return DeleteMsg
+
+
+def delete_group_msg():
+    temp = _EmptyReturnTemplate
+
+    class DeleteGroupMsg(object_class):
+        data: temp
+        http_code: int
+        trace_id: str
+        result: bool
+
+    return DeleteGroupMsg
+
+
+def delete_c2c_msg():
+    temp = _EmptyReturnTemplate
+
+    class DeleteC2CMsg(object_class):
+        data: temp
+        http_code: int
+        trace_id: str
+        result: bool
+
+    return DeleteC2CMsg
+
+
+def generate_url_link():
+    class GenerateUrlLink(object_class):
+        class data:
+            url: str
+
+        http_code: int
+        trace_id: str
+        result: bool
+
+    return GenerateUrlLink
 
 
 def get_guild_setting():
