@@ -3,8 +3,8 @@
 from asyncio import Lock as ALock
 from asyncio import get_event_loop, new_event_loop
 from copy import deepcopy
-from importlib.util import module_from_spec, spec_from_file_location
 from glob import glob
+from importlib.util import module_from_spec, spec_from_file_location
 from os import getpid
 from os.path import exists, join
 from os.path import split as path_split
@@ -21,7 +21,7 @@ from .api import API
 from .async_api import AsyncAPI
 from .http import Session
 from .logger import Logger
-from .model import BotCommandObject, CommandValidScenes, Model
+from .model import BotAdminManager, BotCommandObject, CommandValidScenes, Model
 from .plugins import Plugins
 from .proto import Proto
 from .qg_bot_proto import BotProto as _BotWs
@@ -163,6 +163,7 @@ class BOT:
             self.logger.info("已加载沙箱配置项")
         elif self.sandbox:
             raise TypeError("传入的沙箱配置项不是SandBox类")
+        self._bot_admin_manager = BotAdminManager()
 
     def __repr__(self):
         return f"<qg_botsdk.BOT object [id: {self.bot_id}, token: {self.bot_token}]>"
@@ -178,6 +179,10 @@ class BOT:
     @property
     def loop(self):
         return self._loop
+
+    @property
+    def bot_admin_manager(self) -> BotAdminManager:
+        return self._bot_admin_manager
 
     def load_default_msg_logger(self):
         """
@@ -347,31 +352,116 @@ class BOT:
             result[key] = value.copy()
         return result
 
-    def load_plugins(self, path_to_plugins: str):
+    def load_plugins(
+        self,
+        target: Union[str, List[str], None] = None,
+        *,
+        recursive: bool = False,
+        pattern: str = "*.py",
+    ):
         """
-        用于加载插件的.py程序
+        统一的插件加载入口，支持多种加载模式：
 
-        :param path_to_plugins: 指向相应.py插件文件的相对或绝对路径
-        :return:
+        :param target: 加载目标，支持以下类型：
+            - None: 使用默认插件目录（初始化时设置的 plugins_dir）
+            - str (文件路径): 加载单个 .py 文件，如 "plugins/hello.py"
+            - str (目录路径): 加载目录下所有插件，如 "plugins"
+            - List[str]: 批量加载多个目标
+        :param recursive: 目录模式下是否递归扫描子目录，默认 False
+        :param pattern: 目录模式下的文件匹配模式，默认 "*.py"
+
+        使用示例:
+            bot.load_plugins()                          # 加载默认目录
+            bot.load_plugins("plugins/hello.py")        # 加载单个文件
+            bot.load_plugins("plugins")                 # 加载目录
+            bot.load_plugins("plugins", recursive=True) # 递归加载目录
+            bot.load_plugins(["a.py", "b.py", "dir"])   # 批量加载
         """
-        if not exists(path_to_plugins):
-            raise ModuleNotFoundError(f"指向plugin的路径 [{path_to_plugins}] 并不存在")
-        if not path_to_plugins.endswith(".py"):
-            path_to_plugins += ".py"
-        _name = path_split(path_to_plugins)[1][:-3]
+        import os
+
+        if target is None:
+            target = self._plugins_dir
+
+        if isinstance(target, list):
+            for t in target:
+                self.load_plugins(t, recursive=recursive, pattern=pattern)
+            return
+
+        if not isinstance(target, str):
+            raise TypeError(
+                f"target 参数类型错误，期望 str/list/None，实际为 {type(target)}"
+            )
+
+        if target.endswith(".py"):
+            if not exists(target):
+                raise ModuleNotFoundError(f"插件文件 [{target}] 不存在")
+            self._load_single_plugin_file(target)
+        elif exists(target) and os.path.isdir(target):
+            self._load_plugins_from_directory(target, recursive, pattern)
+        else:
+            self.logger.warning(f"插件目标不存在: {target}")
+
+    def _load_single_plugin_file(self, file_path: str):
+        """
+        加载单个插件文件
+
+        :param file_path: 插件文件的绝对或相对路径
+        """
+        if not file_path.endswith(".py"):
+            file_path += ".py"
+        _name = path_split(file_path)[1][:-3]
         try:
-            # SourceFileLoader(_name, path_to_plugins).exec_module()
-            spec = spec_from_file_location(_name, path_to_plugins)
+            spec = spec_from_file_location(_name, file_path)
             if not spec:
-                raise ImportError(
-                    f"plugin [{path_to_plugins}] 导入失败，未找到对应模块"
-                )
+                raise ImportError(f"插件 [{file_path}] 导入失败，未找到对应模块")
             module = module_from_spec(spec)
             spec.loader.exec_module(module)
+            self.logger.info(f"插件加载成功: {_name}")
         except Exception as e:
-            raise ImportError(f"plugin [{path_to_plugins}] 导入失败，错误：{e}")
+            raise ImportError(f"插件 [{file_path}] 导入失败: {e}")
         if self._bot_class and self._bot_class.running:
             self.refresh_plugins()
+
+    def _load_plugins_from_directory(
+        self,
+        directory: str,
+        recursive: bool = False,
+        pattern: str = "*.py",
+    ):
+        """
+        从目录加载所有插件
+
+        :param directory: 插件目录路径
+        :param recursive: 是否递归扫描子目录
+        :param pattern: 文件匹配模式
+        """
+        import os
+
+        if not exists(directory):
+            self.logger.warning(f"插件目录不存在: {directory}")
+            return
+
+        search_pattern = join(directory, "**" if recursive else "", pattern)
+        plugin_files = glob(search_pattern, recursive=recursive)
+
+        if not plugin_files:
+            self.logger.info(f"插件目录 [{directory}] 中没有找到匹配的文件")
+            return
+
+        plugin_files.sort()
+        loaded_count = 0
+
+        for plugin_path in plugin_files:
+            filename = os.path.basename(plugin_path)
+            if filename.startswith("_"):
+                continue
+            try:
+                self._load_single_plugin_file(plugin_path)
+                loaded_count += 1
+            except Exception as e:
+                self.logger.error(f"插件加载失败 [{filename}]: {e}")
+
+        self.logger.info(f"目录加载完成，共加载 {loaded_count} 个插件")
 
     def load_plugins_auto(
         self,
@@ -382,42 +472,16 @@ class BOT:
         """
         自动扫描并加载插件目录中的所有 Python 文件
 
+        .. deprecated::
+            此方法已废弃，请使用 load_plugins() 替代。
+            示例: bot.load_plugins(plugins_dir, recursive=True)
+
         :param plugins_dir: 插件目录路径，默认使用初始化时传入的 plugins_dir
-        :param recursive: 是否递归扫描子目录，默认False
-        :param pattern: 文件匹配模式，默认"*.py"
+        :param recursive: 是否递归扫描子目录，默认 False
+        :param pattern: 文件匹配模式，默认 "*.py"
         """
-        import os
-
         target_dir = plugins_dir if plugins_dir is not None else self._plugins_dir
-
-        if not exists(target_dir):
-            self.logger.warning(f"插件目录不存在: {target_dir}")
-            return
-
-        search_pattern = join(target_dir, "**" if recursive else "", pattern)
-        plugin_files = glob(search_pattern, recursive=recursive)
-
-        if not plugin_files:
-            self.logger.info(f"插件目录 [{target_dir}] 中没有找到匹配的文件")
-            return
-
-        # 按文件名排序，确保加载顺序一致
-        plugin_files.sort()
-        loaded_count = 0
-
-        for plugin_path in plugin_files:
-            filename = os.path.basename(plugin_path)
-            # 跳过以 _ 开头的私有文件（如 __init__.py）
-            if filename.startswith("_"):
-                continue
-            try:
-                self.load_plugins(plugin_path)
-                loaded_count += 1
-                self.logger.info(f"自动加载插件成功: {filename}")
-            except Exception as e:
-                self.logger.error(f"自动加载插件失败 [{filename}]: {e}")
-
-        self.logger.info(f"自动加载完成，共加载 {loaded_count} 个插件")
+        self.load_plugins(target_dir, recursive=recursive, pattern=pattern)
 
     def before_command(
         self,
@@ -454,6 +518,9 @@ class BOT:
         admin_error_msg: Optional[str] = None,
         valid_scenes: CommandValidScenes = CommandValidScenes.GUILD
         | CommandValidScenes.DM,
+        enabled: bool = True,
+        is_require_bot_admin: bool = False,
+        bot_admin_error_msg: Optional[str] = None,
     ):
         """
         指令装饰器。用于快速注册消息事件，当连同bind_msg使用时，如没有触发短路，bind_msg注册的函数将在最后被调用
@@ -467,6 +534,9 @@ class BOT:
         :param is_require_admin: 是否要求频道主或或管理才可触发指令，默认否
         :param admin_error_msg: 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
         :param valid_scenes: 此机器人命令的有效场景，可传入多个场景，默认 CommandValidScenes.GUILD|CommandValidScenes.DM
+        :param enabled: 是否启用此指令，默认True
+        :param is_require_bot_admin: 是否要求机器人管理员才可触发指令，默认否
+        :param bot_admin_error_msg: 当is_require_bot_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
         """
 
         def wrap(
@@ -492,6 +562,9 @@ class BOT:
                 is_require_admin,
                 admin_error_msg,
                 valid_scenes,
+                enabled,
+                is_require_bot_admin,
+                bot_admin_error_msg,
             )(callback)
             if self._bot_class and self._bot_class.running:
                 self.refresh_plugins()
@@ -933,9 +1006,8 @@ class BOT:
         """
         try:
             if not self.__running and not self._bot_class:
-                # 如果开启了自动加载插件，在启动前自动扫描加载
                 if self._auto_load_plugins:
-                    self.load_plugins_auto()
+                    self.load_plugins()
                 self.__running = True
                 self.refresh_plugins()
                 self._bot_class = _BotWs(
@@ -960,6 +1032,7 @@ class BOT:
                     self.__session_manager,
                     self.protocol,
                     self.sandbox,
+                    self._bot_admin_manager,
                 )
                 self.__task = self._loop.create_task(self._bot_class.start())
                 if is_blocking and not self._loop.is_running():

@@ -705,6 +705,77 @@ class CommandValidScenes(int):
         return cls._name_cache.get(value, "")
 
 
+class BotAdminManager:
+    """
+    机器人管理员管理器，用于管理全局机器人管理员（超管）
+
+    机器人管理员是全局的，类似于超管，可以触发需要机器人管理员权限的指令
+
+    使用示例:
+        admin_manager = BotAdminManager()
+        admin_manager.add_admin("user_id_1")
+        admin_manager.add_admin("user_id_2", "user_id_3")
+
+        if admin_manager.is_admin("user_id_1"):
+            print("是机器人管理员")
+    """
+
+    def __init__(self):
+        self._admins: set = set()
+
+    def add_admin(self, *user_ids: str) -> None:
+        """
+        添加机器人管理员
+
+        :param user_ids: 用户ID，可传入多个
+        """
+        for user_id in user_ids:
+            if not isinstance(user_id, str):
+                raise TypeError(f"user_id 必须是字符串类型，实际为 {type(user_id)}")
+            self._admins.add(user_id)
+
+    def remove_admin(self, *user_ids: str) -> None:
+        """
+        移除机器人管理员
+
+        :param user_ids: 用户ID，可传入多个
+        """
+        for user_id in user_ids:
+            self._admins.discard(user_id)
+
+    def is_admin(self, user_id: str) -> bool:
+        """
+        检查用户是否为机器人管理员
+
+        :param user_id: 用户ID
+        :return: 是否为机器人管理员
+        """
+        return user_id in self._admins
+
+    def get_all_admins(self) -> set:
+        """
+        获取所有机器人管理员
+
+        :return: 机器人管理员ID集合的副本
+        """
+        return self._admins.copy()
+
+    def clear_admins(self) -> None:
+        """
+        清空所有机器人管理员
+        """
+        self._admins.clear()
+
+    def __contains__(self, user_id: str) -> bool:
+        return self.is_admin(user_id)
+
+    def __len__(self) -> int:
+        return len(self._admins)
+
+    def __repr__(self) -> str:
+        return f"<BotAdminManager admins_count={len(self._admins)}>"
+
+
 class BotCommandObject:
     """
     机器人的on_command命令对象，用于存储机器人命令的数据
@@ -719,6 +790,9 @@ class BotCommandObject:
     :param admin: 是否要求频道主或或管理才可触发指令
     :param admin_error_msg: 当admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
     :param valid_scenes: 此机器人命令的有效场景，可传入多个场景，如 CommandValidScenes.GUILD|CommandValidScenes.DM，默认全部
+    :param enabled: 是否启用此指令，默认True
+    :param is_require_bot_admin: 是否要求机器人管理员才可触发指令，默认False
+    :param bot_admin_error_msg: 当is_require_bot_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
     """
 
     def __init__(
@@ -735,6 +809,9 @@ class BotCommandObject:
         admin: bool = False,
         admin_error_msg: Optional[str] = None,
         valid_scenes: CommandValidScenes = CommandValidScenes.ALL,
+        enabled: bool = True,
+        is_require_bot_admin: bool = False,
+        bot_admin_error_msg: Optional[str] = None,
     ):
         # type checking for user input, not included items are not important(for wait_for api)
         if command is not None:
@@ -769,6 +846,10 @@ class BotCommandObject:
             raise TypeError("at must be of type bool")
         if not isinstance(short_circuit, bool):
             raise TypeError("short_circuit must be of type bool")
+        if not isinstance(enabled, bool):
+            raise TypeError("enabled must be of type bool")
+        if not isinstance(is_require_bot_admin, bool):
+            raise TypeError("is_require_bot_admin must be of type bool")
         # init
         self.command: Iterable[str] = command
         self.regex: Iterable[Pattern] = _regex
@@ -782,6 +863,9 @@ class BotCommandObject:
         self.admin: bool = admin
         self.admin_error_msg: Optional[str] = admin_error_msg
         self.valid_scenes: CommandValidScenes = valid_scenes
+        self.enabled: bool = enabled
+        self.is_require_bot_admin: bool = is_require_bot_admin
+        self.bot_admin_error_msg: Optional[str] = bot_admin_error_msg
 
     def __repr__(self):
         if self.command:

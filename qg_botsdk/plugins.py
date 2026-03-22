@@ -95,6 +95,9 @@ class Plugins:
         admin_error_msg: Optional[str] = None,
         valid_scenes: CommandValidScenes = CommandValidScenes.GUILD
         | CommandValidScenes.DM,
+        enabled: bool = True,
+        is_require_bot_admin: bool = False,
+        bot_admin_error_msg: Optional[str] = None,
     ):
         """
         注册plugins指令装饰器，可用于分割式编写指令并注册进机器人
@@ -108,6 +111,9 @@ class Plugins:
         :param is_require_admin: 是否要求频道主或或管理才可触发指令，默认否
         :param admin_error_msg: 当is_require_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
         :param valid_scenes: 此机器人命令的有效场景，可传入多个场景，默认 CommandValidScenes.GUILD|CommandValidScenes.DM
+        :param enabled: 是否启用此指令，默认True
+        :param is_require_bot_admin: 是否要求机器人管理员才可触发指令，默认否
+        :param bot_admin_error_msg: 当is_require_bot_admin为True，而触发用户的权限不足时，如此项不为None，返回此消息并短路；否则不进行短路
         """
 
         def wrap(
@@ -128,6 +134,9 @@ class Plugins:
                 "admin": is_require_admin,
                 "admin_error_msg": admin_error_msg,
                 "valid_scenes": valid_scenes,
+                "enabled": enabled,
+                "is_require_bot_admin": is_require_bot_admin,
+                "bot_admin_error_msg": bot_admin_error_msg,
             }
             if command:
                 if isinstance(command, str):

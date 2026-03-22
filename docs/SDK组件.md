@@ -202,6 +202,9 @@ def c_0(data: Model.MESSAGE):
 | is_require_admin        | bool                                                                                                     | False                                           | 是否要求频道主或或管理才可触发指令                                                                     |
 | admin_error_msg         | str                                                                                                      | None                                            | 当 is_require_admin 为 True，而触发用户的权限不足时，如此项不为 None，返回此消息并短路；否则不进行短路 |
 | valid_scenes            | [CommandValidScenes](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#botcommandobject) | CommandValidScenes.GUILD\|CommandValidScenes.DM | 此处理器的有效场景，可传入多个场景 (需求 SDK 版本>=4.1.4)                                              |
+| enabled                 | bool                                                                                                     | True                                            | 是否启用此指令 (需求 SDK 版本>=4.4.0)                                                                  |
+| is_require_bot_admin    | bool                                                                                                     | False                                           | 是否要求机器人管理员才可触发指令 (需求 SDK 版本>=4.4.0)                                               |
+| bot_admin_error_msg     | str                                                                                                      | None                                            | 当 is_require_bot_admin 为 True，而触发用户的权限不足时，如此项不为 None，返回此消息并短路 (需求 SDK 版本>=4.4.0) |
 
 > （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
 
@@ -233,6 +236,48 @@ command_names = bot.get_command_names()
 print(f"已加载的指令：{command_names}")
 # 输出：已加载的指令：['help', 'ping', 'info', 'echo .*']
 ```
+
+### 获取机器人管理员管理器（需求 SDK 版本>=4.4.0）
+
+- 获取机器人管理员管理器，用于管理全局机器人管理员（超管）
+
+```python
+bot.bot_admin_manager
+```
+
+> 无参数
+
+使用示例：
+
+```python
+from qg_botsdk import BOT
+
+bot = BOT(bot_id="xxx", bot_token="xxx")
+
+# 添加机器人管理员
+bot.bot_admin_manager.add_admin("user_id_1", "user_id_2")
+
+# 检查是否为机器人管理员
+if bot.bot_admin_manager.is_admin("user_id_1"):
+    print("是机器人管理员")
+
+# 移除机器人管理员
+bot.bot_admin_manager.remove_admin("user_id_1")
+
+# 获取所有机器人管理员
+all_admins = bot.bot_admin_manager.get_all_admins()
+print(f"所有管理员：{all_admins}")
+```
+
+#### BotAdminManager 方法
+
+| 方法           | 参数              | 返回值 | 说明                     |
+| -------------- | ----------------- | ------ | ------------------------ |
+| add_admin      | *user_ids: str    | None   | 添加机器人管理员         |
+| remove_admin   | *user_ids: str    | None   | 移除机器人管理员         |
+| is_admin       | user_id: str      | bool   | 检查是否为机器人管理员   |
+| get_all_admins | 无                | set    | 获取所有机器人管理员列表 |
+| clear_admins   | 无                | None   | 清空所有机器人管理员     |
 
 ### 获取当前机器人的预处理器列表（需求 SDK 版本>=3.0.0）
 

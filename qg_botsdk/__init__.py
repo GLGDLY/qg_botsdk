@@ -23,6 +23,7 @@ from .api_model import ApiModel
 from .logger import Logger
 from .model import (
     AT,
+    BotAdminManager,
     BotCommandObject,
     CommandValidScenes,
     EmojiID,
@@ -73,4 +74,5 @@ __all__ = (
     "Proto",
     "SandBox",
     "AT",
+    "BotAdminManager",
 )

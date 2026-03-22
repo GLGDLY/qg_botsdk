@@ -4,7 +4,7 @@ from asyncio import AbstractEventLoop, sleep
 from concurrent.futures import ThreadPoolExecutor
 from copy import copy, deepcopy
 from ssl import create_default_context
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from ._api_model import StrPtr
 from ._event import object_class
@@ -16,7 +16,7 @@ from ._utils import exception_processor, objectize, treat_msg, treat_thread
 from .api import API
 from .async_api import AsyncAPI
 from .logger import Logger
-from .model import BotCommandObject, CommandValidScenes, Model
+from .model import BotAdminManager, BotCommandObject, CommandValidScenes, Model
 from .proto import proto
 from .sandbox import SandBox
 
@@ -52,6 +52,7 @@ class BotProto:
         session_manager: SessionManager,
         protocol: proto.Proto,
         sandbox: SandBox,
+        bot_admin_manager: BotAdminManager = None,
     ):
         """
         此为SDK内部使用类，注册机器人请使用from qg_botsdk.qg_bot import BOT
@@ -108,6 +109,7 @@ class BotProto:
         )
         self.sandbox = sandbox
         self.seq_cache = SeqCache()
+        self.bot_admin_manager = bot_admin_manager if bot_admin_manager else BotAdminManager()
 
     @exception_processor
     async def _time_event_run(self):
@@ -213,6 +215,25 @@ class BotProto:
         command_obj: BotCommandObject,
         **kwargs,
     ):
+        if not command_obj.enabled:
+            return False
+        if command_obj.is_require_bot_admin:
+            user_id = self._get_user_id(objectized_data)
+            if user_id and not self.bot_admin_manager.is_admin(user_id):
+                if command_obj.bot_admin_error_msg:
+                    if self.is_async:
+                        self.loop.create_task(
+                            objectized_data.reply(
+                                command_obj.bot_admin_error_msg,
+                            )
+                        )
+                    else:
+                        self.threads.submit(
+                            objectized_data.reply,
+                            command_obj.bot_admin_error_msg,
+                        )
+                    return True
+                return False
         if command_obj.admin:
             try:
                 roles = objectized_data.member.roles
@@ -250,6 +271,19 @@ class BotProto:
             r = task.result()
             return r  # True or False
 
+    def _get_user_id(self, objectized_data) -> Optional[str]:
+        try:
+            if hasattr(objectized_data, "author"):
+                if hasattr(objectized_data.author, "id"):
+                    return objectized_data.author.id
+                if hasattr(objectized_data.author, "user_openid"):
+                    return objectized_data.author.user_openid
+                if hasattr(objectized_data.author, "member_openid"):
+                    return objectized_data.author.member_openid
+        except Exception:
+            pass
+        return None
+
     def process_wait_for_commands(
         self, current_scene: CommandValidScenes, objectized_data, msg, treated_msg
     ):
@@ -257,14 +291,29 @@ class BotProto:
             wait_for_commands = self.session_manager.wait_for_message_checker(
                 objectized_data
             )
-            for x in wait_for_commands:
+
+            def get_max_cmd_len(x):
+                if x.command.command:
+                    return max(len(c) for c in x.command.command)
+                return 0
+
+            sorted_wait_for = sorted(
+                wait_for_commands, key=get_max_cmd_len, reverse=True
+            )
+            for x in sorted_wait_for:
                 if x.command.valid_scenes & current_scene == 0:
                     continue
                 commands = x.command.command
                 regexs = x.command.regex
                 if commands:
                     for command in commands:
-                        if command in msg and (not x.command.at or self.at in msg):
+                        if command.startswith("/"):
+                            match_target = msg
+                        else:
+                            match_target = treated_msg
+                        if command in match_target and (
+                            not x.command.at or self.at in msg
+                        ):
                             if x.command.treat:
                                 objectized_data = self.treat_command(
                                     objectized_data, treated_msg, command=command
@@ -275,11 +324,11 @@ class BotProto:
                             break
                 else:
                     for regex in regexs:
-                        regex = regex.search(msg)
-                        if regex and (not x.command.at or self.at in msg):
+                        regex_result = regex.search(treated_msg)
+                        if regex_result and (not x.command.at or self.at in msg):
                             if x.command.treat:
                                 objectized_data = self.treat_command(
-                                    objectized_data, treated_msg, regex=regex
+                                    objectized_data, treated_msg, regex=regex_result
                                 )
                             x.callback(objectized_data)
                             if x.command.short_circuit:
@@ -307,24 +356,36 @@ class BotProto:
         ):
             return True
 
-        for items in self.commands:
+        def get_max_command_length(cmd_obj: BotCommandObject) -> int:
+            if cmd_obj.command:
+                return max(len(c) for c in cmd_obj.command)
+            return 0
+
+        sorted_commands = sorted(
+            self.commands, key=get_max_command_length, reverse=True
+        )
+        for items in sorted_commands:
             if items.valid_scenes & current_scene == 0:
                 continue
             commands = items.command
             regexs = items.regex
             if commands:
                 for command in commands:
-                    if command in msg and (not items.at or self.at in msg):
+                    if command.startswith("/"):
+                        match_target = msg
+                    else:
+                        match_target = treated_msg
+                    if command in match_target and (not items.at or self.at in msg):
                         if await self.check_command(
                             objectized_data, treated_msg, items, command=command
                         ):
                             return True
             else:
                 for regex in regexs:
-                    regex = regex.search(msg)
-                    if regex and (not items.at or self.at in msg):
+                    regex_result = regex.search(treated_msg)
+                    if regex_result and (not items.at or self.at in msg):
                         if await self.check_command(
-                            objectized_data, treated_msg, items, regex=regex
+                            objectized_data, treated_msg, items, regex=regex_result
                         ):
                             return True
 
