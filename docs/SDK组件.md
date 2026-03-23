@@ -202,9 +202,9 @@ def c_0(data: Model.MESSAGE):
 | is_require_admin        | bool                                                                                                     | False                                           | 是否要求频道主或或管理才可触发指令                                                                     |
 | admin_error_msg         | str                                                                                                      | None                                            | 当 is_require_admin 为 True，而触发用户的权限不足时，如此项不为 None，返回此消息并短路；否则不进行短路 |
 | valid_scenes            | [CommandValidScenes](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#botcommandobject) | CommandValidScenes.GUILD\|CommandValidScenes.DM | 此处理器的有效场景，可传入多个场景 (需求 SDK 版本>=4.1.4)                                              |
-| enabled                 | bool                                                                                                     | True                                            | 是否启用此指令 (需求 SDK 版本>=4.4.0)                                                                  |
-| is_require_bot_admin    | bool                                                                                                     | False                                           | 是否要求机器人管理员才可触发指令 (需求 SDK 版本>=4.4.0)                                               |
-| bot_admin_error_msg     | str                                                                                                      | None                                            | 当 is_require_bot_admin 为 True，而触发用户的权限不足时，如此项不为 None，返回此消息并短路 (需求 SDK 版本>=4.4.0) |
+| enabled                 | bool                                                                                                     | True                                            | 是否启用此指令 (需求 SDK 版本>=4.3.9)                                                                  |
+| is_require_bot_admin    | bool                                                                                                     | False                                           | 是否要求机器人管理员才可触发指令 (需求 SDK 版本>=4.3.9)                                               |
+| bot_admin_error_msg     | str                                                                                                      | None                                            | 当 is_require_bot_admin 为 True，而触发用户的权限不足时，如此项不为 None，返回此消息并短路 (需求 SDK 版本>=4.3.9) |
 
 > （更多相关例子可参阅<https://github.com/GLGDLY/qg_botsdk/tree/master/example/example_13(%E8%A3%85%E9%A5%B0%E5%99%A8).py>）
 
@@ -237,7 +237,7 @@ print(f"已加载的指令：{command_names}")
 # 输出：已加载的指令：['help', 'ping', 'info', 'echo .*']
 ```
 
-### 获取机器人管理员管理器（需求 SDK 版本>=4.4.0）
+### 获取机器人管理员管理器（需求 SDK 版本>=4.3.9）
 
 - 获取机器人管理员管理器，用于管理全局机器人管理员（超管）
 

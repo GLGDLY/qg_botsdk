@@ -1954,27 +1954,17 @@ class AsyncAPI:
 
     async def generate_url_link(
         self,
-        type: int,
-        channel_id: Optional[str] = None,
-        bot_appid: Optional[int] = None,
-        guild_appid: Optional[int] = None,
+        callback_data: Optional[str] = None,
     ) -> _api_model.generate_url_link():
         """
         获取分享链接
 
-        :param type: 分享类型 0-频道机器人资料页 1-子频道邀请链接
-        :param channel_id: 子频道id，当 type=1 时必填
-        :param bot_appid: 机器人应用id，当 type=0 时必填
-        :param guild_appid: 频道应用id，当 type=0 时必填
+        :param callback_data: 回调数据，添加好友时回传（选填）
         :return: 返回的.data.url为生成的分享链接
         """
-        json_ = {"type": type}
-        if channel_id is not None:
-            json_["channel_id"] = channel_id
-        if bot_appid is not None:
-            json_["bot_appid"] = bot_appid
-        if guild_appid is not None:
-            json_["guild_appid"] = guild_appid
+        json_ = {}
+        if callback_data is not None:
+            json_["callback_data"] = callback_data
         return_ = await self._session.post(
             f"{self._bot_url}/v2/generate_url_link", json=json_
         )

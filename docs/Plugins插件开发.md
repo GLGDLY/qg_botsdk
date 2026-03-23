@@ -46,11 +46,11 @@ def p_0(data: Model.MESSAGE):
 | is_require_admin        | bool                                                                                                     | False                                           | 是否要求频道主或或管理才可触发指令                                                                     |
 | admin_error_msg         | str                                                                                                      | None                                            | 当 is_require_admin 为 True，而触发用户的权限不足时，如此项不为 None，返回此消息并短路；否则不进行短路 |
 | valid_scenes            | [CommandValidScenes](https://qg-botsdk.readthedocs.io/zh_CN/latest/Model%E5%BA%93.html#botcommandobject) | CommandValidScenes.GUILD\|CommandValidScenes.DM | 此处理器的有效场景，可传入多个场景 (需求 SDK 版本>=4.1.4)                                              |
-| enabled                 | bool                                                                                                     | True                                            | 是否启用此指令 (需求 SDK 版本>=4.4.0)                                                                  |
-| is_require_bot_admin    | bool                                                                                                     | False                                           | 是否要求机器人管理员才可触发指令 (需求 SDK 版本>=4.4.0)                                               |
-| bot_admin_error_msg     | str                                                                                                      | None                                            | 当 is_require_bot_admin 为 True，而触发用户的权限不足时，如此项不为 None，返回此消息并短路 (需求 SDK 版本>=4.4.0) |
+| enabled                 | bool                                                                                                     | True                                            | 是否启用此指令 (需求 SDK 版本>=4.3.9)                                                                  |
+| is_require_bot_admin    | bool                                                                                                     | False                                           | 是否要求机器人管理员才可触发指令 (需求 SDK 版本>=4.3.9)                                               |
+| bot_admin_error_msg     | str                                                                                                      | None                                            | 当 is_require_bot_admin 为 True，而触发用户的权限不足时，如此项不为 None，返回此消息并短路 (需求 SDK 版本>=4.3.9) |
 
-### 指令匹配规则（需求 SDK 版本>=4.4.0）
+### 指令匹配规则（需求 SDK 版本>=4.3.9）
 
 SDK 支持两种指令注册方式，匹配规则如下：
 
@@ -104,7 +104,7 @@ bot = BOT(
 bot.start()  # 启动时会自动加载 plugins 目录下的所有插件
 ```
 
-### 方法 2：使用 BOT.load_plugins() 统一加载（需求 SDK 版本>=4.4.0）
+### 方法 2：使用 BOT.load_plugins() 统一加载（需求 SDK 版本>=4.3.9）
 
 `load_plugins()` 是统一的插件加载入口，支持多种加载模式：
 

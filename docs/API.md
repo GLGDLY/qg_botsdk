@@ -2229,6 +2229,80 @@ bot.api.send_group_msg()
 | trace_id  | string | 腾讯官方提供的错误追踪 ID |
 | result    | bool   | 成功为 True；否则为 False |
 
+### [群聊]撤回群聊消息
+
+- 撤回 QQ 群聊消息的 v2 API
+
+```python
+bot.api.delete_group_msg()
+# 路径：qg_botsdk.qg_bot.BOT().api.delete_group_msg()
+```
+
+| 参数         |        |              |         |
+| ------------ | ------ | ------------ | ------- |
+| 字段名       | 类型   | 默认值       | 说明    |
+| group_openid | string | 无，必选参数 | 群 id   |
+| message_id   | string | 无，必选参数 | 消息 id |
+
+| 返回      |             |                                                 |
+| --------- | ----------- | ----------------------------------------------- |
+| 字段      | 类型        | 说明                                            |
+| data      | object None | 成功时 data 为 None，失败时有 code 时是错误数据 |
+| http_code | int         | HTTP 状态码                                     |
+| trace_id  | string      | 腾讯官方提供的错误追踪 ID                       |
+| result    | bool        | 成功为 True；否则为 False                       |
+
+> 可通过 `result` 判断是否成功
+
+### [单聊]撤回单聊消息
+
+- 撤回 QQ 单聊消息的 v2 API
+
+```python
+bot.api.delete_c2c_msg()
+# 路径：qg_botsdk.qg_bot.BOT().api.delete_c2c_msg()
+```
+
+| 参数       |        |              |         |
+| ---------- | ------ | ------------ | ------- |
+| 字段名     | 类型   | 默认值       | 说明    |
+| openid     | string | 无，必选参数 | 用户 id |
+| message_id | string | 无，必选参数 | 消息 id |
+
+| 返回      |             |                                                 |
+| --------- | ----------- | ----------------------------------------------- |
+| 字段      | 类型        | 说明                                            |
+| data      | object None | 成功时 data 为 None，失败时有 code 时是错误数据 |
+| http_code | int         | HTTP 状态码                                     |
+| trace_id  | string      | 腾讯官方提供的错误追踪 ID                       |
+| result    | bool        | 成功为 True；否则为 False                       |
+
+> 可通过 `result` 判断是否成功
+
+### 获取分享链接
+
+- 获取分享链接的 API
+
+```python
+bot.api.generate_url_link()
+# 路径：qg_botsdk.qg_bot.BOT().api.generate_url_link()
+```
+
+| 参数          |             |              |                                    |
+| ------------- | ----------- | ------------ | ---------------------------------- |
+| 字段名        | 类型        | 默认值       | 说明                               |
+| callback_data | string None | None         | 回调数据，添加好友时回传（选填） |
+
+| 返回      |        |                           |
+| --------- | ------ | ------------------------- |
+| 字段      | 类型   | 说明                      |
+| data      | object | 解析后的 json 数据        |
+| http_code | int    | HTTP 状态码               |
+| trace_id  | string | 腾讯官方提供的错误追踪 ID |
+| result    | bool   | 成功为 True；否则为 False |
+
+> 返回的.data.url为生成的分享链接
+
 ## 按钮事件 API
 
 ### 机器人按钮事件回调

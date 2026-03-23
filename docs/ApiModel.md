@@ -30,6 +30,7 @@ ApiModel.Message()
 | event_id                       | string None                        | None   | 事件 id（选填，如此项数据项与 message_id 均为 None，则为此消息主动消息）                                                                                              |
 | message_reference_id           | string None                        | None   | 引用消息的 id（选填）                                                                                                                                                 |
 | ignore_message_reference_error | bool None                          | None   | 是否忽略获取引用消息详情错误，默认否（选填）                                                                                                                          |
+| is_wakeup                      | bool None                          | None   | 是否为互动召回消息，仅单聊v2接口支持（选填）                                                                                                                          |
 
 ## MessageEmbed（继承自 BaseMessageApiModel）
 

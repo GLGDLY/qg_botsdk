@@ -1431,18 +1431,12 @@ class API:
 
     def generate_url_link(
         self,
-        type: int,
-        channel_id: Optional[str] = None,
-        bot_appid: Optional[int] = None,
-        guild_appid: Optional[int] = None,
+        callback_data: Optional[str] = None,
     ) -> _api_model.generate_url_link():
         """
         获取分享链接
 
-        :param type: 分享类型 0-频道机器人资料页 1-子频道邀请链接
-        :param channel_id: 子频道id，当 type=1 时必填
-        :param bot_appid: 机器人应用id，当 type=0 时必填
-        :param guild_appid: 频道应用id，当 type=0 时必填
+        :param callback_data: 回调数据，添加好友时回传（选填）
         :return: 返回的.data.url为生成的分享链接
         """
         _args = locals()
