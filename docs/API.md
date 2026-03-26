@@ -2152,7 +2152,7 @@ bot.api.upload_media()
 | file_type    | int    | 无，必选参数 | 文件类型                                               |
 | url          | string | 无，必选参数 | 需要发送媒体资源的 url                                 |
 | srv_send_msg | bool   | 无，必选参数 | 设置 True 会直接发送消息到目标端，且会占用主动消息频次 |
-| file_data    | string | 无，必选参数 | 【暂未支持】                                           |
+| file_data    | string | 无，必选参数 | base64 二进制数据                                     |
 | user_openid  | string | 无，必选参数 | 用户 id，此项有值时，group_openid 必须为 None          |
 | group_openid | string | 无，必选参数 | 群 id，此项有值时，user_openid 必须为 None             |
 

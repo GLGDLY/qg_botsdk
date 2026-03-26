@@ -98,13 +98,20 @@ bot = BOT(
     bot_id="你的BotAppID",
     bot_token="你的BotToken",
     auto_load_plugins=True,      # 开启自动加载
-    plugins_dir="plugins"        # 指定插件目录，默认为 "plugins"
+    plugins_dir="plugins",       # 指定插件目录，默认为 "plugins"
+    plugins_recursive=True,      # 是否递归扫描子目录，默认 False
 )
 
 bot.start()  # 启动时会自动加载 plugins 目录下的所有插件
 ```
 
-### 方法 2：使用 BOT.load_plugins() 统一加载（需求 SDK 版本>=4.3.9）
+| 参数               | 类型   | 默认值     | 说明                                   |
+| ------------------ | ------ | ---------- | -------------------------------------- |
+| auto_load_plugins  | bool   | False      | 是否自动加载插件目录中的插件           |
+| plugins_dir        | str    | "plugins"  | 插件目录路径                           |
+| plugins_recursive  | bool   | False      | 是否递归扫描子目录（需求 SDK 版本>=4.4.0） |
+
+### 方法 2：使用 BOT.load_plugins() 统一加载（需求 SDK 版本>=4.4.0）
 
 `load_plugins()` 是统一的插件加载入口，支持多种加载模式：
 

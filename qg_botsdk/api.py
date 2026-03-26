@@ -1321,7 +1321,7 @@ class API:
         :param file_type: 文件类型，1 图片，2 视频，3 语音，4 文件
         :param url: 需要发送媒体资源的url
         :param srv_send_msg: 设置 True 会直接发送消息到目标端，且会占用主动消息频次
-        :param file_data: 【暂未支持】
+        :param file_data: base64 二进制数据
         :param user_openid: 用户id，此项有值时，group_openid必须为None
         :param group_openid: 群id，此项有值时，user_openid必须为None
         """

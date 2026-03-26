@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import asyncio
 from asyncio import Lock as ALock
-from asyncio import get_event_loop, new_event_loop
 from copy import deepcopy
 from glob import glob
 from importlib.util import module_from_spec, spec_from_file_location
@@ -53,6 +53,7 @@ class BOT:
         sandbox: Optional[SandBox] = None,
         auto_load_plugins: bool = False,
         plugins_dir: str = "plugins",
+        plugins_recursive: bool = False,
     ):
         """
         机器人主体，输入BotAppID和密钥，并绑定函数后即可快速使用
@@ -73,11 +74,16 @@ class BOT:
         :param sandbox: 沙箱模式配置项，当 is_sandbox=True 时，只有指定的频道、群、用户可以接收到消息；否则当非沙箱环境时，过滤掉指定频道、群、用户的消息。
         :param auto_load_plugins: 是否自动加载插件目录中的插件，默认False
         :param plugins_dir: 插件目录路径，默认"plugins"
+        :param plugins_recursive: 是否递归扫描子目录加载插件，默认False
         """
+        # 改进的事件循环管理逻辑
         try:
-            self._loop = get_event_loop()
+            # 优先尝试获取正在运行的事件循环
+            self._loop = asyncio.get_running_loop()
         except RuntimeError:
-            self._loop = new_event_loop()
+            # 如果没有运行中的事件循环，创建新的
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
 
         self.logger = Logger(bot_id)
         self._loop.create_task(self.logger.start())
@@ -157,6 +163,7 @@ class BOT:
         self.sandbox = sandbox
         self._auto_load_plugins = auto_load_plugins
         self._plugins_dir = plugins_dir
+        self._plugins_recursive = plugins_recursive
         if isinstance(self.sandbox, SandBox):
             self.sandbox.set_logger(self.logger)
             self.sandbox.set_is_sandbox(is_sandbox)
@@ -279,24 +286,28 @@ class BOT:
 
     def refresh_plugins(self):
         commands, preprocessors = self._retrieve_new_plugins()
+        preprocessor_count = sum(len(v) for v in preprocessors.values())
         for intents, v in preprocessors.items():
             scope = CommandValidScenes.get_name(intents)
             for func in v:
-                self.logger.info(f"从Plugins注册 {scope} 预处理器：{func.__name__}")
+                self.logger.debug(f"从Plugins注册 {scope} 预处理器：{func.__name__}")
         for command in commands:
-            # 获取指令名字（command或regex）
             if command.command:
                 cmd_names = ", ".join(command.command)
-                self.logger.info(
-                    f"从Plugins注册指令：{command.func.__name__} -> [{cmd_names}]"
+                self.logger.debug(
+                    f"从Plugins注册指令：[{cmd_names}] -> {command.func.__name__}"
                 )
             elif command.regex:
                 regex_patterns = [r.pattern for r in command.regex]
-                self.logger.info(
-                    f"从Plugins注册正则指令：{command.func.__name__} -> [{', '.join(regex_patterns)}]"
+                self.logger.debug(
+                    f"从Plugins注册正则指令：[{', '.join(regex_patterns)}] -> {command.func.__name__}"
                 )
             else:
-                self.logger.info(f"从Plugins注册指令：{command.func.__name__}")
+                self.logger.debug(f"从Plugins注册指令：{command.func.__name__}")
+        if commands or preprocessor_count > 0:
+            self.logger.info(
+                f"插件注册完成：{len(commands)} 个指令，{preprocessor_count} 个预处理器"
+            )
         self._commands.extend(commands)
         for bit in range(CommandValidScenes.ALL.bit_length()):
             current_bit = 1 << bit
@@ -330,6 +341,8 @@ class BOT:
         """
         names = []
         for cmd in self._commands:
+            if not cmd.enabled:
+                continue
             if cmd.command:
                 names.extend(cmd.command)
             elif cmd.regex:
@@ -416,7 +429,7 @@ class BOT:
                 raise ImportError(f"插件 [{file_path}] 导入失败，未找到对应模块")
             module = module_from_spec(spec)
             spec.loader.exec_module(module)
-            self.logger.info(f"插件加载成功: {_name}")
+            self.logger.debug(f"插件加载成功: {_name}")
         except Exception as e:
             raise ImportError(f"插件 [{file_path}] 导入失败: {e}")
         if self._bot_class and self._bot_class.running:
@@ -461,7 +474,7 @@ class BOT:
             except Exception as e:
                 self.logger.error(f"插件加载失败 [{filename}]: {e}")
 
-        self.logger.info(f"目录加载完成，共加载 {loaded_count} 个插件")
+        self.logger.debug(f"目录扫描完成，共加载 {loaded_count} 个插件文件")
 
     def load_plugins_auto(
         self,
@@ -1007,7 +1020,7 @@ class BOT:
         try:
             if not self.__running and not self._bot_class:
                 if self._auto_load_plugins:
-                    self.load_plugins()
+                    self.load_plugins(recursive=self._plugins_recursive)
                 self.__running = True
                 self.refresh_plugins()
                 self._bot_class = _BotWs(

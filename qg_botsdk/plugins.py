@@ -32,7 +32,8 @@ class Plugins:
         api=None,
         logger=None,
     ) -> Tuple[List, Dict[int, List]]:
-        commands, preprocessors = cls._commands, cls._preprocessors
+        commands = [cmd for cmd in cls._commands if cmd.enabled]
+        preprocessors = cls._preprocessors
         cls._commands, cls._preprocessors = [], {
             1 << x: [] for x in range(CommandValidScenes.ALL.bit_length())
         }
