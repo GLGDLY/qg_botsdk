@@ -21,7 +21,7 @@ from .model import (
     Scope,
     SessionObject,
     SessionStatus,
-    WaifForCommandCallback,
+    WaitForCommandCallback,
 )
 
 _AllScopeStr = ("USER", "GUILD", "CHANNEL", "GROUP", "GLOBAL")
@@ -700,7 +700,7 @@ class SessionManager:
 
     def wait_for_message_checker(
         self, obj: Model.MESSAGE
-    ) -> List[WaifForCommandCallback]:
+    ) -> List[WaitForCommandCallback]:
         triggered_commands = []
         _scope_value = {
             scope: self.__check_identify(scope, obj) for scope in _AllScopeStr
@@ -718,7 +718,7 @@ class SessionManager:
             if flag:
                 for command in command_callback:
                     triggered_commands.append(
-                        WaifForCommandCallback(
+                        WaitForCommandCallback(
                             command=command,
                             callback=lambda data: command_callback.__setitem__(
                                 command, data

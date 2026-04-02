@@ -178,7 +178,9 @@ class AsyncAPI:
                     for items in return_dict:
                         data.append(items)
         except (JSONDecodeError, AttributeError, KeyError) as e:
-            self._logger.error(f"get_bot_guilds() 解析响应失败: {e.__class__.__name__}: {e}")
+            self._logger.error(
+                f"get_bot_guilds() 解析响应失败: {e.__class__.__name__}: {e}"
+            )
             return objectize(
                 {"data": [], "trace_id": trace_ids, "http_code": codes, "result": False}
             )

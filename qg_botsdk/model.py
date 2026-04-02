@@ -591,7 +591,6 @@ class Model:
         class author:
             id: str
             union_openid: str
-            username: str
             member_openid: str
 
         t: str
@@ -626,7 +625,6 @@ class Model:
         class author:
             id: str
             union_openid: str
-            username: str
             user_openid: str
 
         t: str
@@ -1135,7 +1133,7 @@ class EmojiString:
     生气 = "<emoji:326>"
 
 
-class WaifForCommandCallback:
+class WaitForCommandCallback:
     def __init__(
         self, command: BotCommandObject, callback: Callable[[Model.MESSAGE], Any]
     ):

@@ -72,7 +72,9 @@ class SandBox:
             elif event == EVENTS_ENUM.GROUP_AT_MESSAGE_CREATE:
                 return (data["d"]["group_openid"] not in self.groups) ^ self.is_sandbox
             elif event == EVENTS_ENUM.C2C_MESSAGE_CREATE:
-                return (data["d"]["author"]["user_openid"] not in self.q_users) ^ self.is_sandbox
+                return (
+                    data["d"]["author"]["user_openid"] not in self.q_users
+                ) ^ self.is_sandbox
             elif event == EVENTS_ENUM.MESSAGE_DELETE:
                 return (
                     data["d"]["message"]["guild_id"] not in self.guilds
