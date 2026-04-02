@@ -590,6 +590,7 @@ class _Message:
         bot: bool
         id: str
         username: str
+        union_openid: str
 
     class member:
         joined_at: str

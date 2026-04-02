@@ -290,20 +290,20 @@ class BOT:
         for intents, v in preprocessors.items():
             scope = CommandValidScenes.get_name(intents)
             for func in v:
-                self.logger.debug(f"从Plugins注册 {scope} 预处理器：{func.__name__}")
+                self.logger.info(f"从Plugins注册 {scope} 预处理器：{func.__name__}")
         for command in commands:
             if command.command:
                 cmd_names = ", ".join(command.command)
-                self.logger.debug(
+                self.logger.info(
                     f"从Plugins注册指令：[{cmd_names}] -> {command.func.__name__}"
                 )
             elif command.regex:
                 regex_patterns = [r.pattern for r in command.regex]
-                self.logger.debug(
+                self.logger.info(
                     f"从Plugins注册正则指令：[{', '.join(regex_patterns)}] -> {command.func.__name__}"
                 )
             else:
-                self.logger.debug(f"从Plugins注册指令：{command.func.__name__}")
+                self.logger.info(f"从Plugins注册指令：{command.func.__name__}")
         if commands or preprocessor_count > 0:
             self.logger.info(
                 f"插件注册完成：{len(commands)} 个指令，{preprocessor_count} 个预处理器"
@@ -337,7 +337,7 @@ class BOT:
         """
         获取当前所有注册的指令名字列表
 
-        :return: 返回所有指令名字的列表（包括 command 和 regex 模式的指令）
+        :return: 返回所有已启用指令名字的列表（包括 command 和 regex 模式的指令，未启用的指令不包含在内）
         """
         names = []
         for cmd in self._commands:

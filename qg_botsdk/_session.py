@@ -216,6 +216,12 @@ class SessionManager:
                     else:
                         gc_identifies = []
                         for identify, session in sessions.items():
+                            if not isinstance(session, dict):
+                                self.__logger.error(
+                                    f"Session({scope}::{identify}) 数据格式错误，将被清理"
+                                )
+                                gc_identifies.append(identify)
+                                continue
                             change = self.__manage_session_object(
                                 loop, time_now, session, scope, identify
                             )

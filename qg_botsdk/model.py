@@ -189,6 +189,7 @@ class Model:
             bot: bool
             id: str
             username: str
+            union_openid: str
 
         class member:
             joined_at: str
@@ -235,6 +236,7 @@ class Model:
                 bot: bool
                 id: str
                 username: str
+                union_openid: str
 
             channel_id: str
             guild_id: str
@@ -273,6 +275,7 @@ class Model:
             avatar: str
             id: str
             username: str
+            union_openid: str
 
         class member:
             joined_at: str
@@ -588,6 +591,7 @@ class Model:
         class author:
             id: str
             union_openid: str
+            username: str
             member_openid: str
 
         t: str
@@ -622,6 +626,7 @@ class Model:
         class author:
             id: str
             union_openid: str
+            username: str
             user_openid: str
 
         t: str
