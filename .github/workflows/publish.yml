@@ -1,0 +1,116 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "setup.cfg"
+      - "qg_botsdk/version.py"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    if: github.repository_owner == 'GLGDLY' && github.actor == 'GLGDLY'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine packaging
+
+      - name: Verify release bump
+        id: release_bump
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+
+          head_sha="${{ github.sha }}"
+          base_sha=$(git rev-parse "${head_sha}^")
+          changed_files=$(git diff --name-only "$base_sha" "$head_sha")
+          commit_email=$(git log -1 --format=%ae "$head_sha")
+          commit_name=$(git log -1 --format=%an "$head_sha")
+
+          echo "$changed_files"
+
+          if echo "$changed_files" | grep -qx 'setup.cfg' && \
+             echo "$changed_files" | grep -qx 'qg_botsdk/version.py' && \
+             [ "$commit_email" = 'tzlgdly@gmail.com' ] && \
+             [ "$commit_name" = 'GLGDLY' ]; then
+            python -c "import configparser, pathlib, re; root = pathlib.Path('.'); cfg = configparser.ConfigParser(); cfg.read(root / 'setup.cfg', encoding='utf-8'); setup_version = cfg.get('metadata', 'version').strip(); version_py = (root / 'qg_botsdk' / 'version.py').read_text(encoding='utf-8'); match = re.search(r'__version__\\s*=\\s*[\"\\']([^\"\\']+)[\"\\']', version_py); assert match, 'Could not find __version__ in qg_botsdk/version.py'; module_version = match.group(1).strip(); assert setup_version == module_version, f'Version mismatch: setup.cfg={setup_version!r}, version.py={module_version!r}'; print(f'Version verified: {setup_version}')"
+            echo "allow_upload=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "allow_upload=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping upload: commit is not the expected release bump."
+          fi
+
+      - name: Check PyPI version
+        id: pypi_version
+        run: |
+          set -euo pipefail
+
+          current_version=$(python - <<'PY'
+          import configparser
+
+          cfg = configparser.ConfigParser()
+          cfg.read('setup.cfg', encoding='utf-8')
+          print(cfg.get('metadata', 'version').strip())
+          PY
+          )
+
+          published_version=$(python - <<'PY'
+          import json
+          import urllib.request
+          from packaging.version import parse
+
+          url = 'https://pypi.org/pypi/qg-botsdk/json'
+          try:
+              with urllib.request.urlopen(url, timeout=20) as response:
+                  data = json.load(response)
+          except Exception:
+              print('')
+          else:
+              releases = data.get('releases', {})
+              versions = [v for v in releases.keys() if releases.get(v)]
+              if versions:
+                  print(str(max(versions, key=parse)))
+              else:
+                  print('')
+          PY
+          )
+
+          echo "current_version=$current_version"
+          echo "published_version=$published_version"
+
+          if [ "$current_version" = "$published_version" ] && [ -n "$published_version" ]; then
+            echo "skip_upload=true" >> "$GITHUB_OUTPUT"
+            echo "Version $current_version is already on PyPI; skipping upload."
+          else
+            echo "skip_upload=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build distribution
+        run: python -m build
+
+      - name: Check distribution
+        run: twine check dist/*
+
+      - name: Publish package
+        if: steps.pypi_version.outputs.skip_upload != 'true' && (github.event_name != 'push' || steps.release_bump.outputs.allow_upload == 'true')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}

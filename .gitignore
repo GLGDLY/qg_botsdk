@@ -2,6 +2,7 @@ release
 .idea
 .coverage
 .pypirc
+.claude
 __pycache__
 qg_botsdk/__pycache__
 example/log
